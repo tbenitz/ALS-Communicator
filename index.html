@@ -175,7 +175,8 @@
     <audio id="player" class="hidden"></audio>
 
 <script type="module">
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.0/+esm';
+    // Correctly loading 3.8.1 instead of 3.1.0 to support Supertonic TTS Architecture
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
 
     // Set this to the relative path of your Vercel serverless function
     const API_URL = '/api/grok';
@@ -563,7 +564,7 @@
             phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
             saveToStorage();
             closeModal();
-            renderPhrases();
+            renderPhrPhrases();
         }
     };
 
