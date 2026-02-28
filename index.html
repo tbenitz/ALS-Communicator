@@ -41,7 +41,6 @@
         @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .live-text { animation: pulse-text 1.5s infinite; }
         
-        /* Smooth rendering for waveform canvas */
         canvas { image-rendering: pixelated; }
     </style>
 </head>
@@ -223,20 +222,18 @@
     const convHistoryEl     = document.getElementById('conversationHistory');
     const liveTranscript    = document.getElementById('liveTranscript');
     
-    // Waveform DOM
     const waveformCanvas    = document.getElementById('waveformCanvas');
     const canvasCtx         = waveformCanvas.getContext('2d');
     
-    // UI Panels
     const categoryScroll    = document.getElementById('categoryScroll');
     const phraseGridEl      = document.getElementById('phraseGrid');
     const currentCategoryTitle = document.getElementById('currentCategoryTitle');
     
-    // Settings & Toggles
     const editToggleBtn     = document.getElementById('editToggleBtn');
     const addCategoryBtn    = document.getElementById('addCategoryBtn');
     const editCategoryBtn   = document.getElementById('editCategoryBtn');
     const addPhraseBtn      = document.getElementById('addPhraseBtn');
+    
     const openSettingsBtn   = document.getElementById('openSettingsBtn');
     const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
     const settingsModal     = document.getElementById('settingsModal');
@@ -255,7 +252,6 @@
     const micSensSlider     = document.getElementById('micSensSlider');
     const micSensVal        = document.getElementById('micSensVal');
     
-    // State
     const defaultCategories = {
         "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute."],
         "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "Can I have some water?"],
@@ -269,7 +265,7 @@
     
     let isEditMode = false;
     let selectedVoice = 'M1'; 
-    let clickAction = 'speak'; // 'speak' or 'type'
+    let clickAction = 'speak'; 
     let lastSpoken = '';
     
     let tts = null;
@@ -277,13 +273,12 @@
     let intentionallyStopped = true; 
     let isTTSPlaying = false; 
     
-    // Audio Context (Waveform & Noise Gate)
     let audioContext, analyser, microphone, dataArray;
     let maxVolumeInWindow = 0;
     let visualizerActive = false;
 
     // ────────────────────────────────────────────────
-    // INPUT HANDLING
+    // INPUT HANDLING & TAP ACTIONS
     // ────────────────────────────────────────────────
     textInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -292,16 +287,12 @@
         }
     });
 
-    // ────────────────────────────────────────────────
-    // CENTRALIZED TAP ACTION HANDLER
-    // ────────────────────────────────────────────────
     function handlePhraseTap(phrase) {
         if (clickAction === 'speak') {
             textInput.value = phrase;
             genBtn.click();
             predictiveBar.classList.add('hidden');
         } else {
-            // Append to text box (Sentence Builder)
             textInput.value += (textInput.value && !textInput.value.endsWith(' ') ? ' ' : '') + phrase + ' ';
             textInput.scrollTop = textInput.scrollHeight;
             textInput.focus();
@@ -419,13 +410,13 @@
             btn.className = `shrink-0 px-4 py-2 text-md md:text-lg font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white shadow-md' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
             btn.onclick = () => {
                 currentCategory = cat;
-                currentCategoryTitle.textContent = cat;
+                document.getElementById('currentCategoryTitle').textContent = cat;
                 renderCategories();
                 renderPhrases();
             };
             categoryScroll.appendChild(btn);
         });
-        currentCategoryTitle.textContent = currentCategory;
+        document.getElementById('currentCategoryTitle').textContent = currentCategory;
     }
 
     function renderPhrases() {
@@ -476,7 +467,7 @@
     window.openSaveFromHistory = (text) => {
         isEditMode = true; 
         openModal(text, currentCategory, -1);
-        modalTitle.textContent = "Save Spoken Phrase";
+        document.getElementById('modalTitle').textContent = "Save Spoken Phrase";
         document.getElementById('modalDeleteBtn').classList.add('hidden'); 
     };
 
@@ -510,14 +501,14 @@
 
     addPhraseBtn.onclick = () => {
         openModal(textInput.value || "", currentCategory, -1);
-        modalTitle.textContent = "Add New Phrase";
+        document.getElementById('modalTitle').textContent = "Add New Phrase";
         document.getElementById('modalDeleteBtn').classList.add('hidden');
     };
 
     function openModal(phraseText, category, index) {
         editingPhraseIndex = index;
         editingCategorySource = category;
-        modalTitle.textContent = "Edit Phrase";
+        document.getElementById('modalTitle').textContent = "Edit Phrase";
         document.getElementById('modalDeleteBtn').classList.remove('hidden');
         document.getElementById('modalPhraseText').value = phraseText;
         
@@ -589,6 +580,55 @@
         } else aiCountSlider.max = 9;
     });
     aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
+
+    // ────────────────────────────────────────────────
+    // AUDIO VISUALIZER
+    // ────────────────────────────────────────────────
+    async function initVisualizer() {
+        if (visualizerActive) return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            analyser.fftSize = 64; 
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+            visualizerActive = true;
+            drawWaveform();
+        } catch (e) {
+            console.warn("Visualizer mic denied.", e);
+        }
+    }
+
+    function drawWaveform() {
+        if (!visualizerActive || intentionallyStopped) return;
+        requestAnimationFrame(drawWaveform);
+        analyser.getByteFrequencyData(dataArray);
+
+        waveformCanvas.width = waveformCanvas.offsetWidth;
+        waveformCanvas.height = waveformCanvas.offsetHeight;
+        canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+
+        const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
+        let barHeight;
+        let x = 0;
+        let currentMax = 0;
+
+        for(let i = 0; i < dataArray.length; i++) {
+            barHeight = dataArray[i] / 4; 
+            if (dataArray[i] > currentMax) currentMax = dataArray[i];
+
+            canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.2})`;
+            canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
+            x += barWidth + 2;
+        }
+
+        if (currentMax > maxVolumeInWindow) {
+            maxVolumeInWindow = currentMax;
+        }
+    }
 
     // ────────────────────────────────────────────────
     // TTS INIT & PLAYBACK
@@ -697,61 +737,9 @@
     }
 
     // ────────────────────────────────────────────────
-    // AUDIO VISUALIZER (Web Audio API)
-    // ────────────────────────────────────────────────
-    async function initVisualizer() {
-        if (visualizerActive) return;
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            microphone = audioContext.createMediaStreamSource(stream);
-            microphone.connect(analyser);
-            analyser.fftSize = 64; // Smaller for chunkier bars
-            const bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-            visualizerActive = true;
-            drawWaveform();
-        } catch (e) {
-            console.warn("Mic access for visualizer denied.", e);
-        }
-    }
-
-    function drawWaveform() {
-        if (!visualizerActive || intentionallyStopped) return;
-        requestAnimationFrame(drawWaveform);
-        analyser.getByteFrequencyData(dataArray);
-
-        // Adjust canvas internal resolution to match display size for crisp pixels
-        waveformCanvas.width = waveformCanvas.offsetWidth;
-        waveformCanvas.height = waveformCanvas.offsetHeight;
-        
-        canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-
-        const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
-        let barHeight;
-        let x = 0;
-        let currentMax = 0;
-
-        for(let i = 0; i < dataArray.length; i++) {
-            barHeight = dataArray[i] / 4; 
-            if (dataArray[i] > currentMax) currentMax = dataArray[i];
-
-            canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.2})`; // Indigo glow
-            canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
-            x += barWidth + 2;
-        }
-
-        if (currentMax > maxVolumeInWindow) {
-            maxVolumeInWindow = currentMax;
-        }
-    }
-
-    // ────────────────────────────────────────────────
-    // SPEECH RECOGNITION (PERSISTENT + NOISE GATE)
+    // SPEECH RECOGNITION (PERSISTENT + NOISE GATE + ANTI-FRAG)
     // ────────────────────────────────────────────────
     let speechDebounceTimer = null;
-    let accumulatedSpeech = "";
 
     function updateMicUI(isActive) {
         if (isActive) {
@@ -799,12 +787,13 @@
         recognition.onresult = (event) => {
             if (isTTSPlaying) return; 
 
-            let currentTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                currentTranscript += event.results[i][0].transcript;
+            // CHANGED: Grab EVERYTHING in the buffer from index 0 to stop fragmentation
+            let fullTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+                fullTranscript += event.results[i][0].transcript;
             }
 
-            accumulatedSpeech = currentTranscript.trim();
+            const accumulatedSpeech = fullTranscript.trim();
 
             if (accumulatedSpeech) {
                 liveTranscript.textContent = '🗣️ ' + accumulatedSpeech;
@@ -812,13 +801,11 @@
 
                 clearTimeout(speechDebounceTimer);
                 
+                // Bumped timeout slightly to allow for natural conversation pauses
                 speechDebounceTimer = setTimeout(() => {
                     if (accumulatedSpeech) {
                         const finalStringToCommit = accumulatedSpeech;
-                        accumulatedSpeech = ""; 
                         
-                        // NOISE GATE LOGIC: If the loudest sound during this sentence was lower than sensitivity, discard it.
-                        // Sensitivity slider is 0 to 100. We map it to a volume threshold of 150 (strict) to 0 (hears everything).
                         const sensSetting = parseInt(micSensSlider.value);
                         const volumeThreshold = 150 - (sensSetting * 1.5); 
                         
@@ -830,14 +817,16 @@
                             generateGrokSuggestions();
                         }
 
-                        // Reset max volume tracking for the next sentence
                         maxVolumeInWindow = 0;
                         liveTranscript.textContent = '';
                         liveTranscript.classList.add('hidden');
 
-                        if (!intentionallyStopped) { recognition.stop(); }
+                        // ALWAYS manually restart the mic after a commit to dump the old browser transcript array
+                        if (!intentionallyStopped) { 
+                            recognition.stop(); 
+                        }
                     }
-                }, 1500); 
+                }, 1800); 
             }
         };
     } else {
@@ -880,7 +869,6 @@
 
         grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6 md:col-span-3">AI Thinking (${numReplies} replies)...</div>`;
 
-        // Apply Context Limit Slider logic here
         const recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
         
         const prompt = `You are a human named "ALS User" talking to your partner in your house. 
