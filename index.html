@@ -25,7 +25,6 @@
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
         
-        /* Suggestion Buttons - Mobile Horizontal vs Desktop Grid */
         .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
         
@@ -58,7 +57,7 @@
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-3 md:p-4 text-2xl md:text-3xl focus:border-green-500 outline-none resize-none h-24 md:h-36 shadow-inner transition-colors" placeholder="Type and press Enter..."></textarea>
                 
                 <div id="predictiveBar" class="h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm">
-                    </div>
+                </div>
             </div>
             
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-2">
@@ -89,7 +88,7 @@
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll">
-                    </div>
+                </div>
 
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
                     <button id="addCategoryBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-sm shadow-sm" title="New Category">+ Cat</button>
@@ -206,18 +205,15 @@
     const suggestStatus     = document.getElementById('suggestStatus');
     const convHistoryEl     = document.getElementById('conversationHistory');
     
-    // UI Panels
     const categoryScroll    = document.getElementById('categoryScroll');
     const phraseGridEl      = document.getElementById('phraseGrid');
     const currentCategoryTitle = document.getElementById('currentCategoryTitle');
     
-    // Toggles & Modal Controls
     const editToggleBtn     = document.getElementById('editToggleBtn');
     const addCategoryBtn    = document.getElementById('addCategoryBtn');
     const editCategoryBtn   = document.getElementById('editCategoryBtn');
     const addPhraseBtn      = document.getElementById('addPhraseBtn');
     
-    // Settings DOM
     const openSettingsBtn   = document.getElementById('openSettingsBtn');
     const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
     const settingsModal     = document.getElementById('settingsModal');
@@ -234,11 +230,9 @@
     const importFileInput   = document.getElementById('importFileInput');
     const clearHistoryBtn   = document.getElementById('clearHistoryBtn');
     
-    // Progress
     const ttsProgressContainer = document.getElementById('ttsProgressContainer');
     const progressFill      = document.getElementById('progressFill');
 
-    // Phrase Modal
     const phraseModal       = document.getElementById('phraseModal');
     const modalTitle        = document.getElementById('modalTitle');
     const modalPhraseText   = document.getElementById('modalPhraseText');
@@ -265,8 +259,8 @@
     
     let tts = null;
     let recognition = null;
-    let isListening = false;
-    let intentionallyStopped = false;
+    let intentionallyStopped = true; // Tracks explicit user intent
+    let isTTSPlaying = false; // Tracks if the AI is currently speaking to prevent echoing
     let progressInterval = null;
 
     let editingPhraseIndex = -1; 
@@ -461,10 +455,7 @@
     }
     
     function scrollToBottom() {
-        // slight delay to ensure DOM is updated before measuring height
-        setTimeout(() => {
-            convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
-        }, 10);
+        setTimeout(() => { convHistoryEl.scrollTop = convHistoryEl.scrollHeight; }, 10);
     }
 
     window.openSaveFromHistory = (text) => {
@@ -585,8 +576,14 @@
     aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
 
     // ────────────────────────────────────────────────
-    // TTS INIT & PROGRESS
+    // TTS INIT, PROGRESS & ECHO CANCELLATION
     // ────────────────────────────────────────────────
+    
+    // Prevent mic from transcribing our own app's speech
+    player.onplay = () => { isTTSPlaying = true; };
+    player.onended = () => { isTTSPlaying = false; };
+    player.onpause = () => { isTTSPlaying = false; };
+
     async function initTTS() {
         try {
             btnText.textContent = 'Loading...';
@@ -663,6 +660,9 @@
     function nativeSpeak(text) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
+        u.onstart = () => { isTTSPlaying = true; };
+        u.onend = () => { isTTSPlaying = false; };
+        u.onerror = () => { isTTSPlaying = false; };
         speechSynthesis.speak(u);
     }
 
@@ -688,8 +688,21 @@
     }
 
     // ────────────────────────────────────────────────
-    // SPEECH RECOGNITION
+    // SPEECH RECOGNITION (PERSISTENT)
     // ────────────────────────────────────────────────
+    
+    function updateMicUI(isActive) {
+        if (active) {
+            listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🛑</span>Stop Mic';
+            listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+            suggestStatus.textContent = 'Listening (Partner Speaking)...';
+        } else {
+            listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Listen';
+            listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+            suggestStatus.textContent = 'AI Suggestions (Paused)';
+        }
+    }
+
     if ('webkitSpeechRecognition' in window) {
         recognition = new webkitSpeechRecognition();
         recognition.continuous = true;
@@ -697,24 +710,33 @@
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-            listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🛑</span>Stop Mic';
-            listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-            isListening = true;
-            suggestStatus.textContent = 'Listening (Partner Speaking)...';
+            // UI is driven by user intent, so we don't flash it here.
+        };
+
+        recognition.onerror = (event) => {
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                intentionallyStopped = true;
+                updateMicUI(false);
+                alert("Microphone access denied. Please allow permissions in your browser.");
+            }
         };
 
         recognition.onend = () => {
+            // Browser stopped the mic (usually due to mobile silence timeout).
+            // We silently restart it in the background if the user didn't ask to stop.
             if (!intentionallyStopped) {
-                try { recognition.start(); } catch (e) {}
-            } else {
-                listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Listen';
-                listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
-                isListening = false;
-                suggestStatus.textContent = 'AI Suggestions (Paused)';
+                setTimeout(() => {
+                    if (!intentionallyStopped) {
+                        try { recognition.start(); } catch (e) {}
+                    }
+                }, 400); // 400ms buffer prevents browser from crashing the mic stream
             }
         };
 
         recognition.onresult = (event) => {
+            // ECHO CANCELLATION: Ignore mic input if the app is currently speaking!
+            if (isTTSPlaying) return; 
+
             let final = '';
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 if (event.results[i].isFinal) final = event.results[i][0].transcript.trim();
@@ -732,14 +754,25 @@
 
     listenBtn.onclick = () => {
         if (!recognition) return;
-        if (isListening) { intentionallyStopped = true; recognition.stop(); }
-        else { intentionallyStopped = false; recognition.start(); }
+        if (!intentionallyStopped) { 
+            // User explicitly clicked STOP
+            intentionallyStopped = true; 
+            updateMicUI(false);
+            recognition.stop(); 
+        } else { 
+            // User explicitly clicked START
+            intentionallyStopped = false; 
+            updateMicUI(true);
+            try { recognition.start(); } catch(e){} 
+        }
     };
 
+    // Auto start on load
     setTimeout(() => {
-        if (recognition && !isListening) {
+        if (recognition) {
             intentionallyStopped = false;
-            recognition.start();
+            updateMicUI(true);
+            try { recognition.start(); } catch(e){}
         }
     }, 1000);
 
@@ -757,7 +790,6 @@
         if (lengthLevel === 2) { lengthInstruction = "medium length (10-20 words)"; maxTokens = numReplies * 40; } 
         else if (lengthLevel === 3) { lengthInstruction = "longer, more detailed (20-40 words)"; maxTokens = numReplies * 70; }
 
-        // Use horizontal flex box on mobile instead of grid so it doesn't take up vertical space
         grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6 md:col-span-3">AI Thinking (${numReplies} replies)...</div>`;
 
         const recentConv = conversationHistory.slice(-5).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
@@ -794,7 +826,6 @@
 
             suggestions.slice(0, numReplies).forEach(phrase => {
                 const btn = document.createElement('button');
-                // Added flex-shrink-0 for horizontal scroll on mobile
                 btn.className = 'suggestion-btn shrink-0 min-w-[220px] md:min-w-0 md:w-full';
                 btn.textContent = phrase;
                 btn.onclick = () => { textInput.value = phrase; genBtn.click(); };
