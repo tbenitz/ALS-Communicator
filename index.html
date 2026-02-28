@@ -250,12 +250,63 @@
     const micSensSlider     = document.getElementById('micSensSlider');
     const micSensVal        = document.getElementById('micSensVal');
     
-    const defaultCategories = {
-        "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe."],
-        "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired."],
-        "Care": ["Adjust my position.", "I am in pain.", "I need help."],
-        "Greetings": ["Hello!", "How are you?", "Goodbye."]
-    };
+const defaultCategories = {
+    "Basics": [
+        "Yes.", "No.", "Please.", "Thank you.", "I don't know.", 
+        "Maybe.", "Can you repeat that?", "Give me a minute.", 
+        "Okay.", "Wait.", "Stop.", "Go.", "I changed my mind."
+    ],
+    "Needs": [
+        "I am hungry.", "I am thirsty.", "Bathroom, please.", 
+        "I am tired.", "Can I have some water?", "I need my medication.", 
+        "I need a shower.", "Wipe my mouth.", "Wipe my eyes.", 
+        "Blow my nose.", "I need my glasses."
+    ],
+    "Care & Comfort": [
+        "Adjust my position.", "I am in pain.", "I need help.", 
+        "It is too hot.", "It is too cold.", "Scratch my itch.", 
+        "Scratch my face.", "Scratch my head.", "My muscles are cramping.",
+        "Adjust my head.", "Move my arm.", "Move my leg.", 
+        "Prop up my feet.", "I need to stretch."
+    ],
+    "Medical & Breathing": [ // Vital for ALS progression
+        "Suction, please.", "Adjust my mask.", "My mask is leaking.",
+        "Check my ventilator.", "Use the cough assist.", "I can't breathe well.", 
+        "Clear my throat.", "Check my feeding tube.", "Flush my tube.",
+        "I have phlegm.", "Raise the head of the bed.", "Lower the bed."
+    ],
+    "Numbers & Time": [
+        "What time is it?", "Now.", "Later.", "Soon.", "In a minute.",
+        "Today.", "Tomorrow.", "Yesterday.", 
+        "Morning.", "Afternoon.", "Evening.", "Night.", 
+        "A.M.", "P.M.",
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+    ],
+    "Greetings & Social": [
+        "Hello!", "How are you?", "Goodbye.", "Good morning.", 
+        "Good night.", "See you later.", "It is good to see you.", 
+        "What have you been up to?", "Tell me a story.", "Tell me a joke.",
+        "I love you."
+    ],
+    "Emotions & Feelings": [
+        "I am happy.", "I am sad.", "I am frustrated.", "I am angry.", 
+        "I am anxious.", "I am bored.", "I am overwhelmed.", 
+        "Please be patient with me.", "Leave me alone for a bit.", 
+        "Stay here with me."
+    ],
+    "Tech & Environment": [
+        "Turn on the TV.", "Turn off the TV.", "Change the channel.", 
+        "Volume up.", "Volume down.", "Play some music.", 
+        "Turn on the lights.", "Turn off the lights.", "Open the blinds.", 
+        "Close the door.", "Open the door.", 
+        "My screen needs calibrating.", "Adjust my screen."
+    ],
+    "Food & Drink Specifics": [
+        "Coffee, please.", "Tea, please.", "More, please.", "I am full.",
+        "It is too hot to eat.", "It is too cold.", "Give me a smaller bite.",
+        "Give me a smaller sip.", "Thicken my drink.", "Feed me slower."
+    ]
+};
     
     let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || defaultCategories;
     let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
