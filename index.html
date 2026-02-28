@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALS Communicator - Supertonic + Grok</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1"></script>
+    <style>
+        body { background-color: #121212; color: #ffffff; margin: 0; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; }
+        ::-webkit-scrollbar { width: 12px; height: 12px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 6px; border: 2px solid #1e1e1e; }
+        ::-webkit-scrollbar-thumb:hover { background: #888; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 20px; background: #333; outline: none; border-radius: 10px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 36px; height: 36px; border-radius: 50%; background: #4CAF50; cursor: pointer; }
+        @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
+        .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
+        .suggestion-btn { background: #166534; border: 3px solid #22c55e; min-height: 80px; font-size: 1.25rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; }
+        .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
+        .msg { padding: 0.75rem 1rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1.1rem; }
+        .msg-other { background: #2d3748; align-self: flex-start; color: #e2e8f0; border-bottom-left-radius: 0.25rem; }
+        .msg-you { background: #2f855a; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
+        .save-phrase-btn { font-size: 0.85rem; background: #1a202c; color: #a0aec0; padding: 4px 10px; border-radius: 12px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #4a5568; }
+        .save-phrase-btn:hover { background: #2d3748; color: #fff; border-color: #718096; }
+        #progressFill { background: #4CAF50; height: 100%; width: 0%; transition: width 0.3s ease-out; }
+        
+        /* Modal Styles */
+        .modal-overlay { backdrop-filter: blur(5px); }
+        .modal-content { background: #1f2937; border: 2px solid #374151; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="p-2 md:p-4 gap-4 box-border flex flex-col relative h-screen">
+
+    <div class="flex justify-between items-center bg-gray-900 p-3 rounded-2xl border border-gray-700 shadow-sm shrink-0">
+        <h1 class="text-xl md:text-2xl font-bold text-white tracking-wide">🗣️ ALS Communicator</h1>
+        <button id="openSettingsBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all">
+            ⚙️ <span class="hidden md:inline">Settings</span>
+        </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-4 shrink-0">
+        <div class="flex-grow flex flex-col gap-2 relative">
+            <textarea id="textInput" class="w-full bg-gray-800 text-white border-4 border-gray-600 rounded-2xl p-4 md:p-6 text-2xl md:text-4xl focus:border-green-500 outline-none resize-none h-32 md:h-48" placeholder="Type a phrase and press Enter..."></textarea>
+            
+            <div id="predictiveBar" class="h-14 bg-gray-900 rounded-xl border border-gray-700 flex items-center px-2 gap-2 overflow-x-auto whitespace-nowrap hidden">
+                </div>
+        </div>
+        
+        <div class="flex flex-col sm:grid sm:grid-cols-2 md:flex md:flex-col gap-3 w-full md:w-1/3 md:min-w-[320px]">
+            <button id="genBtn" disabled class="col-span-2 bg-green-600 hover:bg-green-500 text-white font-bold text-3xl md:text-4xl rounded-2xl shadow-lg transition-all flex flex-col items-center justify-center py-4 md:py-0 md:h-full disabled:opacity-50 relative overflow-hidden">
+                <span id="btnText" class="z-10 relative">Loading TTS...</span>
+                <div id="ttsProgressContainer" class="absolute bottom-0 left-0 w-full h-2 bg-black bg-opacity-30 hidden">
+                    <div id="progressFill"></div>
+                </div>
+            </button>
+            <button id="listenBtn" class="bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-xl py-4 rounded-2xl shadow-lg transition-all">🎤 Listen</button>
+            <button id="grokSuggestBtn" class="bg-purple-700 hover:bg-purple-600 text-white font-bold text-xl py-4 rounded-2xl shadow-lg transition-all">🤖 AI Reply</button>
+            <button id="replayBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xl py-4 rounded-2xl shadow-lg">🔄 Replay</button>
+            <button id="clearBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold text-xl py-4 rounded-2xl shadow-lg">❌ Clear</button>
+        </div>
+    </div>
+
+    <div class="flex flex-col shrink-0 mt-2 md:mt-0">
+        <div id="suggestStatus" class="text-sm text-gray-400 text-center mb-1">Waiting for conversation…</div>
+        <div id="grokSuggestions" class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-h-[30vh] overflow-y-auto pr-2"></div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden mt-2 pb-2">
+        
+        <div class="w-full md:w-2/3 bg-gray-800 rounded-2xl border-2 border-gray-700 flex flex-col overflow-hidden h-[50vh] md:h-auto">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 md:p-4 bg-gray-900 border-b border-gray-700 gap-3">
+                
+                <div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar" id="categoryScroll">
+                    </div>
+
+                <div class="flex gap-2 shrink-0">
+                    <button id="addCategoryBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-xl font-bold border border-gray-500 transition-all" title="New Category">+ Cat</button>
+                    <button id="addPhraseBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl font-bold border-2 border-blue-400 transition-all hidden">+ Phrase</button>
+                    <button id="editToggleBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-bold border-2 border-gray-500 transition-all">✏️ Manage</button>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center px-4 pt-2 pb-0">
+                <h2 id="currentCategoryTitle" class="text-2xl font-bold text-gray-300">Basics</h2>
+                <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 text-sm font-bold bg-gray-900 px-3 py-1 rounded-lg hidden border border-red-900">Delete Category</button>
+            </div>
+            
+            <div id="phraseGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 overflow-y-auto content-start flex-grow"></div>
+        </div>
+
+        <div class="w-full md:w-1/3 bg-gray-800 rounded-2xl border-2 border-gray-700 flex flex-col overflow-hidden h-[40vh] md:h-auto">
+            <h2 class="text-xl font-bold p-3 bg-gray-900 border-b border-gray-700 text-center shrink-0">Conversation</h2>
+            <div id="conversationHistory" class="flex-grow overflow-y-auto p-4 space-y-3 flex flex-col"></div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center hidden modal-overlay p-4">
+        <div class="modal-content w-full max-w-xl rounded-2xl p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-700 pb-3">
+                <h3 class="text-3xl font-bold">Settings</h3>
+                <button id="closeSettingsBtn" class="text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
+            </div>
+            
+            <div class="flex flex-col gap-2">
+                <label class="font-bold text-gray-300 text-lg">AI Voice</label>
+                <div class="flex gap-3 h-14">
+                    <button id="btnM1" class="flex-1 bg-gray-700 border-4 border-blue-500 text-white font-bold text-xl rounded-xl transition-all shadow-md">Male (M1)</button>
+                    <button id="btnF1" class="flex-1 bg-gray-700 border-4 border-transparent text-gray-400 font-bold text-xl rounded-xl transition-all shadow-md">Female (F1)</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <div class="flex justify-between font-bold text-lg"><span>AI Reply Length</span><span id="replyLenVal" class="text-green-400">Short</span></div>
+                <input type="range" id="replyLenSlider" min="1" max="3" value="1" step="1" class="my-2">
+                <div class="flex justify-between text-sm text-gray-400 px-1"><span>Short</span><span>Medium</span><span>Long</span></div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <div class="flex justify-between font-bold text-lg"><span>Number of AI Replies</span><span id="aiCountVal" class="text-green-400">3</span></div>
+                <input type="range" id="aiCountSlider" min="1" max="9" value="3" step="1" class="my-2">
+                <p class="text-xs text-gray-400">Note: "Long" replies automatically limit this to 5.</p>
+            </div>
+
+            <div class="flex flex-col gap-2 border-t border-gray-700 pt-4">
+                <div class="flex justify-between font-bold text-lg"><span>TTS Quality (Speed vs Clarity)</span><span id="stepsVal" class="text-green-400">25</span></div>
+                <input type="range" id="steps" min="5" max="30" value="25" step="1" class="my-2">
+            </div>
+
+            <div class="flex flex-col gap-3 pt-4 border-t border-gray-700">
+                <label class="font-bold text-gray-300 text-lg">Backup & Restore</label>
+                <div class="flex gap-3">
+                    <button id="exportBtn" class="flex-1 bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2">
+                        📥 Export Data
+                    </button>
+                    <button id="importBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2">
+                        📤 Import Data
+                    </button>
+                    <input type="file" id="importFileInput" accept=".json" class="hidden">
+                </div>
+                <p class="text-xs text-gray-400 text-center">Export saves your phrases and conversation history to a file.</p>
+            </div>
+            
+            <button id="clearHistoryBtn" class="mt-2 bg-red-900 hover:bg-red-800 text-red-200 font-bold py-3 rounded-xl transition-all border border-red-700">
+                🗑️ Clear Conversation History
+            </button>
+        </div>
+    </div>
+
+    <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center hidden modal-overlay p-4">
+        <div class="modal-content w-full max-w-lg rounded-2xl p-6 flex flex-col gap-5">
+            <h3 class="text-2xl font-bold border-b border-gray-700 pb-2" id="modalTitle">Edit Phrase</h3>
+            
+            <div class="flex flex-col gap-2">
+                <label class="font-bold text-gray-300">Phrase Text:</label>
+                <textarea id="modalPhraseText" class="w-full bg-gray-800 border-2 border-gray-600 rounded-xl p-3 text-2xl text-white outline-none focus:border-blue-500 resize-none h-32"></textarea>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="font-bold text-gray-300">Category:</label>
+                <select id="modalCategorySelect" class="w-full bg-gray-800 border-2 border-gray-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500">
+                    </select>
+            </div>
+
+            <div class="flex justify-between mt-2 gap-2">
+                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all">🗑️ Delete</button>
+                <div class="flex gap-2">
+                    <button id="modalCancelBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all">Cancel</button>
+                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 md:px-8 rounded-xl transition-all">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="player" class="hidden"></audio>
+
+<script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+
+// CONFIG
+    const API_URL = 'https://als-communicator.vercel.app';
+
+    // COMMON DICTIONARY FOR PREDICTIVE TEXT
+    const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
+
+    // DOM Elements
+    const textInput         = document.getElementById('textInput');
+    const predictiveBar     = document.getElementById('predictiveBar');
+    const genBtn            = document.getElementById('genBtn');
+    const btnText           = document.getElementById('btnText');
+    const replayBtn         = document.getElementById('replayBtn');
+    const player            = document.getElementById('player');
+    const listenBtn         = document.getElementById('listenBtn');
+    const grokSuggestBtn    = document.getElementById('grokSuggestBtn');
+    const grokSuggestionsEl = document.getElementById('grokSuggestions');
+    const suggestStatus     = document.getElementById('suggestStatus');
+    const convHistoryEl     = document.getElementById('conversationHistory');
+    
+    // UI Panels
+    const categoryScroll    = document.getElementById('categoryScroll');
+    const phraseGridEl      = document.getElementById('phraseGrid');
+    const currentCategoryTitle = document.getElementById('currentCategoryTitle');
+    
+    // Toggles & Modal Controls
+    const editToggleBtn     = document.getElementById('editToggleBtn');
+    const addCategoryBtn    = document.getElementById('addCategoryBtn');
+    const editCategoryBtn   = document.getElementById('editCategoryBtn');
+    const addPhraseBtn      = document.getElementById('addPhraseBtn');
+    
+    // Settings DOM
+    const openSettingsBtn   = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
+    const settingsModal     = document.getElementById('settingsModal');
+    const btnF1             = document.getElementById('btnF1');
+    const btnM1             = document.getElementById('btnM1');
+    const stepsInput        = document.getElementById('steps');
+    const stepsVal          = document.getElementById('stepsVal');
+    const replyLenSlider    = document.getElementById('replyLenSlider');
+    const replyLenVal       = document.getElementById('replyLenVal');
+    const aiCountSlider     = document.getElementById('aiCountSlider');
+    const aiCountVal        = document.getElementById('aiCountVal');
+    const exportBtn         = document.getElementById('exportBtn');
+    const importBtn         = document.getElementById('importBtn');
+    const importFileInput   = document.getElementById('importFileInput');
+    const clearHistoryBtn   = document.getElementById('clearHistoryBtn');
+    
+    // Progress
+    const ttsProgressContainer = document.getElementById('ttsProgressContainer');
+    const progressFill      = document.getElementById('progressFill');
+
+    // Phrase Modal
+    const phraseModal       = document.getElementById('phraseModal');
+    const modalTitle        = document.getElementById('modalTitle');
+    const modalPhraseText   = document.getElementById('modalPhraseText');
+    const modalCategorySelect = document.getElementById('modalCategorySelect');
+    const modalCancelBtn    = document.getElementById('modalCancelBtn');
+    const modalSaveBtn      = document.getElementById('modalSaveBtn');
+    const modalDeleteBtn    = document.getElementById('modalDeleteBtn');
+
+    // State
+    const defaultCategories = {
+        "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe."],
+        "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired."],
+        "Care": ["Adjust my position.", "I am in pain.", "I need help.", "Turn on the TV.", "It is too hot.", "It is too cold."],
+        "Greetings": ["Hello!", "How are you?", "Goodbye.", "Good morning.", "Good night."]
+    };
+    
+    let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || defaultCategories;
+    let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
+    let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
+    
+    let isEditMode = false;
+    let selectedVoice = 'M1'; // DEFAULT MALE
+    let lastSpoken = '';
+    
+    let tts = null;
+    let recognition = null;
+    let isListening = false;
+    let intentionallyStopped = false;
+    let progressInterval = null;
+
+    let editingPhraseIndex = -1; 
+    let editingCategorySource = ""; 
+
+    // ────────────────────────────────────────────────
+    // INPUT HANDLING (ENTER TO SPEAK)
+    // ────────────────────────────────────────────────
+    textInput.addEventListener('keydown', (e) => {
+        // Pressing Enter without Shift triggers Speak & Clear
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); 
+            genBtn.click();
+        }
+    });
+
+    // ────────────────────────────────────────────────
+    // SETTINGS MODAL & DATA MANAGEMENT
+    // ────────────────────────────────────────────────
+    openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
+    closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
+
+    exportBtn.onclick = () => {
+        const data = {
+            phrases: phraseCategories,
+            history: conversationHistory
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `ALS_Communicator_Backup_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    importBtn.onclick = () => importFileInput.click();
+
+    importFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (data.phrases) {
+                    phraseCategories = data.phrases;
+                    localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
+                }
+                if (data.history) {
+                    conversationHistory = data.history;
+                    localStorage.setItem('alsConversation', JSON.stringify(conversationHistory));
+                }
+                currentCategory = Object.keys(phraseCategories)[0];
+                renderCategories();
+                renderPhrases();
+                renderConversationHistory();
+                dynamicDictionary = updateDictionary();
+                alert("Data imported successfully!");
+                settingsModal.classList.add('hidden');
+            } catch (err) {
+                alert("Error reading file. Ensure it is a valid backup JSON.");
+            }
+        };
+        reader.readAsText(file);
+        importFileInput.value = ''; // reset
+    });
+
+    clearHistoryBtn.onclick = () => {
+        if(confirm("Are you sure you want to delete all conversation history? This cannot be undone.")) {
+            conversationHistory = [];
+            localStorage.setItem('alsConversation', JSON.stringify(conversationHistory));
+            renderConversationHistory();
+            settingsModal.classList.add('hidden');
+        }
+    };
+
+    // ────────────────────────────────────────────────
+    // PREDICTIVE TEXT
+    // ────────────────────────────────────────────────
+    function updateDictionary() {
+        let allWords = new Set(CORE_DICTIONARY);
+        Object.values(phraseCategories).flat().forEach(phrase => {
+            let words = phrase.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+            words.forEach(w => { if(w.length > 1) allWords.add(w); });
+        });
+        return Array.from(allWords);
+    }
+
+    let dynamicDictionary = updateDictionary();
+
+    textInput.addEventListener('input', () => {
+        const text = textInput.value;
+        const words = text.split(/\s+/);
+        const lastWord = words[words.length - 1].toLowerCase();
+
+        if (lastWord.length >= 1) {
+            let matches = dynamicDictionary.filter(w => w.startsWith(lastWord) && w !== lastWord);
+            if (matches.length > 0) {
+                predictiveBar.innerHTML = '';
+                predictiveBar.classList.remove('hidden');
+                
+                matches.slice(0, 6).forEach(match => {
+                    const btn = document.createElement('button');
+                    btn.className = 'bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg shrink-0 text-xl border border-gray-600 transition-colors';
+                    btn.textContent = match;
+                    btn.onclick = () => {
+                        words[words.length - 1] = match;
+                        textInput.value = words.join(' ') + ' ';
+                        predictiveBar.classList.add('hidden');
+                        textInput.focus();
+                    };
+                    predictiveBar.appendChild(btn);
+                });
+            } else {
+                predictiveBar.classList.add('hidden');
+            }
+        } else {
+            predictiveBar.classList.add('hidden');
+        }
+    });
+
+    // ────────────────────────────────────────────────
+    // UI RENDERING
+    // ────────────────────────────────────────────────
+    function saveToStorage() {
+        localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
+        dynamicDictionary = updateDictionary();
+    }
+
+    function saveConversation() {
+        localStorage.setItem('alsConversation', JSON.stringify(conversationHistory));
+    }
+
+    function renderCategories() {
+        categoryScroll.innerHTML = '';
+        Object.keys(phraseCategories).forEach(cat => {
+            const btn = document.createElement('button');
+            btn.textContent = cat;
+            btn.className = `shrink-0 px-4 py-2 text-lg md:text-xl font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`;
+            btn.onclick = () => {
+                currentCategory = cat;
+                currentCategoryTitle.textContent = cat;
+                renderCategories();
+                renderPhrases();
+            };
+            categoryScroll.appendChild(btn);
+        });
+        currentCategoryTitle.textContent = currentCategory;
+    }
+
+    function renderPhrases() {
+        phraseGridEl.innerHTML = '';
+        
+        addPhraseBtn.classList.toggle('hidden', !isEditMode);
+        editCategoryBtn.classList.toggle('hidden', !isEditMode);
+        
+        editToggleBtn.className = isEditMode 
+            ? 'bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold border-2 border-blue-400 transition-all shadow-lg' 
+            : 'bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-bold border-2 border-gray-500 transition-all';
+        editToggleBtn.textContent = isEditMode ? 'Done Managing' : '✏️ Manage';
+
+        if(phraseCategories[currentCategory]) {
+            phraseCategories[currentCategory].forEach((phrase, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = phrase;
+                btn.className = `p-4 text-xl md:text-2xl font-bold rounded-xl transition-all shadow-md min-h-[90px] flex items-center justify-center text-center leading-tight ${isEditMode ? 'bg-gray-800 text-blue-300 edit-mode-btn cursor-pointer' : 'bg-gray-700 hover:bg-gray-600 text-white'}`;
+                
+                btn.onclick = () => {
+                    if (isEditMode) {
+                        openModal(phrase, currentCategory, idx);
+                    } else {
+                        textInput.value = phrase;
+                        genBtn.click();
+                        predictiveBar.classList.add('hidden');
+                    }
+                };
+                phraseGridEl.appendChild(btn);
+            });
+        }
+    }
+
+    function renderConversationHistory() {
+        convHistoryEl.innerHTML = '';
+        conversationHistory.forEach(msg => appendMessageUI(msg.speaker, msg.text));
+        convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
+    }
+
+    function appendMessageUI(speaker, text) {
+        const div = document.createElement('div');
+        div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
+        
+        let htmlContent = `<div>${text}</div>`;
+        if (speaker === 'you') {
+            htmlContent += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save Phrase</button>`;
+        }
+        
+        div.innerHTML = htmlContent;
+        convHistoryEl.appendChild(div);
+        convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
+    }
+
+    function addToConversation(speaker, text) {
+        conversationHistory.push({ speaker, text });
+        saveConversation();
+        appendMessageUI(speaker, text);
+    }
+
+    window.openSaveFromHistory = (text) => {
+        isEditMode = true; 
+        openModal(text, currentCategory, -1);
+        modalTitle.textContent = "Save Spoken Phrase";
+        modalDeleteBtn.classList.add('hidden'); 
+    };
+
+    // ────────────────────────────────────────────────
+    // MODALS (CRUD)
+    // ────────────────────────────────────────────────
+    editToggleBtn.onclick = () => {
+        isEditMode = !isEditMode;
+        renderPhrases();
+    };
+
+    addCategoryBtn.onclick = () => {
+        const newCat = prompt("Enter name for new category:");
+        if (newCat && newCat.trim() !== "") {
+            const name = newCat.trim();
+            if (!phraseCategories[name]) {
+                phraseCategories[name] = [];
+                currentCategory = name;
+                saveToStorage();
+                renderCategories();
+                renderPhrases();
+            } else alert("Category already exists.");
+        }
+    };
+
+    editCategoryBtn.onclick = () => {
+        if(confirm(`Are you sure you want to DELETE the category "${currentCategory}" and all its phrases?`)) {
+            delete phraseCategories[currentCategory];
+            currentCategory = Object.keys(phraseCategories)[0] || "";
+            saveToStorage();
+            renderCategories();
+            renderPhrases();
+        }
+    };
+
+    addPhraseBtn.onclick = () => {
+        openModal(textInput.value || "", currentCategory, -1);
+        modalTitle.textContent = "Add New Phrase";
+        modalDeleteBtn.classList.add('hidden');
+    };
+
+    function openModal(phraseText, category, index) {
+        editingPhraseIndex = index;
+        editingCategorySource = category;
+        
+        modalTitle.textContent = "Edit Phrase";
+        modalDeleteBtn.classList.remove('hidden');
+        modalPhraseText.value = phraseText;
+        
+        modalCategorySelect.innerHTML = '';
+        Object.keys(phraseCategories).forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            if (cat === category) opt.selected = true;
+            modalCategorySelect.appendChild(opt);
+        });
+
+        phraseModal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        phraseModal.classList.add('hidden');
+        editingPhraseIndex = -1;
+        editingCategorySource = "";
+        modalPhraseText.value = "";
+    }
+
+    modalCancelBtn.onclick = closeModal;
+
+    modalSaveBtn.onclick = () => {
+        const newText = modalPhraseText.value.trim();
+        const targetCategory = modalCategorySelect.value;
+        if(!newText) return alert("Phrase cannot be empty");
+
+        if (editingPhraseIndex > -1) {
+            phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
+        }
+        phraseCategories[targetCategory].push(newText);
+        
+        saveToStorage();
+        closeModal();
+        currentCategory = targetCategory;
+        renderCategories();
+        renderPhrases();
+    };
+
+    modalDeleteBtn.onclick = () => {
+        if (editingPhraseIndex > -1 && confirm("Delete this phrase?")) {
+            phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
+            saveToStorage();
+            closeModal();
+            renderPhrases();
+        }
+    };
+
+    // ────────────────────────────────────────────────
+    // VOICE SETTINGS & SLIDERS
+    // ────────────────────────────────────────────────
+    function updateVoiceUI() {
+        if(selectedVoice === 'M1') {
+            btnM1.className = 'flex-1 bg-gray-700 border-4 border-blue-500 text-white font-bold text-xl rounded-xl transition-all shadow-md';
+            btnF1.className = 'flex-1 bg-gray-700 border-4 border-transparent text-gray-400 font-bold text-xl rounded-xl transition-all shadow-md';
+        } else {
+            btnF1.className = 'flex-1 bg-gray-700 border-4 border-blue-500 text-white font-bold text-xl rounded-xl transition-all shadow-md';
+            btnM1.className = 'flex-1 bg-gray-700 border-4 border-transparent text-gray-400 font-bold text-xl rounded-xl transition-all shadow-md';
+        }
+    }
+
+    btnM1.onclick = () => { selectedVoice = 'M1'; updateVoiceUI(); };
+    btnF1.onclick = () => { selectedVoice = 'F1'; updateVoiceUI(); };
+    
+    stepsInput.addEventListener('input', e => stepsVal.textContent = e.target.value);
+    
+    // Dynamic slider constraints for length vs count
+    replyLenSlider.addEventListener('input', e => {
+        const labels = ["Short", "Medium", "Long"];
+        replyLenVal.textContent = labels[e.target.value - 1];
+        
+        if (e.target.value == 3) {
+            aiCountSlider.max = 5;
+            if (parseInt(aiCountSlider.value) > 5) {
+                aiCountSlider.value = 5;
+                aiCountVal.textContent = "5";
+            }
+        } else {
+            aiCountSlider.max = 9;
+        }
+    });
+
+    aiCountSlider.addEventListener('input', e => {
+        aiCountVal.textContent = e.target.value;
+    });
+
+    // ────────────────────────────────────────────────
+    // TTS INIT & PROGRESS
+    // ────────────────────────────────────────────────
+    async function initTTS() {
+        try {
+            btnText.textContent = 'Loading Voice...';
+            tts = await pipeline('text-to-speech', 'onnx-community/Supertonic-TTS-ONNX', { quantized: false, device: 'webgpu' });
+            genBtn.disabled = false;
+            btnText.textContent = '🔊 SPEAK';
+        } catch (err) {
+            console.error('TTS init failed:', err);
+            btnText.textContent = 'TTS Failed (Native Only)';
+            genBtn.disabled = false;
+        }
+    }
+
+    function startTTSProgress() {
+        btnText.textContent = 'Generating...';
+        ttsProgressContainer.classList.remove('hidden');
+        progressFill.style.transition = 'width 0.3s ease-out';
+        progressFill.style.width = '0%';
+        genBtn.disabled = true;
+
+        let width = 0;
+        progressInterval = setInterval(() => {
+            width += (90 - width) * 0.1;
+            progressFill.style.width = width + '%';
+        }, 100);
+    }
+
+    function completeTTSProgress() {
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+        setTimeout(() => {
+            ttsProgressContainer.classList.add('hidden');
+            progressFill.style.width = '0%';
+            btnText.textContent = '🔊 SPEAK';
+            genBtn.disabled = false;
+        }, 300);
+    }
+
+    // ────────────────────────────────────────────────
+    // SPEAK
+    // ────────────────────────────────────────────────
+    genBtn.onclick = () => {
+        const text = textInput.value.trim();
+        if (text) {
+            speak(text);
+            textInput.value = '';
+            predictiveBar.classList.add('hidden');
+        }
+    };
+
+    replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
+    document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
+
+    async function speak(text) {
+        if (!text) return;
+        lastSpoken = text;
+        addToConversation('you', text);
+
+        if (tts) {
+            startTTSProgress();
+            try {
+                const speakerUrl = `https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/${selectedVoice}.bin`;
+                const output = await tts(text, {
+                    speaker_embeddings: speakerUrl,
+                    num_inference_steps: Number(stepsInput.value),
+                    speed: 1.0
+                });
+                const samples = output.audio;
+                const wav = floatTo16BitPcmWav(samples, 44100);
+                player.src = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+                
+                completeTTSProgress();
+                player.play().catch(() => {});
+            } catch (err) {
+                completeTTSProgress();
+                nativeSpeak(text);
+            }
+        } else nativeSpeak(text);
+    }
+
+    function nativeSpeak(text) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        speechSynthesis.speak(u);
+    }
+
+    function floatTo16BitPcmWav(samples, sampleRate) {
+        const numChannels = 1, bitsPerSample = 16, bytesPerSample = 2;
+        const dataLen = samples.length * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataLen);
+        const view = new DataView(buffer);
+        const writeStr = (offset, str) => { for(let i=0; i<str.length; i++) view.setUint8(offset+i, str.charCodeAt(i)); };
+        
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * bytesPerSample, true);
+        view.setUint16(32, bytesPerSample, true); view.setUint16(34, bitsPerSample, true);
+        writeStr(36, 'data'); view.setUint32(40, dataLen, true);
+        for (let i = 0, offset = 44; i < samples.length; i++, offset += 2) {
+            let s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        return buffer;
+    }
+
+    // ────────────────────────────────────────────────
+    // SPEECH RECOGNITION
+    // ────────────────────────────────────────────────
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            listenBtn.innerHTML = '🛑 Stop Mic';
+            listenBtn.classList.replace('bg-indigo-700', 'bg-red-700');
+            isListening = true;
+            suggestStatus.textContent = 'Listening...';
+        };
+
+        recognition.onend = () => {
+            if (!intentionallyStopped) {
+                try { recognition.start(); } catch (e) {}
+            } else {
+                listenBtn.innerHTML = '🎤 Listen';
+                listenBtn.classList.replace('bg-red-700', 'bg-indigo-700');
+                isListening = false;
+                suggestStatus.textContent = 'Paused.';
+            }
+        };
+
+        recognition.onresult = (event) => {
+            let final = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) final = event.results[i][0].transcript.trim();
+            }
+            if (final) {
+                addToConversation('other', final);
+                suggestStatus.textContent = 'Generating AI suggestions...';
+                generateGrokSuggestions();
+            }
+        };
+    } else {
+        listenBtn.disabled = true;
+        listenBtn.textContent = 'Mic not supported';
+    }
+
+    listenBtn.onclick = () => {
+        if (!recognition) return;
+        if (isListening) { intentionallyStopped = true; recognition.stop(); }
+        else { intentionallyStopped = false; recognition.start(); }
+    };
+
+    setTimeout(() => {
+        if (recognition && !isListening) {
+            intentionallyStopped = false;
+            recognition.start();
+        }
+    }, 1000);
+
+    // ────────────────────────────────────────────────
+    // GROK AI SUGGESTIONS
+    // ────────────────────────────────────────────────
+    async function generateGrokSuggestions() {
+        if(XAI_API_KEY === 'xxxx') {
+            suggestStatus.textContent = 'Add API Key for AI Replies.';
+            return;
+        }
+
+        let numReplies = parseInt(aiCountSlider.value);
+        const lengthLevel = parseInt(replyLenSlider.value);
+
+        if (lengthLevel === 3 && numReplies > 5) {
+            numReplies = 5;
+        }
+
+        let lengthInstruction = "extremely short (2-8 words)";
+        let maxTokens = numReplies * 25;
+        
+        if (lengthLevel === 2) { 
+            lengthInstruction = "medium length (10-20 words)"; 
+            maxTokens = numReplies * 40; 
+        } else if (lengthLevel === 3) { 
+            lengthInstruction = "longer, more detailed (20-40 words)"; 
+            maxTokens = numReplies * 70; 
+        }
+
+        grokSuggestionsEl.innerHTML = `<div class="col-span-1 sm:col-span-3 text-center text-gray-500 py-4">AI Thinking (${numReplies} replies)…</div>`;
+
+        const recentConv = conversationHistory.slice(-5).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
+        
+        const prompt = `You are generating ${numReplies} alternative replies for a person using a text-to-speech device to say to their partner in the same room. 
+        Rules:
+        1. The replies MUST be ${lengthInstruction}.
+        2. Speak in the first person ("I").
+        3. Act like a normal human having a casual conversation. 
+        4. NEVER act like an AI assistant. NEVER offer to look things up, search the web, or check facts.
+        5. Just give a direct, natural answer based on general knowledge or conversational flow.
+        
+        Conversation History:
+        ${recentConv}
+        
+        Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers, no extra text.`;
+
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${XAI_API_KEY}` },
+                body: JSON.stringify({ 
+                    model: 'grok-3-mini', 
+                    messages: [{ role: 'user', content: prompt }], 
+                    max_tokens: maxTokens, 
+                    temperature: 0.7 
+                })
+            });
+            
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            
+            // Clean up regex to aggressively strip numbers, bullet points, quotes, dashes, etc.
+            const suggestions = data.choices[0].message.content.trim().split('\n')
+                .map(s => s.trim().replace(/^([0-9]+[\.\-)]\s*|["-]\s*|\*\s*)/, ''))
+                .filter(s => s);
+
+            grokSuggestionsEl.innerHTML = '';
+            suggestStatus.textContent = suggestions.length ? 'AI Suggested Replies:' : 'No suggestions';
+
+            suggestions.slice(0, numReplies).forEach(phrase => {
+                const btn = document.createElement('button');
+                btn.className = 'suggestion-btn rounded-xl text-white font-bold shadow-md';
+                btn.textContent = phrase;
+                btn.onclick = () => { textInput.value = phrase; genBtn.click(); };
+                grokSuggestionsEl.appendChild(btn);
+            });
+        } catch (err) {
+            suggestStatus.textContent = 'Suggestions API unavailable';
+            grokSuggestionsEl.innerHTML = '';
+        }
+    }
+
+    grokSuggestBtn.onclick = () => {
+        if (conversationHistory.length > 0) generateGrokSuggestions();
+        else suggestStatus.textContent = 'Have a conversation first!';
+    };
+
+    // ────────────────────────────────────────────────
+    // INIT
+    // ────────────────────────────────────────────────
+    updateVoiceUI();
+    renderCategories();
+    renderPhrases();
+    renderConversationHistory();
+    initTTS();
+
+</script>
+</body>
+</html>
