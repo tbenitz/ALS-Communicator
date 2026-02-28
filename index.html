@@ -269,7 +269,7 @@ const defaultCategories = {
         "Adjust my head.", "Move my arm.", "Move my leg.", 
         "Prop up my feet.", "I need to stretch."
     ],
-    "Medical & Breathing": [ // Vital for ALS progression
+    "Medical & Breathing": [
         "Suction, please.", "Adjust my mask.", "My mask is leaking.",
         "Check my ventilator.", "Use the cough assist.", "I can't breathe well.", 
         "Clear my throat.", "Check my feeding tube.", "Flush my tube.",
@@ -318,7 +318,7 @@ const defaultCategories = {
     let lastSpoken = '';
     
     let tts = null;
-    let intentionallyStopped = true; 
+    let intentionallyStopped = false; // FIX: Allows auto-start on load
     let isTTSPlaying = false; 
     let editingPhraseIndex = -1;
     let editingCategorySource = '';
@@ -327,7 +327,7 @@ const defaultCategories = {
     let maxVolumeInWindow = 0;
     let visualizerActive = false;
 
-    // Detect if the user is on mobile to apply the specific Android fix
+    // Detect if the user is on mobile to apply specific Android fixes
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // ────────────────────────────────────────────────
@@ -638,7 +638,10 @@ const defaultCategories = {
     // AUDIO VISUALIZER
     // ────────────────────────────────────────────────
     async function initVisualizer() {
-        if (visualizerActive) return;
+        // FIX: Prevent visualizer from running on mobile. Android cannot share 
+        // the microphone between getUserMedia and Speech Recognition.
+        if (visualizerActive || isMobileDevice) return; 
+        
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -691,6 +694,7 @@ const defaultCategories = {
         try {
             btnText.textContent = 'Loading...';
             
+            // FIX: Conditionally set WebGPU and Quantization based on device capabilities
             const hasWebGPU = navigator.gpu !== undefined;
             const useWebGPU = hasWebGPU && !isMobileDevice; 
             
@@ -799,6 +803,7 @@ const defaultCategories = {
 // CROSS-PLATFORM SPEECH RECOGNITION
 // ────────────────────────────────────────────────
 
+// FIX: Ensure UI functions are available for the button listener
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -821,7 +826,7 @@ function createRecognition() {
     const rec = new webkitSpeechRecognition();
     rec.lang = 'en-US';
     rec.interimResults = true;
-    rec.continuous = !isMobile; 
+    rec.continuous = true; // Set universally for better stability
     
     rec.onstart = () => {
         updateMicUI(true);
@@ -833,7 +838,7 @@ function createRecognition() {
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             intentionallyStopped = true;
             updateMicUI(false);
-            alert("Microphone access denied.");
+            console.warn("Microphone access denied or requires user interaction first.");
         }
         else if (!intentionallyStopped) {
             setTimeout(restartListening, 300);
@@ -868,6 +873,8 @@ function createRecognition() {
 
                 const sens = parseInt(micSensSlider.value);
                 const threshold = 150 - (sens * 1.5);
+                
+                // Only enforce volume gate if visualizer is actively running (desktop)
                 if (visualizerActive && maxVolumeInWindow < threshold) {
                     console.log(`Ignored low volume: ${maxVolumeInWindow} < ${threshold}`);
                 } else if (finalText) {
@@ -881,7 +888,6 @@ function createRecognition() {
                 liveTranscript.classList.add('hidden');
 
                 if (isMobile && utteranceCount >= MAX_UTTERANCES_BEFORE_RECREATE) {
-                    console.log("Recycling speech recognition instance...");
                     intentionallyStopped = true;
                     if (recognition) recognition.stop();
                     recognition = null;
@@ -906,7 +912,6 @@ function initOrRestartRecognition() {
         try {
             recognition.start();
         } catch (e) {
-            console.warn("start() failed", e);
             setTimeout(initOrRestartRecognition, 600);
         }
     }
@@ -917,20 +922,21 @@ function restartListening() {
     initOrRestartRecognition();
 }
 
-if ('webkitSpeechRecognition' in window) {
-    initOrRestartRecognition();
-} else {
-    listenBtn.disabled = true;
-    listenBtn.innerHTML = 'Mic not supported';
-}
-
 listenBtn.onclick = () => {
-    if (!recognition) return;
+    // FIX: Check for API support instead of checking if the instance exists, 
+    // which allows the button to successfully rebuild a null instance after pausing.
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Speech recognition is not supported in this browser.");
+        return;
+    }
 
     if (!intentionallyStopped) {
         intentionallyStopped = true;
-        if (recognition) recognition.stop();
-        recognition = null;      
+        updateMicUI(false);
+        if (recognition) {
+            recognition.stop();
+            recognition = null; // Wipe it so we get a fresh build next time
+        }
         utteranceCount = 0;
     } else {
         intentionallyStopped = false;
@@ -939,11 +945,18 @@ listenBtn.onclick = () => {
     }
 };
 
-setTimeout(() => {
-    if (!intentionallyStopped && recognition) {
-        try { recognition.start(); } catch(e){}
-    }
-}, 1000);
+// FIX: Auto-start logic successfully decoupled
+if ('webkitSpeechRecognition' in window) {
+    setTimeout(() => {
+        if (!intentionallyStopped) {
+            initOrRestartRecognition();
+            initVisualizer();
+        }
+    }, 1000);
+} else {
+    listenBtn.disabled = true;
+    listenBtn.innerHTML = 'Mic not supported';
+}
 
     // ────────────────────────────────────────────────
     // GROK AI SUGGESTIONS
