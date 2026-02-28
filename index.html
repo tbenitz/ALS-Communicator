@@ -700,9 +700,12 @@
     }
 
     // ────────────────────────────────────────────────
-    // SPEECH RECOGNITION (PERSISTENT & LIVE)
+    // SPEECH RECOGNITION (PERSISTENT & SILENCE DEBOUNCED)
     // ────────────────────────────────────────────────
     
+    let speechDebounceTimer = null;
+    let accumulatedSpeech = "";
+
     function updateMicUI(isActive) {
         if (isActive) {
             listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🛑</span>Stop Mic';
@@ -736,49 +739,55 @@
         };
 
         recognition.onend = () => {
-            // Browser stopped the mic (usually due to mobile silence timeout).
-            // We silently restart it in the background if the user didn't ask to stop.
+            // If the user didn't explicitly hit stop, quietly restart it in the background
             if (!intentionallyStopped) {
                 setTimeout(() => {
                     if (!intentionallyStopped) {
                         try { recognition.start(); } catch (e) {}
                     }
-                }, 400); // 400ms buffer prevents browser from crashing the mic stream
+                }, 400); 
             } else {
                 updateMicUI(false);
             }
         };
 
         recognition.onresult = (event) => {
-            // ECHO CANCELLATION: Ignore mic input if the app is currently speaking!
+            // Ignore mic input if the app is currently speaking!
             if (isTTSPlaying) return; 
 
-            let interim = '';
-            let final = '';
-
+            let currentTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                    final += event.results[i][0].transcript.trim();
-                } else {
-                    interim += event.results[i][0].transcript;
-                }
+                currentTranscript += event.results[i][0].transcript;
             }
 
-            // Live Text Rendering
-            if (interim) {
-                liveTranscript.textContent = '🗣️ ' + interim;
+            accumulatedSpeech = currentTranscript.trim();
+
+            if (accumulatedSpeech) {
+                liveTranscript.textContent = '🗣️ ' + accumulatedSpeech;
                 liveTranscript.classList.remove('hidden');
-            } else {
-                liveTranscript.textContent = '';
-                liveTranscript.classList.add('hidden');
-            }
 
-            if (final) {
-                liveTranscript.textContent = '';
-                liveTranscript.classList.add('hidden');
-                addToConversation('other', final);
-                suggestStatus.textContent = 'Generating AI suggestions...';
-                generateGrokSuggestions();
+                // Clear the previous timer every time a new word is heard
+                clearTimeout(speechDebounceTimer);
+                
+                // If they stop talking for 1.5 seconds, commit the sentence.
+                speechDebounceTimer = setTimeout(() => {
+                    if (accumulatedSpeech) {
+                        const finalStringToCommit = accumulatedSpeech;
+                        accumulatedSpeech = ""; // Clear immediately to prevent duplicates
+
+                        liveTranscript.textContent = '';
+                        liveTranscript.classList.add('hidden');
+                        
+                        addToConversation('other', finalStringToCommit);
+                        suggestStatus.textContent = 'Generating AI suggestions...';
+                        generateGrokSuggestions();
+
+                        // Force restart mic to clear mobile browser's internal duplication buffer
+                        if (!intentionallyStopped) {
+                            recognition.stop(); 
+                        }
+                    }
+                }, 1500); 
             }
         };
     } else {
@@ -789,11 +798,9 @@
     listenBtn.onclick = () => {
         if (!recognition) return;
         if (!intentionallyStopped) { 
-            // User explicitly clicked STOP
             intentionallyStopped = true; 
             recognition.stop(); 
         } else { 
-            // User explicitly clicked START
             intentionallyStopped = false; 
             try { recognition.start(); } catch(e){} 
         }
@@ -825,28 +832,32 @@
 
         const recentConv = conversationHistory.slice(-5).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
         
-        const prompt = `You are generating ${numReplies} alternative replies for a person using a text-to-speech device to say to their partner in the same room. 
-        Rules:
-        1. The replies MUST be ${lengthInstruction}.
-        2. Speak in the first person ("I").
-        3. Act like a normal human having a casual conversation. 
-        4. NEVER act like an AI assistant. NEVER offer to look things up, search the web, or check facts.
-        5. Just give a direct, natural answer based on general knowledge or conversational flow.
+        // Severely restricted AI Prompt to stop it from acting like an assistant
+        const prompt = `You are a human named "ALS User" talking to your partner in your house. 
+        You use a text-to-speech device to speak. 
+        Your partner just said something to you. Generate ${numReplies} natural, casual replies you could click to say back to them.
+        
+        STRICT RULES:
+        1. Reply length: ${lengthInstruction}.
+        2. Speak ONLY in the first person ("I", "me", "my").
+        3. YOU ARE A HUMAN BEING, NOT AN AI.
+        4. NEVER offer to "look something up", "double-check", or act like an assistant. You do not have internet access. If you don't know something, just casually say you don't know or guess like a normal person.
+        5. No formal robotic tone. Be incredibly casual.
         
         Conversation History:
         ${recentConv}
         
-        Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers, no extra text.`;
+        Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
 
         try {
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    model: 'grok-3-mini', // FASTEST AVAILABLE WIDELY (can also be grok-4-fast-non-reasoning)
+                    model: 'grok-3-mini', 
                     messages: [{ role: 'user', content: prompt }], 
                     max_tokens: maxTokens, 
-                    temperature: 0.5 // Lowered to 0.5 to stop it from "overthinking" and force faster responses
+                    temperature: 0.5 // Lowered to 0.5 to force faster, more direct responses
                 })
             });
             
