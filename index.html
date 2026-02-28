@@ -38,6 +38,10 @@
         
         .modal-overlay { backdrop-filter: blur(5px); }
         .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
+
+        /* Animation for live transcription */
+        @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        .live-text { animation: pulse-text 1.5s infinite; }
     </style>
 </head>
 <body class="flex flex-col md:h-screen md:overflow-hidden">
@@ -72,6 +76,8 @@
                 <button id="replayBtn" class="col-span-2 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">🔄</span>Replay</button>
                 <button id="clearBtn" class="col-span-2 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">❌</span>Clear</button>
             </div>
+
+            <div id="liveTranscript" class="shrink-0 text-indigo-300 italic text-sm px-2 font-medium min-h-[1.25rem] live-text hidden"></div>
 
             <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-2 rounded-xl border border-slate-700/50">
                 <div id="suggestStatus" class="text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
@@ -134,8 +140,8 @@
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
-                <div class="flex justify-between font-bold text-slate-300 text-lg"><span>TTS Quality (Speed vs Clarity)</span><span id="stepsVal" class="text-green-400">25</span></div>
-                <input type="range" id="steps" min="5" max="30" value="25" step="1" class="my-2">
+                <div class="flex justify-between font-bold text-slate-300 text-lg"><span>TTS Quality (Speed vs Clarity)</span><span id="stepsVal" class="text-green-400">18</span></div>
+                <input type="range" id="steps" min="5" max="30" value="18" step="1" class="my-2">
             </div>
 
             <div class="flex flex-col gap-3 pt-4 border-t border-slate-700">
@@ -204,16 +210,20 @@
     const grokSuggestionsEl = document.getElementById('grokSuggestions');
     const suggestStatus     = document.getElementById('suggestStatus');
     const convHistoryEl     = document.getElementById('conversationHistory');
+    const liveTranscript    = document.getElementById('liveTranscript');
     
+    // UI Panels
     const categoryScroll    = document.getElementById('categoryScroll');
     const phraseGridEl      = document.getElementById('phraseGrid');
     const currentCategoryTitle = document.getElementById('currentCategoryTitle');
     
+    // Toggles & Modal Controls
     const editToggleBtn     = document.getElementById('editToggleBtn');
     const addCategoryBtn    = document.getElementById('addCategoryBtn');
     const editCategoryBtn   = document.getElementById('editCategoryBtn');
     const addPhraseBtn      = document.getElementById('addPhraseBtn');
     
+    // Settings DOM
     const openSettingsBtn   = document.getElementById('openSettingsBtn');
     const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
     const settingsModal     = document.getElementById('settingsModal');
@@ -230,9 +240,11 @@
     const importFileInput   = document.getElementById('importFileInput');
     const clearHistoryBtn   = document.getElementById('clearHistoryBtn');
     
+    // Progress
     const ttsProgressContainer = document.getElementById('ttsProgressContainer');
     const progressFill      = document.getElementById('progressFill');
 
+    // Phrase Modal
     const phraseModal       = document.getElementById('phraseModal');
     const modalTitle        = document.getElementById('modalTitle');
     const modalPhraseText   = document.getElementById('modalPhraseText');
@@ -688,11 +700,11 @@
     }
 
     // ────────────────────────────────────────────────
-    // SPEECH RECOGNITION (PERSISTENT)
+    // SPEECH RECOGNITION (PERSISTENT & LIVE)
     // ────────────────────────────────────────────────
     
     function updateMicUI(isActive) {
-        if (active) {
+        if (isActive) {
             listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🛑</span>Stop Mic';
             listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
             suggestStatus.textContent = 'Listening (Partner Speaking)...';
@@ -700,6 +712,8 @@
             listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Listen';
             listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
             suggestStatus.textContent = 'AI Suggestions (Paused)';
+            liveTranscript.textContent = '';
+            liveTranscript.classList.add('hidden');
         }
     }
 
@@ -710,7 +724,7 @@
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-            // UI is driven by user intent, so we don't flash it here.
+            updateMicUI(true);
         };
 
         recognition.onerror = (event) => {
@@ -730,6 +744,8 @@
                         try { recognition.start(); } catch (e) {}
                     }
                 }, 400); // 400ms buffer prevents browser from crashing the mic stream
+            } else {
+                updateMicUI(false);
             }
         };
 
@@ -737,11 +753,29 @@
             // ECHO CANCELLATION: Ignore mic input if the app is currently speaking!
             if (isTTSPlaying) return; 
 
+            let interim = '';
             let final = '';
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) final = event.results[i][0].transcript.trim();
+                if (event.results[i].isFinal) {
+                    final += event.results[i][0].transcript.trim();
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
             }
+
+            // Live Text Rendering
+            if (interim) {
+                liveTranscript.textContent = '🗣️ ' + interim;
+                liveTranscript.classList.remove('hidden');
+            } else {
+                liveTranscript.textContent = '';
+                liveTranscript.classList.add('hidden');
+            }
+
             if (final) {
+                liveTranscript.textContent = '';
+                liveTranscript.classList.add('hidden');
                 addToConversation('other', final);
                 suggestStatus.textContent = 'Generating AI suggestions...';
                 generateGrokSuggestions();
@@ -757,12 +791,10 @@
         if (!intentionallyStopped) { 
             // User explicitly clicked STOP
             intentionallyStopped = true; 
-            updateMicUI(false);
             recognition.stop(); 
         } else { 
             // User explicitly clicked START
             intentionallyStopped = false; 
-            updateMicUI(true);
             try { recognition.start(); } catch(e){} 
         }
     };
@@ -771,7 +803,6 @@
     setTimeout(() => {
         if (recognition) {
             intentionallyStopped = false;
-            updateMicUI(true);
             try { recognition.start(); } catch(e){}
         }
     }, 1000);
@@ -811,7 +842,12 @@
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'grok-3-mini', messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature: 0.7 })
+                body: JSON.stringify({ 
+                    model: 'grok-3-mini', // FASTEST AVAILABLE WIDELY (can also be grok-4-fast-non-reasoning)
+                    messages: [{ role: 'user', content: prompt }], 
+                    max_tokens: maxTokens, 
+                    temperature: 0.5 // Lowered to 0.5 to stop it from "overthinking" and force faster responses
+                })
             });
             
             if (!res.ok) throw new Error();
