@@ -737,10 +737,8 @@
     }
 
     // ────────────────────────────────────────────────
-    // SPEECH RECOGNITION (PERSISTENT + NOISE GATE + ANTI-FRAG)
+    // NATIVE SPEECH RECOGNITION (CONTINUOUS, NO DEAD ZONES)
     // ────────────────────────────────────────────────
-    let speechDebounceTimer = null;
-
     function updateMicUI(isActive) {
         if (isActive) {
             listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🛑</span>Stop Mic';
@@ -776,57 +774,59 @@
             }
         };
 
+        // If the browser forces a stop (e.g. timeout), silently restart it
         recognition.onend = () => {
             if (!intentionallyStopped) {
                 setTimeout(() => {
                     if (!intentionallyStopped) { try { recognition.start(); } catch (e) {} }
                 }, 400); 
-            } else updateMicUI(false);
+            } else {
+                updateMicUI(false);
+            }
         };
 
+        // Processing loop: Only look at NEW results using resultIndex
         recognition.onresult = (event) => {
-            if (isTTSPlaying) return; 
+            let interimTranscript = '';
+            let finalTranscript = '';
 
-            // CHANGED: Grab EVERYTHING in the buffer from index 0 to stop fragmentation
-            let fullTranscript = '';
-            for (let i = 0; i < event.results.length; i++) {
-                fullTranscript += event.results[i][0].transcript;
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
             }
 
-            const accumulatedSpeech = fullTranscript.trim();
-
-            if (accumulatedSpeech) {
-                liveTranscript.textContent = '🗣️ ' + accumulatedSpeech;
+            // Show real-time typing
+            if (interimTranscript) {
+                liveTranscript.textContent = '🗣️ ' + interimTranscript;
                 liveTranscript.classList.remove('hidden');
+            } else {
+                liveTranscript.classList.add('hidden');
+            }
 
-                clearTimeout(speechDebounceTimer);
+            // Commit final sentence
+            if (finalTranscript.trim()) {
+                // Echo cancellation: If the app is speaking, swallow the transcript
+                if (isTTSPlaying) {
+                    maxVolumeInWindow = 0; 
+                    return; 
+                }
+
+                // Noise Gate Application
+                const sensSetting = parseInt(micSensSlider.value);
+                const volumeThreshold = 150 - (sensSetting * 1.5); 
                 
-                // Bumped timeout slightly to allow for natural conversation pauses
-                speechDebounceTimer = setTimeout(() => {
-                    if (accumulatedSpeech) {
-                        const finalStringToCommit = accumulatedSpeech;
-                        
-                        const sensSetting = parseInt(micSensSlider.value);
-                        const volumeThreshold = 150 - (sensSetting * 1.5); 
-                        
-                        if (visualizerActive && maxVolumeInWindow < volumeThreshold) {
-                            console.log(`Ignored noise: Vol ${maxVolumeInWindow} < Threshold ${volumeThreshold}`);
-                        } else {
-                            addToConversation('other', finalStringToCommit);
-                            suggestStatus.textContent = 'Generating AI suggestions...';
-                            generateGrokSuggestions();
-                        }
-
-                        maxVolumeInWindow = 0;
-                        liveTranscript.textContent = '';
-                        liveTranscript.classList.add('hidden');
-
-                        // ALWAYS manually restart the mic after a commit to dump the old browser transcript array
-                        if (!intentionallyStopped) { 
-                            recognition.stop(); 
-                        }
-                    }
-                }, 1800); 
+                if (visualizerActive && maxVolumeInWindow < volumeThreshold) {
+                    console.log(`Ignored noise: Vol ${maxVolumeInWindow} < Threshold ${volumeThreshold}`);
+                } else {
+                    addToConversation('other', finalTranscript.trim());
+                    suggestStatus.textContent = 'Generating AI suggestions...';
+                    generateGrokSuggestions();
+                }
+                
+                maxVolumeInWindow = 0; // Reset gate
             }
         };
     } else {
