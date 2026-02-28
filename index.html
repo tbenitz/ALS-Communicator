@@ -6,7 +6,6 @@
     <title>ALS Communicator - Supertonic + Grok</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1"></script>
     <style>
         body { background-color: #121212; color: #ffffff; margin: 0; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; }
         ::-webkit-scrollbar { width: 12px; height: 12px; }
@@ -45,7 +44,7 @@
             <textarea id="textInput" class="w-full bg-gray-800 text-white border-4 border-gray-600 rounded-2xl p-4 md:p-6 text-2xl md:text-4xl focus:border-green-500 outline-none resize-none h-32 md:h-48" placeholder="Type a phrase and press Enter..."></textarea>
             
             <div id="predictiveBar" class="h-14 bg-gray-900 rounded-xl border border-gray-700 flex items-center px-2 gap-2 overflow-x-auto whitespace-nowrap hidden">
-                </div>
+            </div>
         </div>
         
         <div class="flex flex-col sm:grid sm:grid-cols-2 md:flex md:flex-col gap-3 w-full md:w-1/3 md:min-w-[320px]">
@@ -73,7 +72,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 md:p-4 bg-gray-900 border-b border-gray-700 gap-3">
                 
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar" id="categoryScroll">
-                    </div>
+                </div>
 
                 <div class="flex gap-2 shrink-0">
                     <button id="addCategoryBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-xl font-bold border border-gray-500 transition-all" title="New Category">+ Cat</button>
@@ -160,7 +159,7 @@
             <div class="flex flex-col gap-2">
                 <label class="font-bold text-gray-300">Category:</label>
                 <select id="modalCategorySelect" class="w-full bg-gray-800 border-2 border-gray-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500">
-                    </select>
+                </select>
             </div>
 
             <div class="flex justify-between mt-2 gap-2">
@@ -176,10 +175,10 @@
     <audio id="player" class="hidden"></audio>
 
 <script type="module">
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.0/+esm';
 
-// CONFIG
-    const API_URL = 'https://als-communicator.vercel.app';
+    // Set this to the relative path of your Vercel serverless function
+    const API_URL = '/api/grok';
 
     // COMMON DICTIONARY FOR PREDICTIVE TEXT
     const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
@@ -251,7 +250,7 @@
     let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
     
     let isEditMode = false;
-    let selectedVoice = 'M1'; // DEFAULT MALE
+    let selectedVoice = 'M1'; 
     let lastSpoken = '';
     
     let tts = null;
@@ -267,7 +266,6 @@
     // INPUT HANDLING (ENTER TO SPEAK)
     // ────────────────────────────────────────────────
     textInput.addEventListener('keydown', (e) => {
-        // Pressing Enter without Shift triggers Speak & Clear
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault(); 
             genBtn.click();
@@ -326,7 +324,7 @@
             }
         };
         reader.readAsText(file);
-        importFileInput.value = ''; // reset
+        importFileInput.value = ''; 
     });
 
     clearHistoryBtn.onclick = () => {
@@ -587,7 +585,6 @@
     
     stepsInput.addEventListener('input', e => stepsVal.textContent = e.target.value);
     
-    // Dynamic slider constraints for length vs count
     replyLenSlider.addEventListener('input', e => {
         const labels = ["Short", "Medium", "Long"];
         replyLenVal.textContent = labels[e.target.value - 1];
@@ -777,11 +774,6 @@
     // GROK AI SUGGESTIONS
     // ────────────────────────────────────────────────
     async function generateGrokSuggestions() {
-        if(XAI_API_KEY === 'xxxx') {
-            suggestStatus.textContent = 'Add API Key for AI Replies.';
-            return;
-        }
-
         let numReplies = parseInt(aiCountSlider.value);
         const lengthLevel = parseInt(replyLenSlider.value);
 
@@ -818,9 +810,10 @@
         Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers, no extra text.`;
 
         try {
+            // Pointing to your Vercel Serverless Function
             const res = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${XAI_API_KEY}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     model: 'grok-3-mini', 
                     messages: [{ role: 'user', content: prompt }], 
@@ -832,7 +825,6 @@
             if (!res.ok) throw new Error();
             const data = await res.json();
             
-            // Clean up regex to aggressively strip numbers, bullet points, quotes, dashes, etc.
             const suggestions = data.choices[0].message.content.trim().split('\n')
                 .map(s => s.trim().replace(/^([0-9]+[\.\-)]\s*|["-]\s*|\*\s*)/, ''))
                 .filter(s => s);
@@ -848,7 +840,7 @@
                 grokSuggestionsEl.appendChild(btn);
             });
         } catch (err) {
-            suggestStatus.textContent = 'Suggestions API unavailable';
+            suggestStatus.textContent = 'Suggestions API unavailable. Check Vercel backend.';
             grokSuggestionsEl.innerHTML = '';
         }
     }
