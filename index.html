@@ -785,120 +785,152 @@ const defaultCategories = {
         return buffer;
     }
 
-    // ────────────────────────────────────────────────
-    // CROSS-PLATFORM SPEECH RECOGNITION 
-    // ────────────────────────────────────────────────
-    let speechDebounceTimer = null;
+// ────────────────────────────────────────────────
+// CROSS-PLATFORM SPEECH RECOGNITION
+// ────────────────────────────────────────────────
 
-    function updateMicUI(isActive) {
-        if (isActive) {
-            listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🛑</span>Stop Mic';
-            listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-            suggestStatus.textContent = 'Listening (Partner Speaking)...';
-            waveformCanvas.classList.remove('hidden');
-            if (!visualizerActive) initVisualizer();
-            else if (audioContext && audioContext.state === 'suspended') audioContext.resume();
-            if (visualizerActive && !intentionallyStopped) drawWaveform();
-        } else {
-            listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Listen';
-            listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
-            suggestStatus.textContent = 'AI Suggestions (Paused)';
-            liveTranscript.textContent = '';
-            liveTranscript.classList.add('hidden');
-            waveformCanvas.classList.add('hidden');
+let speechDebounceTimer = null;
+let recognition = null;
+let utteranceCount = 0;
+const MAX_UTTERANCES_BEFORE_RECREATE = 5;   // tune this: 3–8 is sweet spot on most Android devices
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+function createRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return null;
+    
+    const rec = new webkitSpeechRecognition();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    // Most reliable mobile behavior = continuous:false + manual restart
+    rec.continuous = !isMobile;   // ← key change: turn OFF on mobile
+    
+    rec.onstart = () => {
+        updateMicUI(true);
+        utteranceCount++;  // only count when we actually started
+    };
+
+    rec.onerror = (event) => {
+        console.warn("Recognition error:", event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            intentionallyStopped = true;
+            updateMicUI(false);
+            alert("Microphone access denied.");
         }
-    }
-
-    if ('webkitSpeechRecognition' in window) {
-        recognition = new webkitSpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-
-        recognition.onstart = () => { updateMicUI(true); };
-
-        recognition.onerror = (event) => {
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                intentionallyStopped = true;
-                updateMicUI(false);
-                alert("Microphone access denied.");
-            }
-        };
-
-        recognition.onend = () => {
-            // Silently restart if the browser forcefully closes it (e.g. mobile timeout)
-            if (!intentionallyStopped) {
-                setTimeout(() => {
-                    if (!intentionallyStopped) { try { recognition.start(); } catch (e) {} }
-                }, 400); 
-            } else updateMicUI(false);
-        };
-
-        recognition.onresult = (event) => {
-            if (isTTSPlaying) return; 
-
-            let currentTranscript = '';
-            
-            // Standard continuous reading (works great on PC)
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                currentTranscript += event.results[i][0].transcript;
-            }
-
-            if (currentTranscript.trim()) {
-                liveTranscript.textContent = '🗣️ ' + currentTranscript;
-                liveTranscript.classList.remove('hidden');
-
-                clearTimeout(speechDebounceTimer);
-                
-                // Wait 1.8 seconds of silence to confirm the sentence is over
-                speechDebounceTimer = setTimeout(() => {
-                    const finalStringToCommit = currentTranscript.trim();
-                    
-                    const sensSetting = parseInt(micSensSlider.value);
-                    const volumeThreshold = 150 - (sensSetting * 1.5); 
-                    
-                    if (visualizerActive && maxVolumeInWindow < volumeThreshold) {
-                        console.log(`Ignored noise: Vol ${maxVolumeInWindow} < Threshold ${volumeThreshold}`);
-                    } else {
-                        addToConversation('other', finalStringToCommit);
-                        suggestStatus.textContent = 'Generating AI suggestions...';
-                        generateGrokSuggestions();
-                    }
-
-                    maxVolumeInWindow = 0;
-                    liveTranscript.textContent = '';
-                    liveTranscript.classList.add('hidden');
-
-                    // If on a Mobile device, we MUST manually stop the mic after a commit
-                    // to flush the Android Chrome buffer and prevent the "staircase" duplication.
-                    if (isMobileDevice && !intentionallyStopped) { 
-                        recognition.stop(); 
-                    }
-                }, 1800); 
-            }
-        };
-    } else {
-        listenBtn.disabled = true;
-        listenBtn.innerHTML = 'Mic not supported';
-    }
-
-    listenBtn.onclick = () => {
-        if (!recognition) return;
-        if (!intentionallyStopped) { 
-            intentionallyStopped = true; 
-            recognition.stop(); 
-        } else { 
-            intentionallyStopped = false; 
-            try { recognition.start(); } catch(e){} 
+        // Auto-restart on non-critical errors (network, no-speech, etc.)
+        else if (!intentionallyStopped) {
+            setTimeout(restartListening, 300);
         }
     };
 
-    setTimeout(() => {
-        if (recognition) {
-            intentionallyStopped = false;
-            try { recognition.start(); } catch(e){}
+    rec.onend = () => {
+        if (!intentionallyStopped) {
+            // Mobile needs fast restart → desktop can be more relaxed
+            setTimeout(restartListening, isMobile ? 150 : 400);
+        } else {
+            updateMicUI(false);
         }
-    }, 1000);
+    };
+
+    rec.onresult = (event) => {
+        if (isTTSPlaying) return;
+
+        let currentTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+        }
+
+        if (currentTranscript.trim()) {
+            liveTranscript.textContent = '🗣️ ' + currentTranscript;
+            liveTranscript.classList.remove('hidden');
+
+            clearTimeout(speechDebounceTimer);
+
+            speechDebounceTimer = setTimeout(() => {
+                const finalText = currentTranscript.trim();
+
+                // Volume gate (keep your logic)
+                const sens = parseInt(micSensSlider.value);
+                const threshold = 150 - (sens * 1.5);
+                if (visualizerActive && maxVolumeInWindow < threshold) {
+                    console.log(`Ignored low volume: ${maxVolumeInWindow} < ${threshold}`);
+                } else if (finalText) {
+                    addToConversation('other', finalText);
+                    suggestStatus.textContent = 'Generating AI suggestions...';
+                    generateGrokSuggestions();
+                }
+
+                maxVolumeInWindow = 0;
+                liveTranscript.textContent = '';
+                liveTranscript.classList.add('hidden');
+
+                // On mobile: force recreate every few utterances to prevent freeze / memory leak
+                if (isMobile && utteranceCount >= MAX_UTTERANCES_BEFORE_RECREATE) {
+                    console.log("Recycling speech recognition instance...");
+                    intentionallyStopped = true;
+                    if (recognition) recognition.stop();
+                    recognition = null;
+                    utteranceCount = 0;
+                    setTimeout(() => {
+                        intentionallyStopped = false;
+                        initOrRestartRecognition();
+                    }, 400);
+                }
+            }, 1800);
+        }
+    };
+
+    return rec;
+}
+
+function initOrRestartRecognition() {
+    if (!recognition) {
+        recognition = createRecognition();
+    }
+    if (recognition && !intentionallyStopped) {
+        try {
+            recognition.start();
+        } catch (e) {
+            console.warn("start() failed", e);
+            setTimeout(initOrRestartRecognition, 600);
+        }
+    }
+}
+
+function restartListening() {
+    if (intentionallyStopped) return;
+    initOrRestartRecognition();
+}
+
+// Initialize
+if ('webkitSpeechRecognition' in window) {
+    initOrRestartRecognition();
+} else {
+    listenBtn.disabled = true;
+    listenBtn.innerHTML = 'Mic not supported';
+}
+
+// Toggle button
+listenBtn.onclick = () => {
+    if (!recognition) return;
+
+    if (!intentionallyStopped) {
+        intentionallyStopped = true;
+        if (recognition) recognition.stop();
+        recognition = null;      // force fresh instance next time
+        utteranceCount = 0;
+    } else {
+        intentionallyStopped = false;
+        initOrRestartRecognition();
+    }
+};
+
+// Optional: initial auto-start after 1s
+setTimeout(() => {
+    if (!intentionallyStopped && recognition) {
+        try { recognition.start(); } catch(e){}
+    }
+}, 1000);
 
     // ────────────────────────────────────────────────
     // GROK AI SUGGESTIONS
