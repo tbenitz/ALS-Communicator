@@ -168,6 +168,27 @@
         </div>
     </div>
 
+    <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
+        <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
+            <h3 class="text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
+            <div class="flex flex-col gap-1">
+                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Phrase Text:</label>
+                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500 resize-none h-28 shadow-inner"></textarea>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Category:</label>
+                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
+            </div>
+            <div class="flex justify-between mt-4 gap-2">
+                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">🗑️ Delete</button>
+                <div class="flex gap-2 w-full justify-end">
+                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">Cancel</button>
+                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 md:px-10 rounded-xl transition-all shadow-md">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
     const API_URL = '/api/grok';
 
@@ -599,12 +620,11 @@ const defaultCategories = {
     // ────────────────────────────────────────────────
     // AUDIO VISUALIZER
     // ────────────────────────────────────────────────
-    let isDrawing = false; // Tracks if the animation loop is running
+    let isDrawing = false; 
 
     async function initVisualizer() {
         if (isMobileDevice) return; 
         
-        // If we paused and resumed, just restart the visualizer loop
         if (visualizerActive) {
             if (!isDrawing) drawWaveform();
             return;
@@ -661,7 +681,6 @@ const defaultCategories = {
     // ────────────────────────────────────────────────
     function initTTS() {
         if ('speechSynthesis' in window) {
-            // Trigger voice load
             speechSynthesis.getVoices();
             window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
         }
@@ -693,7 +712,6 @@ const defaultCategories = {
         
         if (voices.length > 0) {
             const isMale = selectedVoice === 'M1';
-            // Attempt to pick a matching gendered voice from device
             const voiceMatch = voices.find(v => v.lang.startsWith('en') && (isMale ? v.name.toLowerCase().includes('male') : v.name.toLowerCase().includes('female')));
             if (voiceMatch) u.voice = voiceMatch;
         }
@@ -721,12 +739,10 @@ function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
         listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
-        // Clear indication that it is listening
         listenBtn.innerHTML = '<span class="text-xl leading-none mb-1 animate-pulse">🔴</span>Mic ON';
     } else {
         listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
         listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
-        // Clear indication that it is off
         listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Mic OFF';
     }
 }
@@ -903,7 +919,6 @@ setTimeout(async () => {
         Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
 
         try {
-            // Using your existing backend API!
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
