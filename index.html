@@ -26,10 +26,10 @@
         .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
         
-        .msg { padding: 0.75rem 1rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1.1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .msg-other { background: #334155; align-self: flex-start; color: #f8fafc; border-bottom-left-radius: 0.25rem; }
         .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
-        .save-phrase-btn { font-size: 0.75rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
+        .save-phrase-btn { font-size: 0.7rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
         .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
         
         .modal-overlay { backdrop-filter: blur(5px); }
@@ -41,68 +41,74 @@
         canvas { image-rendering: pixelated; }
     </style>
 </head>
-<body class="flex flex-col h-[100dvh] overflow-hidden">
+<body class="flex flex-col h-[100dvh] overflow-hidden bg-[#121212] text-slate-200">
 
-    <header class="flex justify-between items-center bg-gray-900 p-3 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
-        <h1 class="text-xl md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="hidden sm:inline">ALS Communicator</span></h1>
-        <button id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm">
+    <header class="flex justify-between items-center bg-gray-900 p-2 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
+        <h1 class="text-lg md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="inline">ALS Communicator</span></h1>
+        <button id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm text-sm md:text-base">
             ⚙️ <span class="hidden sm:inline">Settings</span>
         </button>
     </header>
 
-    <main class="flex-grow flex flex-col md:flex-row gap-4 p-2 md:p-4 min-h-0">
+    <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-y-auto md:overflow-hidden">
         
-        <div class="w-full md:w-1/2 flex flex-col gap-3 h-full min-h-0">
+        <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             
             <div class="relative shrink-0 flex flex-col gap-1">
-                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-3 md:p-4 text-2xl md:text-3xl focus:border-green-500 outline-none resize-none h-24 md:h-36 shadow-inner transition-colors" placeholder="Type and press Enter..."></textarea>
-                <div id="predictiveBar" class="h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm"></div>
+                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
+                <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
             </div>
             
-            <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-2">
-                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
-                    <span id="btnText" class="z-10 relative"><span class="text-3xl md:text-4xl leading-none">🔊</span>Speak</span>
+            <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-1 md:gap-2">
+                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-2 md:py-3 disabled:opacity-50 relative overflow-hidden">
+                    <span id="btnText" class="z-10 relative flex items-center gap-1 md:flex-col"><span class="text-2xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
-                <button id="listenBtn" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
-                    <span class="text-xl leading-none mb-1">🎤</span>Mic OFF
+                <button id="listenBtn" class="col-span-1 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF
                 </button>
-                <button id="grokSuggestBtn" class="col-span-2 md:col-span-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">🤖</span>AI Reply</button>
-                <button id="replayBtn" class="col-span-2 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">🔄</span>Replay</button>
-                <button id="clearBtn" class="col-span-2 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">❌</span>Clear</button>
+                <button id="grokSuggestBtn" class="col-span-1 md:col-span-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🤖</span>AI Reply
+                </button>
+                <button id="replayBtn" class="col-span-1 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🔄</span>Replay
+                </button>
+                <button id="clearBtn" class="col-span-1 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">❌</span>Clear
+                </button>
             </div>
 
-            <div class="shrink-0 flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 relative h-12">
+            <div class="shrink-0 flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 relative h-8 md:h-12">
                 <canvas id="waveformCanvas" class="absolute inset-0 w-full h-full hidden opacity-80"></canvas>
-                <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-3 text-indigo-300 italic text-sm font-bold live-text hidden text-shadow-md truncate"></div>
+                <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-2 md:px-3 text-indigo-300 italic text-xs md:text-sm font-bold live-text hidden text-shadow-md truncate"></div>
             </div>
 
-            <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-2 rounded-xl border border-slate-700/50">
-                <div id="suggestStatus" class="text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
-                <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-2 pb-1"></div>
+            <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-1.5 md:p-2 rounded-xl border border-slate-700/50">
+                <div id="suggestStatus" class="text-[10px] md:text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
+                <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
 
-            <div class="md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-40 md:h-auto min-h-[150px] shadow-sm min-h-0">
-                <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0">Conversation Log</div>
-                <div id="conversationHistory" class="flex-grow overflow-y-auto p-3 flex flex-col gap-2 min-h-0"></div>
+            <div class="shrink-0 md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-28 md:h-auto md:min-h-[150px] shadow-sm min-h-0">
+                <div class="bg-slate-900/80 p-1 md:p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
+                <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
 
-        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[400px] h-full shadow-sm mt-2 md:mt-0 min-h-0">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
+        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
-                    <button id="addCategoryBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-sm shadow-sm" title="New Category">+ Cat</button>
-                    <button id="addPhraseBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-sm hidden shadow-sm">+ Phrase</button>
-                    <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-sm shadow-sm">✏️ Edit</button>
+                    <button id="addCategoryBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">+ Cat</button>
+                    <button id="addPhraseBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-xs md:text-sm hidden shadow-sm">+ Phrase</button>
+                    <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">✏️ Edit</button>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center px-3 pt-2 pb-1 shrink-0">
-                <h2 id="currentCategoryTitle" class="text-xl font-bold text-slate-200">Basics</h2>
-                <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
+            <div class="flex justify-between items-center px-3 pt-1.5 md:pt-2 pb-1 shrink-0">
+                <h2 id="currentCategoryTitle" class="text-lg md:text-xl font-bold text-slate-200">Basics</h2>
+                <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-[10px] md:text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
             </div>
             
-            <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-2 p-3 content-start min-h-0"></div>
+            <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-2 p-2 md:p-3 content-start min-h-0"></div>
         </div>
     </main>
 
@@ -115,51 +121,51 @@
             
             <div class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">System Voice</label>
-                <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-lg rounded-xl p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors"></select>
+                <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-sm md:text-lg rounded-xl p-2 md:p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors"></select>
                 <p class="text-xs text-slate-400 mt-1">Select from the actual voices installed on your device.</p>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
                 <div class="flex gap-3 h-12">
-                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
-                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
+                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
+                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
                 </div>
-                <p class="text-xs text-slate-400">Choose whether clicking a phrase speaks it right away, or adds it to the box so you can string phrases together.</p>
+                <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose whether clicking a phrase speaks it right away, or adds it to the box.</p>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <div class="flex justify-between font-bold text-slate-300 text-lg"><span>AI Context Memory</span><span id="aiContextVal" class="text-green-400">5 msgs</span></div>
+                <div class="flex justify-between font-bold text-slate-300 text-md md:text-lg"><span>AI Context Memory</span><span id="aiContextVal" class="text-green-400">5 msgs</span></div>
                 <input type="range" id="aiContextSlider" min="1" max="15" value="5" step="1" class="my-2">
-                <p class="text-xs text-slate-400">Limits how many past messages the AI remembers to prevent confusion.</p>
+                <p class="text-[10px] md:text-xs text-slate-400">Limits how many past messages the AI remembers to prevent confusion.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>AI Length</span><span id="replyLenVal" class="text-green-400">Short</span></div>
+                    <div class="flex justify-between font-bold text-slate-300 text-sm md:text-md"><span>AI Length</span><span id="replyLenVal" class="text-green-400">Short</span></div>
                     <input type="range" id="replyLenSlider" min="1" max="3" value="1" step="1" class="my-2">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>AI Replies</span><span id="aiCountVal" class="text-green-400">3</span></div>
+                    <div class="flex justify-between font-bold text-slate-300 text-sm md:text-md"><span>AI Replies</span><span id="aiCountVal" class="text-green-400">3</span></div>
                     <input type="range" id="aiCountSlider" min="1" max="9" value="3" step="1" class="my-2">
                 </div>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <div class="flex justify-between font-bold text-slate-300 text-md"><span>Mic Sensitivity</span><span id="micSensVal" class="text-green-400">80%</span></div>
+                <div class="flex justify-between font-bold text-slate-300 text-sm md:text-md"><span>Mic Sensitivity</span><span id="micSensVal" class="text-green-400">80%</span></div>
                 <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
-                <p class="text-xs text-slate-400">Adjust to filter out background noise on desktop.</p>
+                <p class="text-[10px] md:text-xs text-slate-400">Adjust to filter out background noise on desktop.</p>
             </div>
 
             <div class="flex flex-col gap-2 border-t border-slate-700 pt-3">
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <button id="exportBtn" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl transition-all shadow-md">📥 Export Backup</button>
-                    <button id="importBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 rounded-xl transition-all shadow-md">📤 Import Backup</button>
+                <div class="flex flex-col sm:flex-row gap-2 md:gap-3">
+                    <button id="exportBtn" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded-xl transition-all shadow-md text-sm md:text-base">📥 Export Backup</button>
+                    <button id="importBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 rounded-xl transition-all shadow-md text-sm md:text-base">📤 Import Backup</button>
                     <input type="file" id="importFileInput" accept=".json" class="hidden">
                 </div>
             </div>
             
-            <button id="clearHistoryBtn" class="mt-2 bg-red-900/50 hover:bg-red-800 text-red-300 font-bold py-2 rounded-xl transition-all border border-red-800 shadow-md">
+            <button id="clearHistoryBtn" class="mt-2 bg-red-900/50 hover:bg-red-800 text-red-300 font-bold py-2 rounded-xl transition-all border border-red-800 shadow-md text-sm md:text-base">
                 🗑️ Clear Conversation History
             </button>
         </div>
@@ -167,20 +173,20 @@
 
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
-            <h3 class="text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
+            <h3 class="text-xl md:text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
             <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Phrase Text:</label>
-                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500 resize-none h-28 shadow-inner"></textarea>
+                <label class="font-bold text-slate-300 text-xs md:text-sm uppercase tracking-wider">Phrase Text:</label>
+                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg md:text-xl text-white outline-none focus:border-blue-500 resize-none h-24 md:h-28 shadow-inner"></textarea>
             </div>
             <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Category:</label>
-                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
+                <label class="font-bold text-slate-300 text-xs md:text-sm uppercase tracking-wider">Category:</label>
+                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-2 md:p-3 text-base md:text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
             </div>
-            <div class="flex justify-between mt-4 gap-2">
-                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">🗑️ Delete</button>
+            <div class="flex justify-between mt-2 md:mt-4 gap-2">
+                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-xl transition-all shadow-md text-sm md:text-base">🗑️ Delete</button>
                 <div class="flex gap-2 w-full justify-end">
-                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">Cancel</button>
-                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 md:px-10 rounded-xl transition-all shadow-md">Save</button>
+                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-xl transition-all shadow-md text-sm md:text-base">Cancel</button>
+                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 md:py-3 px-6 md:px-10 rounded-xl transition-all shadow-md text-sm md:text-base">Save</button>
                 </div>
             </div>
         </div>
@@ -298,7 +304,7 @@ const defaultCategories = {
     let clickAction = 'speak'; 
     let lastSpoken = '';
     
-    let intentionallyStopped = false; // Allow auto-start on load
+    let intentionallyStopped = false; 
     let isTTSPlaying = false; 
     let editingPhraseIndex = -1;
     let editingCategorySource = '';
@@ -340,11 +346,11 @@ const defaultCategories = {
 
     function updateActionUI() {
         if (clickAction === 'speak') {
-            btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-md rounded-xl transition-all shadow-md';
-            btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-md rounded-xl transition-all shadow-md';
+            btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+            btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
         } else {
-            btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-md rounded-xl transition-all shadow-md';
-            btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-md rounded-xl transition-all shadow-md';
+            btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+            btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
         }
     }
     btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
@@ -415,7 +421,7 @@ const defaultCategories = {
                 predictiveBar.classList.remove('hidden');
                 matches.slice(0, 6).forEach(match => {
                     const btn = document.createElement('button');
-                    btn.className = 'bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold px-4 py-2 rounded-lg shrink-0 text-lg border border-slate-600 transition-colors shadow-sm';
+                    btn.className = 'bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold px-3 py-1.5 md:px-4 md:py-2 rounded-lg shrink-0 text-sm md:text-lg border border-slate-600 transition-colors shadow-sm';
                     btn.textContent = match;
                     btn.onclick = () => {
                         words[words.length - 1] = match;
@@ -440,7 +446,7 @@ const defaultCategories = {
         Object.keys(phraseCategories).forEach(cat => {
             const btn = document.createElement('button');
             btn.textContent = cat;
-            btn.className = `shrink-0 px-4 py-2 text-md md:text-lg font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white shadow-md' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
+            btn.className = `shrink-0 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-lg font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white shadow-md' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
             btn.onclick = () => {
                 currentCategory = cat;
                 document.getElementById('currentCategoryTitle').textContent = cat;
@@ -456,14 +462,14 @@ const defaultCategories = {
         phraseGridEl.innerHTML = '';
         addPhraseBtn.classList.toggle('hidden', !isEditMode);
         editCategoryBtn.classList.toggle('hidden', !isEditMode);
-        editToggleBtn.className = isEditMode ? 'bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-sm shadow-sm' : 'bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-sm shadow-sm';
+        editToggleBtn.className = isEditMode ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-xs md:text-sm shadow-sm' : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm';
         editToggleBtn.innerHTML = isEditMode ? 'Done' : '✏️ Edit';
 
         if(phraseCategories[currentCategory]) {
             phraseCategories[currentCategory].forEach((phrase, idx) => {
                 const btn = document.createElement('button');
                 btn.textContent = phrase;
-                btn.className = `p-3 md:p-4 text-lg md:text-xl font-bold rounded-xl transition-all shadow-md min-h-[80px] flex items-center justify-center text-center leading-tight ${isEditMode ? 'bg-slate-800 text-blue-300 edit-mode-btn cursor-pointer' : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'}`;
+                btn.className = `p-2 md:p-4 text-[13px] sm:text-base md:text-xl font-bold rounded-xl transition-all shadow-md min-h-[56px] md:min-h-[80px] flex items-center justify-center text-center leading-tight ${isEditMode ? 'bg-slate-800 text-blue-300 edit-mode-btn cursor-pointer' : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'}`;
                 btn.onclick = () => {
                     if (isEditMode) openModal(phrase, currentCategory, idx);
                     else handlePhraseTap(phrase);
@@ -730,14 +736,13 @@ const defaultCategories = {
     let unlockCalled = false;
     let ttsFallbackTimer = null; 
 
-    // Reusable function to unlock the UI and Microphone after speech ends or crashes
     function unlockMic() {
         if (unlockCalled) return; 
         unlockCalled = true;
         
         clearTimeout(ttsFallbackTimer);
         genBtn.disabled = false;
-        btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+        btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
 
         setTimeout(() => { 
             isTTSPlaying = false; 
@@ -753,16 +758,14 @@ const defaultCategories = {
         lastSpoken = text;
         addToConversation('you', text);
 
-        // CLEAR everything first
         clearTimeout(ttsFallbackTimer);
         window.speechSynthesis.cancel();
 
         genBtn.disabled = true;
-        btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>...';
+        btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>...';
         isTTSPlaying = true;
         unlockCalled = false; 
 
-        // Pause listening temporarily
         wasMicActive = !intentionallyStopped;
         if (wasMicActive) {
             intentionallyStopped = true;
@@ -772,8 +775,6 @@ const defaultCategories = {
             }
         }
 
-        // CRITICAL FIX: The browser needs a tiny delay after cancel() before it can speak() again.
-        // Without this delay, the speech is silently dropped and the UI freezes forever.
         setTimeout(() => {
             window.currentUtterance = new SpeechSynthesisUtterance(text);
             
@@ -806,11 +807,11 @@ function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
         listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
-        listenBtn.innerHTML = '<span class="text-xl leading-none mb-1 animate-pulse">🔴</span>Mic ON';
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
     } else {
         listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
         listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
-        listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Mic OFF';
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
     }
 }
 
