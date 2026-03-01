@@ -699,11 +699,16 @@ const defaultCategories = {
     document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
     let wasMicActive = false; // Remembers if mic was listening before TTS started
+    window.currentUtterance = null; // FIX: Prevents Chrome from garbage-collecting the speech object
+    window.ttsFallbackTimer = null; // FIX: Global fallback timer
 
     function speak(text) {
         if (!text) return;
         lastSpoken = text;
         addToConversation('you', text);
+
+        // FIX: Always flush the browser's speech queue first to prevent getting stuck
+        window.speechSynthesis.cancel();
 
         genBtn.disabled = true;
         btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>...';
@@ -721,6 +726,8 @@ const defaultCategories = {
         }
 
         const u = new SpeechSynthesisUtterance(text);
+        window.currentUtterance = u; // Attach to window to prevent Chrome memory deletion bug
+        
         u.lang = 'en-US';
         const voices = speechSynthesis.getVoices();
         
@@ -730,14 +737,9 @@ const defaultCategories = {
             if (voiceMatch) u.voice = voiceMatch;
         }
         
-        // Failsafe timer: Mobile browsers occasionally fail to trigger the 'onend' event. 
-        // This calculates a generous padding time so the app never freezes.
-        let ttsFallbackTimer;
-        const estimatedTimeMs = (text.length * 100) + 2500; 
-
         const unlockMic = () => {
             if (!isTTSPlaying) return; 
-            clearTimeout(ttsFallbackTimer);
+            clearTimeout(window.ttsFallbackTimer);
             
             genBtn.disabled = false;
             btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
@@ -752,9 +754,12 @@ const defaultCategories = {
             }, 800);
         };
 
-        u.onstart = () => {
-            ttsFallbackTimer = setTimeout(unlockMic, estimatedTimeMs);
-        };
+        // FIX: Start the failsafe timer IMMEDIATELY. This guarantees the button 
+        // will unlock even if the Chrome speech engine crashes entirely.
+        const estimatedTimeMs = (text.length * 100) + 3000; 
+        clearTimeout(window.ttsFallbackTimer);
+        window.ttsFallbackTimer = setTimeout(unlockMic, estimatedTimeMs);
+
         u.onend = unlockMic;
         u.onerror = unlockMic;
         
@@ -816,7 +821,6 @@ function createRecognition() {
     };
 
     rec.onresult = (event) => {
-        // Double check just in case, though the hard pause should catch this
         if (isTTSPlaying) return; 
 
         let currentTranscript = '';
