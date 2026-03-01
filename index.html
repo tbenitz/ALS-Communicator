@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALS Communicator - Grok Voice</title>
+    <title>ALS Communicator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
     <style>
         body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
         
@@ -84,7 +85,7 @@
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-2 pb-1"></div>
             </div>
 
-            <div class="flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[300px] md:min-h-0 md:h-full md:overflow-hidden shadow-sm">
+            <div class="shrink-0 md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-40 md:h-full md:overflow-hidden shadow-sm">
                 <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0">Conversation Log</div>
                 <div id="conversationHistory" class="flex-grow overflow-y-auto p-3 flex flex-col gap-2"></div>
             </div>
@@ -116,12 +117,6 @@
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
             
-            <div class="flex flex-col gap-1 border-b border-slate-700 pb-3">
-                <label class="font-bold text-slate-300 text-lg">xAI API Key (For Grok Voice & Cloud AI)</label>
-                <input type="password" id="xaiApiKey" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-3 text-white outline-none focus:border-blue-500 shadow-inner" placeholder="Optional: Enter xAI API Key">
-                <p class="text-xs text-slate-400 mt-1">Enables high-quality Grok voices, Grok Speech-to-Text, and AI Replies without a backend server. If left blank, it falls back to your device's default system voice and transcription.</p>
-            </div>
-            
             <div class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">AI Voice Persona</label>
                 <div class="flex gap-3 h-12">
@@ -151,14 +146,20 @@
                     <input type="range" id="replyLenSlider" min="1" max="3" value="1" step="1" class="my-2">
                 </div>
                 <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>AI Replies</span><span id="aiCountVal" class="text-green-400">6</span></div>
-                    <input type="range" id="aiCountSlider" min="1" max="9" value="6" step="1" class="my-2">
+                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>AI Replies</span><span id="aiCountVal" class="text-green-400">3</span></div>
+                    <input type="range" id="aiCountSlider" min="1" max="9" value="3" step="1" class="my-2">
                 </div>
             </div>
 
-            <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <div class="flex justify-between font-bold text-slate-300 text-md"><span>Mic Sensitivity (Grok STT Only)</span><span id="micSensVal" class="text-green-400">80%</span></div>
-                <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
+            <div class="grid grid-cols-2 gap-4 border-t border-slate-700 pt-3">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>TTS Quality</span><span id="stepsVal" class="text-green-400">18</span></div>
+                    <input type="range" id="steps" min="5" max="30" value="18" step="1" class="my-2">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>Mic Sensitivity</span><span id="micSensVal" class="text-green-400">80%</span></div>
+                    <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
+                </div>
             </div>
 
             <div class="flex flex-col gap-2 border-t border-slate-700 pt-3">
@@ -198,7 +199,10 @@
 
     <audio id="player" class="hidden"></audio>
 
-<script>
+<script type="module">
+    // Restoring the HuggingFace local model processing
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
+
     const API_URL = '/api/grok';
 
     const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
@@ -232,11 +236,12 @@
     const openSettingsBtn   = document.getElementById('openSettingsBtn');
     const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
     const settingsModal     = document.getElementById('settingsModal');
-    const xaiApiKeyInput    = document.getElementById('xaiApiKey');
     const btnF1             = document.getElementById('btnF1');
     const btnM1             = document.getElementById('btnM1');
     const btnActionSpeak    = document.getElementById('btnActionSpeak');
     const btnActionType     = document.getElementById('btnActionType');
+    const stepsInput        = document.getElementById('steps');
+    const stepsVal          = document.getElementById('stepsVal');
     const replyLenSlider    = document.getElementById('replyLenSlider');
     const replyLenVal       = document.getElementById('replyLenVal');
     const aiCountSlider     = document.getElementById('aiCountSlider');
@@ -313,16 +318,17 @@ const defaultCategories = {
     let clickAction = 'speak'; 
     let lastSpoken = '';
     
-    let intentionallyStopped = false; 
+    let tts = null;
+    let intentionallyStopped = false; // Allow auto-start on load
     let isTTSPlaying = false; 
     let editingPhraseIndex = -1;
     let editingCategorySource = '';
-    let useSystemSTTFallback = false;
     
     let audioContext, analyser, microphone, dataArray;
     let maxVolumeInWindow = 0;
     let visualizerActive = false;
 
+    // Detect if the user is on mobile to apply specific Android fixes
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // ────────────────────────────────────────────────
@@ -350,12 +356,6 @@ const defaultCategories = {
     // ────────────────────────────────────────────────
     // SETTINGS MODAL & DATA MANAGEMENT
     // ────────────────────────────────────────────────
-    xaiApiKeyInput.value = localStorage.getItem('xaiApiKey') || '';
-    xaiApiKeyInput.addEventListener('change', () => {
-        localStorage.setItem('xaiApiKey', xaiApiKeyInput.value.trim());
-        useSystemSTTFallback = false; 
-    });
-
     openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
     closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
@@ -618,6 +618,7 @@ const defaultCategories = {
     btnM1.onclick = () => { selectedVoice = 'M1'; updateVoiceUI(); };
     btnF1.onclick = () => { selectedVoice = 'F1'; updateVoiceUI(); };
     
+    stepsInput.addEventListener('input', e => stepsVal.textContent = e.target.value);
     aiContextSlider.addEventListener('input', e => aiContextVal.textContent = e.target.value + " msgs");
     micSensSlider.addEventListener('input', e => micSensVal.textContent = e.target.value + "%");
     
@@ -635,79 +636,16 @@ const defaultCategories = {
     aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
 
     // ────────────────────────────────────────────────
-    // AUDIO VISUALIZER & GROK VAD RECORDING
+    // AUDIO VISUALIZER
     // ────────────────────────────────────────────────
-    let isDrawing = false; 
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let isSpeaking = false;
-    let silenceTimer = null;
-
-    async function setupGrokSTT(stream) {
-        if (!window.MediaRecorder) {
-            useSystemSTTFallback = true;
-            return;
-        }
-        
-        let mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'audio/mp4';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                useSystemSTTFallback = true;
-                return;
-            }
-        }
-
-        mediaRecorder = new MediaRecorder(stream, { mimeType });
-        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-        mediaRecorder.onstop = async () => {
-            if (audioChunks.length === 0) return;
-            const blob = new Blob(audioChunks, { type: mimeType });
-            audioChunks = [];
-            await processGrokSTT(blob);
-        };
-    }
-
-    async function processGrokSTT(blob) {
-        const apiKey = xaiApiKeyInput.value.trim();
-        if (!apiKey) return;
-        
-        const formData = new FormData();
-        formData.append('file', blob, 'speech.webm');
-        formData.append('model', 'whisper-1');
-
-        try {
-            const res = await fetch('https://api.x.ai/v1/audio/transcriptions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${apiKey}` },
-                body: formData
-            });
-            if (!res.ok) throw new Error("Grok STT API Error");
-            const data = await res.json();
-            
-            const finalText = data.text.trim();
-            if (finalText) {
-                addToConversation('other', finalText);
-                suggestStatus.textContent = 'Generating AI suggestions...';
-                generateGrokSuggestions();
-            }
-        } catch (e) {
-            console.warn("Grok STT failed, falling back to System Default", e);
-            useSystemSTTFallback = true;
-            alert("Grok Voice failed. Switching to System Default Transcription.");
-            if (microphone) microphone.mediaStream.getTracks().forEach(t => t.stop());
-            visualizerActive = false;
-            initOrRestartRecognition();
-        }
-    }
+    let isDrawing = false; // Tracks if the animation loop is running
 
     async function initVisualizer() {
-        const apiKey = xaiApiKeyInput.value.trim();
-        // Prevent mic crash on mobile ONLY if skipping Grok Voice entirely
-        if (isMobileDevice && (!apiKey || useSystemSTTFallback)) return; 
+        if (isMobileDevice) return; 
         
+        // If we paused and resumed, just restart the visualizer loop
         if (visualizerActive) {
-            if (!isDrawing && !intentionallyStopped) drawWaveform();
+            if (!isDrawing) drawWaveform();
             return;
         }
         
@@ -720,16 +658,9 @@ const defaultCategories = {
             analyser.fftSize = 64; 
             const bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
-            
-            await setupGrokSTT(stream);
-
             visualizerActive = true;
-            if (!intentionallyStopped) drawWaveform();
-        } catch (e) { 
-            console.warn("Visualizer mic denied.", e); 
-            intentionallyStopped = true;
-            updateMicUI(false);
-        }
+            drawWaveform();
+        } catch (e) { console.warn("Visualizer mic denied.", e); }
     }
 
     function drawWaveform() {
@@ -759,42 +690,8 @@ const defaultCategories = {
             x += barWidth + 2;
         }
 
-        const apiKey = xaiApiKeyInput.value.trim();
-        const useGrokSTT = apiKey && !useSystemSTTFallback && mediaRecorder;
-
-        if (useGrokSTT) {
-            // Grok Voice Activity Detection
-            const sens = parseInt(micSensSlider.value);
-            const threshold = 150 - (sens * 1.5);
-            
-            if (currentMax >= threshold) {
-                if (!isSpeaking) {
-                    isSpeaking = true;
-                    liveTranscript.textContent = '🗣️ Grok is listening...';
-                    liveTranscript.classList.remove('hidden');
-                    if (mediaRecorder.state === 'inactive') {
-                        audioChunks = [];
-                        mediaRecorder.start();
-                    }
-                }
-                
-                clearTimeout(silenceTimer);
-                silenceTimer = setTimeout(() => {
-                    isSpeaking = false;
-                    liveTranscript.textContent = 'Processing...';
-                    if (mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
-                    }
-                    setTimeout(() => { 
-                        if (!isSpeaking) liveTranscript.classList.add('hidden'); 
-                    }, 1000);
-                }, 1500);
-            }
-        } else {
-            // Volume gate for native system fallback
-            if (currentMax > maxVolumeInWindow) {
-                maxVolumeInWindow = currentMax;
-            }
+        if (currentMax > maxVolumeInWindow) {
+            maxVolumeInWindow = currentMax;
         }
     }
 
@@ -805,9 +702,26 @@ const defaultCategories = {
     player.onended = () => { isTTSPlaying = false; };
     player.onpause = () => { isTTSPlaying = false; };
 
-    function initTTS() {
-        btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
-        genBtn.disabled = false;
+    async function initTTS() {
+        try {
+            btnText.textContent = 'Loading...';
+            
+            // WebGPU vs WASM logic for Transformers.js
+            const hasWebGPU = navigator.gpu !== undefined;
+            const useWebGPU = hasWebGPU && !isMobileDevice; 
+            
+            const pipeOptions = useWebGPU 
+                ? { quantized: false, device: 'webgpu' } 
+                : { quantized: true, device: 'wasm' };
+
+            tts = await pipeline('text-to-speech', 'onnx-community/Supertonic-TTS-ONNX', pipeOptions);
+            genBtn.disabled = false;
+            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+        } catch (err) {
+            console.error("Local Model load failed:", err);
+            btnText.innerHTML = 'Speak (Native)';
+            genBtn.disabled = false;
+        }
     }
 
     function startTTSProgress() {
@@ -851,57 +765,50 @@ const defaultCategories = {
         lastSpoken = text;
         addToConversation('you', text);
 
-        const apiKey = xaiApiKeyInput.value.trim();
-        
-        if (apiKey) {
+        if (tts) {
             startTTSProgress();
             try {
-                // Grok voices: rex (Male), ara (Female)
-                const voice = selectedVoice === 'M1' ? 'rex' : 'ara';
-                const res = await fetch('https://api.x.ai/v1/audio/speech', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: "tts-1",
-                        input: text,
-                        voice: voice
-                    })
-                });
-                
-                if (!res.ok) throw new Error("Grok TTS failed");
-                
-                const blob = await res.blob();
-                player.src = URL.createObjectURL(blob);
+                const speakerUrl = `https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/${selectedVoice}.bin`;
+                const output = await tts(text, { speaker_embeddings: speakerUrl, num_inference_steps: Number(stepsInput.value), speed: 1.0 });
+                const wav = floatTo16BitPcmWav(output.audio, 44100);
+                player.src = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
                 completeTTSProgress();
                 player.play().catch(() => {});
-                return;
             } catch (err) {
-                console.warn("Grok TTS Error, falling back to native:", err);
                 completeTTSProgress();
                 nativeSpeak(text);
             }
-        } else {
-            nativeSpeak(text);
-        }
+        } else nativeSpeak(text);
     }
 
     function nativeSpeak(text) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
-        const voices = speechSynthesis.getVoices();
-        if (voices.length > 0) {
-            const isMale = selectedVoice === 'M1';
-            const voiceMatch = voices.find(v => v.lang.startsWith('en') && (isMale ? v.name.toLowerCase().includes('male') : v.name.toLowerCase().includes('female')));
-            if (voiceMatch) u.voice = voiceMatch;
-        }
-        
         u.onstart = () => { isTTSPlaying = true; };
         u.onend = () => { isTTSPlaying = false; };
         u.onerror = () => { isTTSPlaying = false; };
         speechSynthesis.speak(u);
+    }
+
+    function floatTo16BitPcmWav(samples, sampleRate) {
+        const numChannels = 1, bitsPerSample = 16, bytesPerSample = 2;
+        const dataLen = samples.length * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataLen);
+        const view = new DataView(buffer);
+        const writeStr = (offset, str) => { for(let i=0; i<str.length; i++) view.setUint8(offset+i, str.charCodeAt(i)); };
+        
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * bytesPerSample, true);
+        view.setUint16(32, bytesPerSample, true); view.setUint16(34, bitsPerSample, true);
+        writeStr(36, 'data'); view.setUint32(40, dataLen, true);
+        for (let i = 0, offset = 44; i < samples.length; i++, offset += 2) {
+            let s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        return buffer;
     }
 
 // ────────────────────────────────────────────────
@@ -1026,36 +933,25 @@ listenBtn.onclick = async () => {
             recognition.stop();
             recognition = null; 
         }
-        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
         utteranceCount = 0;
     } else {
         intentionallyStopped = false;
         updateMicUI(true);
-        
-        const apiKey = xaiApiKeyInput.value.trim();
-        if (apiKey && !useSystemSTTFallback) {
-            await initVisualizer();
-        } else {
-            if (!('webkitSpeechRecognition' in window)) {
-                alert("Speech recognition is not supported in this browser.");
-                intentionallyStopped = true;
-                updateMicUI(false);
-                return;
-            }
-            initOrRestartRecognition();
-            initVisualizer();
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("Speech recognition is not supported in this browser.");
+            intentionallyStopped = true;
+            updateMicUI(false);
+            return;
         }
+        initOrRestartRecognition();
+        initVisualizer();
     }
 };
 
 // Auto-start initialization
 setTimeout(async () => {
     if (!intentionallyStopped) {
-        const apiKey = xaiApiKeyInput.value.trim();
-        if (apiKey && !useSystemSTTFallback) {
-            updateMicUI(true);
-            await initVisualizer();
-        } else if ('webkitSpeechRecognition' in window) {
+        if ('webkitSpeechRecognition' in window) {
             initOrRestartRecognition();
             initVisualizer();
         } else {
@@ -1100,15 +996,11 @@ setTimeout(async () => {
         
         Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
 
-        const apiKey = xaiApiKeyInput.value.trim();
-        const url = apiKey ? 'https://api.x.ai/v1/chat/completions' : API_URL;
-        const headers = { 'Content-Type': 'application/json' };
-        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
         try {
-            const res = await fetch(url, {
+            // Using your existing backend API!
+            const res = await fetch(API_URL, {
                 method: 'POST',
-                headers: headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     model: 'grok-3-mini', 
                     messages: [{ role: 'user', content: prompt }], 
