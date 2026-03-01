@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALS Communicator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
     <style>
         body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
         
@@ -32,8 +31,6 @@
         .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
         .save-phrase-btn { font-size: 0.75rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
         .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
-        
-        #progressFill { background: #22c55e; height: 100%; width: 0%; transition: width 0.3s ease-out; }
         
         .modal-overlay { backdrop-filter: blur(5px); }
         .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
@@ -63,13 +60,12 @@
             </div>
             
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-2">
-                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
-                    <span id="btnText" class="z-10 relative">Loading...</span>
-                    <div id="ttsProgressContainer" class="absolute bottom-0 left-0 w-full h-1 bg-black bg-opacity-40 hidden">
-                        <div id="progressFill"></div>
-                    </div>
+                <button id="genBtn" class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
+                    <span id="btnText" class="z-10 relative"><span class="text-3xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
-                <button id="listenBtn" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">🎤</span>Listen</button>
+                <button id="listenBtn" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-xl leading-none mb-1">🎤</span>Mic OFF
+                </button>
                 <button id="grokSuggestBtn" class="col-span-2 md:col-span-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">🤖</span>AI Reply</button>
                 <button id="replayBtn" class="col-span-2 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">🔄</span>Replay</button>
                 <button id="clearBtn" class="col-span-2 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center"><span class="text-xl leading-none mb-1">❌</span>Clear</button>
@@ -118,11 +114,12 @@
             </div>
             
             <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-lg">AI Voice Persona</label>
+                <label class="font-bold text-slate-300 text-lg">AI Voice Persona (System)</label>
                 <div class="flex gap-3 h-12">
-                    <button id="btnM1" class="flex-1 bg-slate-700 border-2 border-blue-500 text-white font-bold text-lg rounded-xl transition-all shadow-md">Male (M1)</button>
-                    <button id="btnF1" class="flex-1 bg-slate-700 border-2 border-transparent text-slate-400 font-bold text-lg rounded-xl transition-all shadow-md">Female (F1)</button>
+                    <button id="btnM1" class="flex-1 bg-slate-700 border-2 border-blue-500 text-white font-bold text-lg rounded-xl transition-all shadow-md">Male</button>
+                    <button id="btnF1" class="flex-1 bg-slate-700 border-2 border-transparent text-slate-400 font-bold text-lg rounded-xl transition-all shadow-md">Female</button>
                 </div>
+                <p class="text-xs text-slate-400">Attempts to match your device's built-in voices based on preference.</p>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
@@ -151,15 +148,10 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 border-t border-slate-700 pt-3">
-                <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>TTS Quality</span><span id="stepsVal" class="text-green-400">18</span></div>
-                    <input type="range" id="steps" min="5" max="30" value="18" step="1" class="my-2">
-                </div>
-                <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300 text-md"><span>Mic Sensitivity</span><span id="micSensVal" class="text-green-400">80%</span></div>
-                    <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
-                </div>
+            <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
+                <div class="flex justify-between font-bold text-slate-300 text-md"><span>Mic Sensitivity</span><span id="micSensVal" class="text-green-400">80%</span></div>
+                <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
+                <p class="text-xs text-slate-400">Adjust to filter out background noise on desktop.</p>
             </div>
 
             <div class="flex flex-col gap-2 border-t border-slate-700 pt-3">
@@ -176,33 +168,7 @@
         </div>
     </div>
 
-    <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
-        <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
-            <h3 class="text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
-            <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Phrase Text:</label>
-                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500 resize-none h-28 shadow-inner"></textarea>
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Category:</label>
-                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
-            </div>
-            <div class="flex justify-between mt-4 gap-2">
-                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">🗑️ Delete</button>
-                <div class="flex gap-2 w-full justify-end">
-                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">Cancel</button>
-                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 md:px-10 rounded-xl transition-all shadow-md">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <audio id="player" class="hidden"></audio>
-
-<script type="module">
-    // Restoring the HuggingFace local model processing
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/+esm';
-
+<script>
     const API_URL = '/api/grok';
 
     const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
@@ -213,7 +179,6 @@
     const genBtn            = document.getElementById('genBtn');
     const btnText           = document.getElementById('btnText');
     const replayBtn         = document.getElementById('replayBtn');
-    const player            = document.getElementById('player');
     const listenBtn         = document.getElementById('listenBtn');
     const grokSuggestBtn    = document.getElementById('grokSuggestBtn');
     const grokSuggestionsEl = document.getElementById('grokSuggestions');
@@ -240,8 +205,6 @@
     const btnM1             = document.getElementById('btnM1');
     const btnActionSpeak    = document.getElementById('btnActionSpeak');
     const btnActionType     = document.getElementById('btnActionType');
-    const stepsInput        = document.getElementById('steps');
-    const stepsVal          = document.getElementById('stepsVal');
     const replyLenSlider    = document.getElementById('replyLenSlider');
     const replyLenVal       = document.getElementById('replyLenVal');
     const aiCountSlider     = document.getElementById('aiCountSlider');
@@ -318,7 +281,6 @@ const defaultCategories = {
     let clickAction = 'speak'; 
     let lastSpoken = '';
     
-    let tts = null;
     let intentionallyStopped = false; // Allow auto-start on load
     let isTTSPlaying = false; 
     let editingPhraseIndex = -1;
@@ -618,7 +580,6 @@ const defaultCategories = {
     btnM1.onclick = () => { selectedVoice = 'M1'; updateVoiceUI(); };
     btnF1.onclick = () => { selectedVoice = 'F1'; updateVoiceUI(); };
     
-    stepsInput.addEventListener('input', e => stepsVal.textContent = e.target.value);
     aiContextSlider.addEventListener('input', e => aiContextVal.textContent = e.target.value + " msgs");
     micSensSlider.addEventListener('input', e => micSensVal.textContent = e.target.value + "%");
     
@@ -696,56 +657,14 @@ const defaultCategories = {
     }
 
     // ────────────────────────────────────────────────
-    // TTS INIT & PLAYBACK
+    // TTS INIT & PLAYBACK (NATIVE SYSTEM VOICES ONLY)
     // ────────────────────────────────────────────────
-    player.onplay = () => { isTTSPlaying = true; };
-    player.onended = () => { isTTSPlaying = false; };
-    player.onpause = () => { isTTSPlaying = false; };
-
-    async function initTTS() {
-        try {
-            btnText.textContent = 'Loading...';
-            
-            // WebGPU vs WASM logic for Transformers.js
-            const hasWebGPU = navigator.gpu !== undefined;
-            const useWebGPU = hasWebGPU && !isMobileDevice; 
-            
-            const pipeOptions = useWebGPU 
-                ? { quantized: false, device: 'webgpu' } 
-                : { quantized: true, device: 'wasm' };
-
-            tts = await pipeline('text-to-speech', 'onnx-community/Supertonic-TTS-ONNX', pipeOptions);
-            genBtn.disabled = false;
-            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
-        } catch (err) {
-            console.error("Local Model load failed:", err);
-            btnText.innerHTML = 'Speak (Native)';
-            genBtn.disabled = false;
+    function initTTS() {
+        if ('speechSynthesis' in window) {
+            // Trigger voice load
+            speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
         }
-    }
-
-    function startTTSProgress() {
-        btnText.textContent = 'Generating...';
-        document.getElementById('ttsProgressContainer').classList.remove('hidden');
-        progressFill.style.width = '0%';
-        genBtn.disabled = true;
-
-        let width = 0;
-        let progInt = setInterval(() => {
-            width += (90 - width) * 0.15;
-            progressFill.style.width = width + '%';
-            if (width > 99) clearInterval(progInt);
-        }, 100);
-    }
-
-    function completeTTSProgress() {
-        progressFill.style.width = '100%';
-        setTimeout(() => {
-            document.getElementById('ttsProgressContainer').classList.add('hidden');
-            progressFill.style.width = '0%';
-            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
-            genBtn.disabled = false;
-        }, 200);
     }
 
     genBtn.onclick = () => {
@@ -760,55 +679,38 @@ const defaultCategories = {
     replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
     document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
-    async function speak(text) {
+    function speak(text) {
         if (!text) return;
         lastSpoken = text;
         addToConversation('you', text);
 
-        if (tts) {
-            startTTSProgress();
-            try {
-                const speakerUrl = `https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/${selectedVoice}.bin`;
-                const output = await tts(text, { speaker_embeddings: speakerUrl, num_inference_steps: Number(stepsInput.value), speed: 1.0 });
-                const wav = floatTo16BitPcmWav(output.audio, 44100);
-                player.src = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
-                completeTTSProgress();
-                player.play().catch(() => {});
-            } catch (err) {
-                completeTTSProgress();
-                nativeSpeak(text);
-            }
-        } else nativeSpeak(text);
-    }
+        genBtn.disabled = true;
+        btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>...';
 
-    function nativeSpeak(text) {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
-        u.onstart = () => { isTTSPlaying = true; };
-        u.onend = () => { isTTSPlaying = false; };
-        u.onerror = () => { isTTSPlaying = false; };
-        speechSynthesis.speak(u);
-    }
-
-    function floatTo16BitPcmWav(samples, sampleRate) {
-        const numChannels = 1, bitsPerSample = 16, bytesPerSample = 2;
-        const dataLen = samples.length * bytesPerSample;
-        const buffer = new ArrayBuffer(44 + dataLen);
-        const view = new DataView(buffer);
-        const writeStr = (offset, str) => { for(let i=0; i<str.length; i++) view.setUint8(offset+i, str.charCodeAt(i)); };
+        const voices = speechSynthesis.getVoices();
         
-        writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true);
-        writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
-        view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-        view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * bytesPerSample, true);
-        view.setUint16(32, bytesPerSample, true); view.setUint16(34, bitsPerSample, true);
-        writeStr(36, 'data'); view.setUint32(40, dataLen, true);
-        for (let i = 0, offset = 44; i < samples.length; i++, offset += 2) {
-            let s = Math.max(-1, Math.min(1, samples[i]));
-            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        if (voices.length > 0) {
+            const isMale = selectedVoice === 'M1';
+            // Attempt to pick a matching gendered voice from device
+            const voiceMatch = voices.find(v => v.lang.startsWith('en') && (isMale ? v.name.toLowerCase().includes('male') : v.name.toLowerCase().includes('female')));
+            if (voiceMatch) u.voice = voiceMatch;
         }
-        return buffer;
+        
+        u.onstart = () => { isTTSPlaying = true; };
+        u.onend = () => { 
+            isTTSPlaying = false; 
+            genBtn.disabled = false;
+            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+        };
+        u.onerror = () => { 
+            isTTSPlaying = false; 
+            genBtn.disabled = false;
+            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+        };
+        
+        speechSynthesis.speak(u);
     }
 
 // ────────────────────────────────────────────────
@@ -819,9 +721,13 @@ function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
         listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
+        // Clear indication that it is listening
+        listenBtn.innerHTML = '<span class="text-xl leading-none mb-1 animate-pulse">🔴</span>Mic ON';
     } else {
         listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
         listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
+        // Clear indication that it is off
+        listenBtn.innerHTML = '<span class="text-xl leading-none mb-1">🎤</span>Mic OFF';
     }
 }
 
