@@ -41,7 +41,7 @@
         canvas { image-rendering: pixelated; }
     </style>
 </head>
-<body class="flex flex-col md:h-screen md:overflow-hidden">
+<body class="flex flex-col h-[100dvh] overflow-hidden">
 
     <header class="flex justify-between items-center bg-gray-900 p-3 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
         <h1 class="text-xl md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="hidden sm:inline">ALS Communicator</span></h1>
@@ -50,9 +50,9 @@
         </button>
     </header>
 
-    <main class="flex-grow flex flex-col md:flex-row gap-4 p-2 md:p-4 md:overflow-hidden">
+    <main class="flex-grow flex flex-col md:flex-row gap-4 p-2 md:p-4 min-h-0">
         
-        <div class="w-full md:w-1/2 flex flex-col gap-3 md:h-full md:overflow-hidden">
+        <div class="w-full md:w-1/2 flex flex-col gap-3 h-full min-h-0">
             
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-3 md:p-4 text-2xl md:text-3xl focus:border-green-500 outline-none resize-none h-24 md:h-36 shadow-inner transition-colors" placeholder="Type and press Enter..."></textarea>
@@ -60,7 +60,7 @@
             </div>
             
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-2">
-                <button id="genBtn" class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
+                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
                     <span id="btnText" class="z-10 relative"><span class="text-3xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
                 <button id="listenBtn" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
@@ -81,13 +81,13 @@
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-2 pb-1"></div>
             </div>
 
-            <div class="shrink-0 md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-40 md:h-full md:overflow-hidden shadow-sm">
+            <div class="md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-40 md:h-auto min-h-[150px] shadow-sm min-h-0">
                 <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0">Conversation Log</div>
-                <div id="conversationHistory" class="flex-grow overflow-y-auto p-3 flex flex-col gap-2"></div>
+                <div id="conversationHistory" class="flex-grow overflow-y-auto p-3 flex flex-col gap-2 min-h-0"></div>
             </div>
         </div>
 
-        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[400px] md:h-full md:overflow-hidden shadow-sm mt-2 md:mt-0">
+        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[400px] h-full shadow-sm mt-2 md:mt-0 min-h-0">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
@@ -102,7 +102,7 @@
                 <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
             </div>
             
-            <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-2 p-3 content-start"></div>
+            <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-2 p-3 content-start min-h-0"></div>
         </div>
     </main>
 
@@ -114,12 +114,9 @@
             </div>
             
             <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-lg">AI Voice Persona (System)</label>
-                <div class="flex gap-3 h-12">
-                    <button id="btnM1" class="flex-1 bg-slate-700 border-2 border-blue-500 text-white font-bold text-lg rounded-xl transition-all shadow-md">Male</button>
-                    <button id="btnF1" class="flex-1 bg-slate-700 border-2 border-transparent text-slate-400 font-bold text-lg rounded-xl transition-all shadow-md">Female</button>
-                </div>
-                <p class="text-xs text-slate-400">Attempts to match your device's built-in voices based on preference.</p>
+                <label class="font-bold text-slate-300 text-lg">System Voice</label>
+                <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-lg rounded-xl p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors"></select>
+                <p class="text-xs text-slate-400 mt-1">Select from the actual voices installed on your device.</p>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
@@ -222,8 +219,8 @@
     const openSettingsBtn   = document.getElementById('openSettingsBtn');
     const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
     const settingsModal     = document.getElementById('settingsModal');
-    const btnF1             = document.getElementById('btnF1');
-    const btnM1             = document.getElementById('btnM1');
+    
+    const voiceSelect       = document.getElementById('voiceSelect'); // NEW Dropdown
     const btnActionSpeak    = document.getElementById('btnActionSpeak');
     const btnActionType     = document.getElementById('btnActionType');
     const replyLenSlider    = document.getElementById('replyLenSlider');
@@ -298,7 +295,6 @@ const defaultCategories = {
     let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
     
     let isEditMode = false;
-    let selectedVoice = 'M1'; 
     let clickAction = 'speak'; 
     let lastSpoken = '';
     
@@ -499,7 +495,11 @@ const defaultCategories = {
         appendMessageUI(speaker, text);
     }
     
-    function scrollToBottom() { setTimeout(() => { convHistoryEl.scrollTop = convHistoryEl.scrollHeight; }, 10); }
+    function scrollToBottom() { 
+        setTimeout(() => { 
+            convHistoryEl.scrollTo({ top: convHistoryEl.scrollHeight, behavior: 'smooth' });
+        }, 10); 
+    }
 
     window.openSaveFromHistory = (text) => {
         isEditMode = true; 
@@ -589,17 +589,52 @@ const defaultCategories = {
     // ────────────────────────────────────────────────
     // VOICE SETTINGS & SLIDERS
     // ────────────────────────────────────────────────
-    function updateVoiceUI() {
-        if(selectedVoice === 'M1') {
-            btnM1.className = 'flex-1 bg-slate-700 border-2 border-blue-500 text-white font-bold text-lg rounded-xl transition-all shadow-md';
-            btnF1.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-lg rounded-xl transition-all shadow-md';
-        } else {
-            btnF1.className = 'flex-1 bg-slate-700 border-2 border-blue-500 text-white font-bold text-lg rounded-xl transition-all shadow-md';
-            btnM1.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-lg rounded-xl transition-all shadow-md';
+    let availableVoices = [];
+
+    function populateVoiceList() {
+        if (typeof speechSynthesis === 'undefined') return;
+        
+        availableVoices = speechSynthesis.getVoices();
+        voiceSelect.innerHTML = '';
+        
+        // Filter to English voices for clarity, but if none exist, show all
+        let enVoices = availableVoices.filter(v => v.lang.startsWith('en'));
+        if (enVoices.length === 0) enVoices = availableVoices;
+
+        const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+        let foundSaved = false;
+
+        enVoices.forEach((voice) => {
+            const option = document.createElement('option');
+            // Clean up the name for readability
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.value = voice.voiceURI;
+            
+            if (voice.voiceURI === savedVoiceURI) {
+                option.selected = true;
+                foundSaved = true;
+            }
+            voiceSelect.appendChild(option);
+        });
+
+        // Auto-select the first English voice if none is saved
+        if (!foundSaved && enVoices.length > 0) {
+            voiceSelect.selectedIndex = 0;
+            localStorage.setItem('selectedVoiceURI', voiceSelect.value);
         }
     }
-    btnM1.onclick = () => { selectedVoice = 'M1'; updateVoiceUI(); };
-    btnF1.onclick = () => { selectedVoice = 'F1'; updateVoiceUI(); };
+
+    // Load voices
+    if ('speechSynthesis' in window) {
+        populateVoiceList();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+    }
+
+    voiceSelect.addEventListener('change', () => {
+        localStorage.setItem('selectedVoiceURI', voiceSelect.value);
+    });
     
     aiContextSlider.addEventListener('input', e => aiContextVal.textContent = e.target.value + " msgs");
     micSensSlider.addEventListener('input', e => micSensVal.textContent = e.target.value + "%");
@@ -677,13 +712,10 @@ const defaultCategories = {
     }
 
     // ────────────────────────────────────────────────
-    // NATIVE SYSTEM TEXT-TO-SPEECH (ECHO-PROOFED)
+    // NATIVE SYSTEM TEXT-TO-SPEECH (ECHO-PROOFED & BUG-PROOFED)
     // ────────────────────────────────────────────────
     function initTTS() {
-        if ('speechSynthesis' in window) {
-            speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
-        }
+        genBtn.disabled = false;
     }
 
     genBtn.onclick = () => {
@@ -699,15 +731,15 @@ const defaultCategories = {
     document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
     let wasMicActive = false; // Remembers if mic was listening before TTS started
-    window.currentUtterance = null; // FIX: Prevents Chrome from garbage-collecting the speech object
-    window.ttsFallbackTimer = null; // FIX: Global fallback timer
+    window.currentUtterance = null; // Prevents Chrome from garbage-collecting the speech object
+    window.ttsFallbackTimer = null; // Global fallback timer
 
     function speak(text) {
         if (!text) return;
         lastSpoken = text;
         addToConversation('you', text);
 
-        // FIX: Always flush the browser's speech queue first to prevent getting stuck
+        // ALWAYS flush the browser's speech queue first to prevent getting stuck
         window.speechSynthesis.cancel();
 
         genBtn.disabled = true;
@@ -728,13 +760,13 @@ const defaultCategories = {
         const u = new SpeechSynthesisUtterance(text);
         window.currentUtterance = u; // Attach to window to prevent Chrome memory deletion bug
         
-        u.lang = 'en-US';
-        const voices = speechSynthesis.getVoices();
-        
-        if (voices.length > 0) {
-            const isMale = selectedVoice === 'M1';
-            const voiceMatch = voices.find(v => v.lang.startsWith('en') && (isMale ? v.name.toLowerCase().includes('male') : v.name.toLowerCase().includes('female')));
-            if (voiceMatch) u.voice = voiceMatch;
+        // Grab the precise voice the user selected in the dropdown
+        const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+        if (savedVoiceURI && availableVoices.length > 0) {
+            const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
+            if (exactVoice) u.voice = exactVoice;
+        } else {
+            u.lang = 'en-US'; // safe default
         }
         
         const unlockMic = () => {
@@ -754,7 +786,7 @@ const defaultCategories = {
             }, 800);
         };
 
-        // FIX: Start the failsafe timer IMMEDIATELY. This guarantees the button 
+        // START THE FAILSAFE TIMER IMMEDIATELY. This guarantees the button 
         // will unlock even if the Chrome speech engine crashes entirely.
         const estimatedTimeMs = (text.length * 100) + 3000; 
         clearTimeout(window.ttsFallbackTimer);
@@ -998,7 +1030,7 @@ setTimeout(async () => {
     // ────────────────────────────────────────────────
     // INIT
     // ────────────────────────────────────────────────
-    updateVoiceUI();
+    updateActionUI();
     renderCategories();
     renderPhrases();
     renderConversationHistory();
