@@ -60,7 +60,7 @@
             </div>
             
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-2">
-                <button id="genBtn" class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
+                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
                     <span id="btnText" class="z-10 relative"><span class="text-3xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
                 <button id="listenBtn" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
@@ -162,6 +162,27 @@
             <button id="clearHistoryBtn" class="mt-2 bg-red-900/50 hover:bg-red-800 text-red-300 font-bold py-2 rounded-xl transition-all border border-red-800 shadow-md">
                 🗑️ Clear Conversation History
             </button>
+        </div>
+    </div>
+
+    <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
+        <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
+            <h3 class="text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
+            <div class="flex flex-col gap-1">
+                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Phrase Text:</label>
+                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500 resize-none h-28 shadow-inner"></textarea>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Category:</label>
+                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
+            </div>
+            <div class="flex justify-between mt-4 gap-2">
+                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">🗑️ Delete</button>
+                <div class="flex gap-2 w-full justify-end">
+                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">Cancel</button>
+                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 md:px-10 rounded-xl transition-all shadow-md">Save</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -689,6 +710,10 @@ const defaultCategories = {
     // ────────────────────────────────────────────────
     // NATIVE SYSTEM TEXT-TO-SPEECH (BUG-PROOFED)
     // ────────────────────────────────────────────────
+    function initTTS() {
+        genBtn.disabled = false;
+    }
+
     genBtn.onclick = () => {
         const text = textInput.value.trim();
         if (text) {
@@ -702,16 +727,34 @@ const defaultCategories = {
     document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
     let wasMicActive = false; 
+    let unlockCalled = false;
     let ttsFallbackTimer = null; 
-    let unlockCalled = false; // Prevents double-execution of the unlock logic
+
+    // Reusable function to unlock the UI and Microphone after speech ends or crashes
+    function unlockMic() {
+        if (unlockCalled) return; 
+        unlockCalled = true;
+        
+        clearTimeout(ttsFallbackTimer);
+        genBtn.disabled = false;
+        btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+
+        setTimeout(() => { 
+            isTTSPlaying = false; 
+            if (wasMicActive && intentionallyStopped) {
+                intentionallyStopped = false;
+                initOrRestartRecognition();
+            }
+        }, 800);
+    }
 
     function speak(text) {
         if (!text) return;
         lastSpoken = text;
         addToConversation('you', text);
 
-        // FIX 1: Aggressively wake up and reset the Chrome OS engine before generating new speech
-        window.speechSynthesis.resume();
+        // CLEAR everything first
+        clearTimeout(ttsFallbackTimer);
         window.speechSynthesis.cancel();
 
         genBtn.disabled = true;
@@ -729,44 +772,30 @@ const defaultCategories = {
             }
         }
 
-        // FIX 2: Attach to global window object to prevent garbage collection crashes
-        window.currentUtterance = new SpeechSynthesisUtterance(text);
-        
-        const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
-        if (savedVoiceURI && availableVoices.length > 0) {
-            const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
-            if (exactVoice) window.currentUtterance.voice = exactVoice;
-        } else {
-            window.currentUtterance.lang = 'en-US'; 
-        }
-        
-        const unlockMic = () => {
-            if (unlockCalled) return; 
-            unlockCalled = true;
+        // CRITICAL FIX: The browser needs a tiny delay after cancel() before it can speak() again.
+        // Without this delay, the speech is silently dropped and the UI freezes forever.
+        setTimeout(() => {
+            window.currentUtterance = new SpeechSynthesisUtterance(text);
             
-            clearTimeout(ttsFallbackTimer);
-            genBtn.disabled = false;
-            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+            const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+            if (savedVoiceURI && availableVoices.length > 0) {
+                const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
+                if (exactVoice) window.currentUtterance.voice = exactVoice;
+            } else {
+                window.currentUtterance.lang = 'en-US'; 
+            }
+            
+            const estimatedTimeMs = (text.length * 100) + 3000; 
+            ttsFallbackTimer = setTimeout(() => {
+                console.warn("TTS failsafe triggered to prevent freeze.");
+                unlockMic();
+            }, estimatedTimeMs);
 
-            setTimeout(() => { 
-                isTTSPlaying = false; 
-                if (wasMicActive && intentionallyStopped) {
-                    intentionallyStopped = false;
-                    initOrRestartRecognition();
-                }
-            }, 800);
-        };
-
-        // FIX 3: Start the timer instantly. Even if the TTS completely hangs, 
-        // the button will unlock in a few seconds based on sentence length.
-        const estimatedTimeMs = (text.length * 80) + 2500; 
-        clearTimeout(ttsFallbackTimer);
-        ttsFallbackTimer = setTimeout(unlockMic, estimatedTimeMs);
-
-        window.currentUtterance.onend = unlockMic;
-        window.currentUtterance.onerror = unlockMic;
-        
-        speechSynthesis.speak(window.currentUtterance);
+            window.currentUtterance.onend = unlockMic;
+            window.currentUtterance.onerror = unlockMic;
+            
+            window.speechSynthesis.speak(window.currentUtterance);
+        }, 50);
     }
 
 // ────────────────────────────────────────────────
@@ -1000,6 +1029,7 @@ setTimeout(async () => {
     renderCategories();
     renderPhrases();
     renderConversationHistory();
+    initTTS();
 
 </script>
 </body>
