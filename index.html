@@ -60,7 +60,7 @@
             </div>
             
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-2">
-                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
+                <button id="genBtn" class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-2xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-3 md:py-2 disabled:opacity-50 relative overflow-hidden">
                     <span id="btnText" class="z-10 relative"><span class="text-3xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
                 <button id="listenBtn" class="col-span-2 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow-md py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
@@ -165,27 +165,6 @@
         </div>
     </div>
 
-    <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
-        <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
-            <h3 class="text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
-            <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Phrase Text:</label>
-                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-xl text-white outline-none focus:border-blue-500 resize-none h-28 shadow-inner"></textarea>
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-sm uppercase tracking-wider">Category:</label>
-                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
-            </div>
-            <div class="flex justify-between mt-4 gap-2">
-                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">🗑️ Delete</button>
-                <div class="flex gap-2 w-full justify-end">
-                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 md:px-6 rounded-xl transition-all shadow-md">Cancel</button>
-                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 md:px-10 rounded-xl transition-all shadow-md">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 <script>
     const API_URL = '/api/grok';
 
@@ -220,7 +199,7 @@
     const closeSettingsBtn  = document.getElementById('closeSettingsBtn');
     const settingsModal     = document.getElementById('settingsModal');
     
-    const voiceSelect       = document.getElementById('voiceSelect'); // NEW Dropdown
+    const voiceSelect       = document.getElementById('voiceSelect');
     const btnActionSpeak    = document.getElementById('btnActionSpeak');
     const btnActionType     = document.getElementById('btnActionType');
     const replyLenSlider    = document.getElementById('replyLenSlider');
@@ -307,7 +286,7 @@ const defaultCategories = {
     let maxVolumeInWindow = 0;
     let visualizerActive = false;
 
-    // Detect if the user is on mobile to apply specific Android fixes
+    // Detect if user is on mobile/tablet to adjust UX constraints
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // ────────────────────────────────────────────────
@@ -597,7 +576,6 @@ const defaultCategories = {
         availableVoices = speechSynthesis.getVoices();
         voiceSelect.innerHTML = '';
         
-        // Filter to English voices for clarity, but if none exist, show all
         let enVoices = availableVoices.filter(v => v.lang.startsWith('en'));
         if (enVoices.length === 0) enVoices = availableVoices;
 
@@ -606,7 +584,6 @@ const defaultCategories = {
 
         enVoices.forEach((voice) => {
             const option = document.createElement('option');
-            // Clean up the name for readability
             option.textContent = `${voice.name} (${voice.lang})`;
             option.value = voice.voiceURI;
             
@@ -617,14 +594,12 @@ const defaultCategories = {
             voiceSelect.appendChild(option);
         });
 
-        // Auto-select the first English voice if none is saved
         if (!foundSaved && enVoices.length > 0) {
             voiceSelect.selectedIndex = 0;
             localStorage.setItem('selectedVoiceURI', voiceSelect.value);
         }
     }
 
-    // Load voices
     if ('speechSynthesis' in window) {
         populateVoiceList();
         if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -712,12 +687,8 @@ const defaultCategories = {
     }
 
     // ────────────────────────────────────────────────
-    // NATIVE SYSTEM TEXT-TO-SPEECH (ECHO-PROOFED & BUG-PROOFED)
+    // NATIVE SYSTEM TEXT-TO-SPEECH (BUG-PROOFED)
     // ────────────────────────────────────────────────
-    function initTTS() {
-        genBtn.disabled = false;
-    }
-
     genBtn.onclick = () => {
         const text = textInput.value.trim();
         if (text) {
@@ -730,24 +701,25 @@ const defaultCategories = {
     replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
     document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
-    let wasMicActive = false; // Remembers if mic was listening before TTS started
-    window.currentUtterance = null; // Prevents Chrome from garbage-collecting the speech object
-    window.ttsFallbackTimer = null; // Global fallback timer
+    let wasMicActive = false; 
+    let ttsFallbackTimer = null; 
+    let unlockCalled = false; // Prevents double-execution of the unlock logic
 
     function speak(text) {
         if (!text) return;
         lastSpoken = text;
         addToConversation('you', text);
 
-        // ALWAYS flush the browser's speech queue first to prevent getting stuck
+        // FIX 1: Aggressively wake up and reset the Chrome OS engine before generating new speech
+        window.speechSynthesis.resume();
         window.speechSynthesis.cancel();
 
         genBtn.disabled = true;
         btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>...';
-
         isTTSPlaying = true;
+        unlockCalled = false; 
 
-        // HARD PAUSE: Kills the microphone so it absolutely cannot hear the device's own speaker
+        // Pause listening temporarily
         wasMicActive = !intentionallyStopped;
         if (wasMicActive) {
             intentionallyStopped = true;
@@ -757,45 +729,44 @@ const defaultCategories = {
             }
         }
 
-        const u = new SpeechSynthesisUtterance(text);
-        window.currentUtterance = u; // Attach to window to prevent Chrome memory deletion bug
+        // FIX 2: Attach to global window object to prevent garbage collection crashes
+        window.currentUtterance = new SpeechSynthesisUtterance(text);
         
-        // Grab the precise voice the user selected in the dropdown
         const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
         if (savedVoiceURI && availableVoices.length > 0) {
             const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
-            if (exactVoice) u.voice = exactVoice;
+            if (exactVoice) window.currentUtterance.voice = exactVoice;
         } else {
-            u.lang = 'en-US'; // safe default
+            window.currentUtterance.lang = 'en-US'; 
         }
         
         const unlockMic = () => {
-            if (!isTTSPlaying) return; 
-            clearTimeout(window.ttsFallbackTimer);
+            if (unlockCalled) return; 
+            unlockCalled = true;
             
+            clearTimeout(ttsFallbackTimer);
             genBtn.disabled = false;
             btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
 
-            // Wait an extra 800ms for the echo to clear the room before turning the mic back on
             setTimeout(() => { 
                 isTTSPlaying = false; 
-                if (wasMicActive) {
+                if (wasMicActive && intentionallyStopped) {
                     intentionallyStopped = false;
                     initOrRestartRecognition();
                 }
             }, 800);
         };
 
-        // START THE FAILSAFE TIMER IMMEDIATELY. This guarantees the button 
-        // will unlock even if the Chrome speech engine crashes entirely.
-        const estimatedTimeMs = (text.length * 100) + 3000; 
-        clearTimeout(window.ttsFallbackTimer);
-        window.ttsFallbackTimer = setTimeout(unlockMic, estimatedTimeMs);
+        // FIX 3: Start the timer instantly. Even if the TTS completely hangs, 
+        // the button will unlock in a few seconds based on sentence length.
+        const estimatedTimeMs = (text.length * 80) + 2500; 
+        clearTimeout(ttsFallbackTimer);
+        ttsFallbackTimer = setTimeout(unlockMic, estimatedTimeMs);
 
-        u.onend = unlockMic;
-        u.onerror = unlockMic;
+        window.currentUtterance.onend = unlockMic;
+        window.currentUtterance.onerror = unlockMic;
         
-        speechSynthesis.speak(u);
+        speechSynthesis.speak(window.currentUtterance);
     }
 
 // ────────────────────────────────────────────────
@@ -837,7 +808,6 @@ function createRecognition() {
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             intentionallyStopped = true;
             updateMicUI(false);
-            console.warn("Microphone access denied or requires user interaction first.");
         }
         else if (!intentionallyStopped) {
             setTimeout(restartListening, 300);
@@ -872,7 +842,7 @@ function createRecognition() {
                 const threshold = 150 - (sens * 1.5);
                 
                 if (visualizerActive && isDrawing && !isMobileDevice && maxVolumeInWindow < threshold) {
-                    console.log(`Ignored low volume: ${maxVolumeInWindow} < ${threshold}`);
+                    console.log(`Ignored low volume`);
                 } else if (finalText) {
                     addToConversation('other', finalText);
                     suggestStatus.textContent = 'Generating AI suggestions...';
@@ -915,7 +885,7 @@ function restartListening() {
 }
 
 listenBtn.onclick = async () => {
-    if (isTTSPlaying) return; // Prevent mic toggling while the device is actively speaking
+    if (isTTSPlaying) return; 
 
     if (!intentionallyStopped) {
         intentionallyStopped = true;
@@ -939,7 +909,6 @@ listenBtn.onclick = async () => {
     }
 };
 
-// Auto-start initialization
 setTimeout(async () => {
     if (!intentionallyStopped) {
         if ('webkitSpeechRecognition' in window) {
@@ -1027,14 +996,10 @@ setTimeout(async () => {
         else suggestStatus.textContent = 'Have a conversation first!';
     };
 
-    // ────────────────────────────────────────────────
-    // INIT
-    // ────────────────────────────────────────────────
     updateActionUI();
     renderCategories();
     renderPhrases();
     renderConversationHistory();
-    initTTS();
 
 </script>
 </body>
