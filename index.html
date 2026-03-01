@@ -677,7 +677,7 @@ const defaultCategories = {
     }
 
     // ────────────────────────────────────────────────
-    // TTS INIT & PLAYBACK (NATIVE SYSTEM VOICES ONLY)
+    // NATIVE SYSTEM TEXT-TO-SPEECH (ECHO-PROOFED)
     // ────────────────────────────────────────────────
     function initTTS() {
         if ('speechSynthesis' in window) {
@@ -698,6 +698,8 @@ const defaultCategories = {
     replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
     document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
+    let wasMicActive = false; // Remembers if mic was listening before TTS started
+
     function speak(text) {
         if (!text) return;
         lastSpoken = text;
@@ -705,6 +707,18 @@ const defaultCategories = {
 
         genBtn.disabled = true;
         btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>...';
+
+        isTTSPlaying = true;
+
+        // HARD PAUSE: Kills the microphone so it absolutely cannot hear the device's own speaker
+        wasMicActive = !intentionallyStopped;
+        if (wasMicActive) {
+            intentionallyStopped = true;
+            updateMicUI(false);
+            if (recognition) {
+                try { recognition.abort(); } catch(e) {}
+            }
+        }
 
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'en-US';
@@ -716,17 +730,33 @@ const defaultCategories = {
             if (voiceMatch) u.voice = voiceMatch;
         }
         
-        u.onstart = () => { isTTSPlaying = true; };
-        u.onend = () => { 
-            isTTSPlaying = false; 
+        // Failsafe timer: Mobile browsers occasionally fail to trigger the 'onend' event. 
+        // This calculates a generous padding time so the app never freezes.
+        let ttsFallbackTimer;
+        const estimatedTimeMs = (text.length * 100) + 2500; 
+
+        const unlockMic = () => {
+            if (!isTTSPlaying) return; 
+            clearTimeout(ttsFallbackTimer);
+            
             genBtn.disabled = false;
             btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+
+            // Wait an extra 800ms for the echo to clear the room before turning the mic back on
+            setTimeout(() => { 
+                isTTSPlaying = false; 
+                if (wasMicActive) {
+                    intentionallyStopped = false;
+                    initOrRestartRecognition();
+                }
+            }, 800);
         };
-        u.onerror = () => { 
-            isTTSPlaying = false; 
-            genBtn.disabled = false;
-            btnText.innerHTML = '<span class="text-3xl md:text-4xl leading-none">🔊</span>Speak';
+
+        u.onstart = () => {
+            ttsFallbackTimer = setTimeout(unlockMic, estimatedTimeMs);
         };
+        u.onend = unlockMic;
+        u.onerror = unlockMic;
         
         speechSynthesis.speak(u);
     }
@@ -786,7 +816,8 @@ function createRecognition() {
     };
 
     rec.onresult = (event) => {
-        if (isTTSPlaying) return;
+        // Double check just in case, though the hard pause should catch this
+        if (isTTSPlaying) return; 
 
         let currentTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -848,6 +879,8 @@ function restartListening() {
 }
 
 listenBtn.onclick = async () => {
+    if (isTTSPlaying) return; // Prevent mic toggling while the device is actively speaking
+
     if (!intentionallyStopped) {
         intentionallyStopped = true;
         updateMicUI(false);
