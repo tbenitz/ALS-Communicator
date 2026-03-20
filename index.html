@@ -136,13 +136,184 @@
     </div>
 
 <script>
-const API_URL = '/api/grok';  // ← YOUR ORIGINAL VERCEL PROXY RESTORED
+const API_URL = '/api/grok';
+const CORE_DICTIONARY = new Set(["yes","no","please","thank","help","pain","water","bathroom","hungry","tired","suction","mask","ventilator","position","hot","cold"]);
 
-// (all variables, render functions, speak, mic, visualizer, predictive text, modals, TTS sliders, etc. are exactly the same as the improved version I gave you before)
+let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
+    "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Can you repeat?"],
+    "Urgent Needs": ["I need suction.", "I am in pain.", "Bathroom please.", "I need water.", "Adjust my position.", "My mask is leaking.", "Turn me.", "I can't breathe."],
+    "Care": ["I love you.", "I'm tired.", "Scratch my head.", "Wipe my mouth.", "Too hot.", "Too cold."],
+    "Social": ["How are you?", "Tell me a joke.", "Good morning.", "I love you."]
+};
 
-const FAST_MODEL = 'grok-4.1-fast-non-reasoning'; // you can change this in your Vercel function if needed
+let usageCount = JSON.parse(localStorage.getItem('phraseUsage')) || {};
+let currentCategory = "Basics";
+let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
+let clickAction = 'speak';
+let isEditMode = false;
+let lastSpoken = '';
+let ttsRate = parseFloat(localStorage.getItem('ttsRate')) || 1.0;
+let ttsPitch = parseFloat(localStorage.getItem('ttsPitch')) || 1.0;
+let intentionallyStopped = false;
+let isTTSPlaying = false;
+let maxVolumeInWindow = 0;
+let recognition = null;
+let audioContext, analyser, microphone, dataArray;
+let visualizerActive = false;
+let isDrawing = false;
 
-// UPDATED generateGrokSuggestions – uses your Vercel proxy again
+const textInput = document.getElementById('textInput');
+const predictiveBar = document.getElementById('predictiveBar');
+const genBtn = document.getElementById('genBtn');
+const btnText = document.getElementById('btnText');
+const listenBtn = document.getElementById('listenBtn');
+const grokSuggestionsEl = document.getElementById('grokSuggestions');
+const suggestStatus = document.getElementById('suggestStatus');
+const convHistoryEl = document.getElementById('conversationHistory');
+const liveTranscript = document.getElementById('liveTranscript');
+const waveformCanvas = document.getElementById('waveformCanvas');
+const canvasCtx = waveformCanvas.getContext('2d');
+const categoryScroll = document.getElementById('categoryScroll');
+const phraseGridEl = document.getElementById('phraseGrid');
+const currentCategoryTitle = document.getElementById('currentCategoryTitle');
+const editToggleBtn = document.getElementById('editToggleBtn');
+const quickNeedsBar = document.getElementById('quickNeedsBar');
+const urgentFloatBtn = document.getElementById('urgentFloatBtn');
+const settingsModal = document.getElementById('settingsModal');
+
+const quickNeeds = [
+    {text:"Yes", emoji:"✅"}, {text:"No", emoji:"❌"},
+    {text:"Help!", emoji:"🆘"}, {text:"Pain", emoji:"😣"},
+    {text:"Bathroom", emoji:"🚽"}, {text:"Water", emoji:"💧"},
+    {text:"Suction", emoji:"🫁"}, {text:"Position", emoji:"🛏️"}
+];
+
+function renderQuickNeeds() {
+    quickNeedsBar.innerHTML = '';
+    quickNeeds.forEach(item => {
+        const b = document.createElement('button');
+        b.className = 'quick-btn bg-slate-800 hover:bg-emerald-700 text-white rounded-2xl font-bold flex flex-col items-center justify-center shadow-md transition-all';
+        b.innerHTML = `<span class="text-3xl mb-1">${item.emoji}</span><span class="text-sm">${item.text}</span>`;
+        b.onclick = () => { textInput.value = item.text; genBtn.click(); };
+        quickNeedsBar.appendChild(b);
+    });
+}
+
+function renderCategories() {
+    categoryScroll.innerHTML = '';
+    Object.keys(phraseCategories).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.textContent = cat;
+        btn.className = `shrink-0 px-6 py-3 text-base font-semibold rounded-2xl transition-all ${cat === currentCategory ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`;
+        btn.onclick = () => { currentCategory = cat; renderCategories(); renderPhrases(); };
+        categoryScroll.appendChild(btn);
+    });
+    currentCategoryTitle.textContent = currentCategory;
+}
+
+function renderPhrases() {
+    phraseGridEl.innerHTML = '';
+    if (!phraseCategories[currentCategory]) return;
+    phraseCategories[currentCategory].forEach((phrase, i) => {
+        const btn = document.createElement('button');
+        btn.className = `phrase-btn bg-slate-800 hover:bg-slate-700 text-white rounded-3xl shadow-md flex items-center justify-center text-center leading-tight transition-all ${isEditMode ? 'border-2 border-blue-500' : ''}`;
+        btn.textContent = phrase;
+        btn.onclick = isEditMode ? () => openModal(phrase, currentCategory, i) : () => handlePhraseTap(phrase);
+        phraseGridEl.appendChild(btn);
+    });
+}
+
+function trackUsage(phrase) {
+    usageCount[phrase] = (usageCount[phrase] || 0) + 1;
+    localStorage.setItem('phraseUsage', JSON.stringify(usageCount));
+}
+
+function ensureFavorites() {
+    if (!phraseCategories["Favorites"]) phraseCategories["Favorites"] = [];
+    const sorted = Object.keys(usageCount).sort((a,b) => usageCount[b] - usageCount[a]).slice(0,8);
+    phraseCategories["Favorites"] = sorted;
+}
+
+function handlePhraseTap(phrase) {
+    trackUsage(phrase);
+    if (clickAction === 'speak') {
+        textInput.value = phrase;
+        genBtn.click();
+    } else {
+        textInput.value += (textInput.value ? ' ' : '') + phrase;
+    }
+}
+
+function speak(text) {
+    if (!text) return;
+    lastSpoken = text;
+    trackUsage(text);
+    addToConversation('you', text);
+    const utterance = new SpeechSynthesisUtterance(text);
+    const savedVoice = localStorage.getItem('selectedVoiceURI');
+    if (savedVoice) {
+        const voices = speechSynthesis.getVoices();
+        const match = voices.find(v => v.voiceURI === savedVoice);
+        if (match) utterance.voice = match;
+    }
+    utterance.rate = ttsRate;
+    utterance.pitch = ttsPitch;
+    utterance.onend = () => { isTTSPlaying = false; genBtn.classList.remove('speaking'); };
+    window.speechSynthesis.speak(utterance);
+    genBtn.classList.add('speaking');
+    isTTSPlaying = true;
+}
+
+genBtn.onclick = () => {
+    const text = textInput.value.trim();
+    if (text) {
+        speak(text);
+        textInput.value = '';
+        predictiveBar.classList.add('hidden');
+    }
+};
+
+function addToConversation(speaker, text) {
+    const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    conversationHistory.push({ speaker, text, time });
+    localStorage.setItem('alsConversation', JSON.stringify(conversationHistory));
+    const div = document.createElement('div');
+    div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'} flex flex-col`;
+    div.innerHTML = `
+        <div class="text-xs opacity-70 mb-1">${speaker === 'you' ? 'You' : 'Partner'} • ${time}</div>
+        <div>${text}</div>
+    `;
+    if (speaker === 'other') {
+        const corr = document.createElement('button');
+        corr.className = 'correction-btn mt-2 text-[10px]';
+        corr.textContent = '↔️ This was me';
+        corr.onclick = () => {
+            const last = conversationHistory[conversationHistory.length-1];
+            last.speaker = 'you';
+            renderConversationHistory();
+            generateGrokSuggestions();
+        };
+        div.appendChild(corr);
+    }
+    convHistoryEl.appendChild(div);
+    convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
+    document.getElementById('historyCount').textContent = conversationHistory.length + ' msgs';
+}
+
+function renderConversationHistory() {
+    convHistoryEl.innerHTML = '';
+    conversationHistory.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `msg ${msg.speaker === 'you' ? 'msg-you' : 'msg-other'} flex flex-col`;
+        div.innerHTML = `
+            <div class="text-xs opacity-70 mb-1">${msg.speaker === 'you' ? 'You' : 'Partner'} • ${msg.time || ''}</div>
+            <div>${msg.text}</div>
+        `;
+        convHistoryEl.appendChild(div);
+    });
+    document.getElementById('historyCount').textContent = conversationHistory.length + ' msgs';
+}
+
 async function generateGrokSuggestions() {
     const num = parseInt(document.getElementById('aiCountSlider').value) || 4;
     const contextLimit = parseInt(document.getElementById('aiContextSlider').value) || 6;
@@ -150,16 +321,26 @@ async function generateGrokSuggestions() {
         .map(m => `${m.speaker === 'you' ? 'Me' : 'Partner'}: ${m.text}`)
         .join('\n');
     
-    const prompt = `You are a person with ALS using a speech device...`; // same great prompt as before
+    const prompt = `You are a person with ALS using a speech device. You speak in short, natural, casual sentences.
+Your partner just spoke. Give me exactly ${num} quick replies I could say next.
+Rules:
+- First person only ("I", "me")
+- Extremely casual, human tone
+- Max 12 words each
+- No offers to search or be helpful – just normal conversation
+Recent chat:
+${recent}
+
+Output ONLY the ${num} lines, nothing else.`;
 
     grokSuggestionsEl.innerHTML = `<div class="text-slate-400 py-6 text-center">Thinking fast...</div>`;
     
     try {
-        const res = await fetch(API_URL, {  // ← YOUR VERCEL ENDPOINT
+        const res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: FAST_MODEL,
+                model: 'grok-4.1-fast-non-reasoning',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 180,
                 temperature: 0.7
@@ -176,11 +357,204 @@ async function generateGrokSuggestions() {
             grokSuggestionsEl.appendChild(b);
         });
     } catch(e) {
-        suggestStatus.textContent = 'AI offline (check Vercel deployment)';
+        suggestStatus.textContent = 'AI offline (check Vercel)';
     }
 }
 
-// (rest of the code — mic, visualizer, modals, settings, init — exactly the same as the last working version)
+function updateMicUI(isListening) {
+    if (isListening) {
+        listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+        listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
+        listenBtn.innerHTML = '<span class="text-3xl">🔴</span><span class="text-xs mt-1">ON</span>';
+    } else {
+        listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+        listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
+        listenBtn.innerHTML = '<span class="text-3xl">🎤</span><span class="text-xs mt-1">PARTNER</span>';
+    }
+}
+
+function createRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return null;
+    const rec = new webkitSpeechRecognition();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.onstart = () => updateMicUI(true);
+    rec.onerror = () => { if (!intentionallyStopped) setTimeout(restartListening, 300); };
+    rec.onend = () => { if (!intentionallyStopped) setTimeout(restartListening, 400); };
+    rec.onresult = (event) => {
+        if (isTTSPlaying) return;
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) currentTranscript += event.results[i][0].transcript;
+        if (currentTranscript.trim()) {
+            liveTranscript.textContent = '🗣️ ' + currentTranscript;
+            liveTranscript.classList.remove('hidden');
+            clearTimeout(window.speechDebounceTimer);
+            window.speechDebounceTimer = setTimeout(() => {
+                addToConversation('other', currentTranscript.trim());
+                suggestStatus.textContent = 'Generating AI suggestions...';
+                generateGrokSuggestions();
+                liveTranscript.classList.add('hidden');
+            }, 1800);
+        }
+    };
+    return rec;
+}
+
+function initOrRestartRecognition() {
+    if (!recognition) recognition = createRecognition();
+    if (recognition && !intentionallyStopped) try { recognition.start(); } catch(e) {}
+}
+
+function restartListening() {
+    if (intentionallyStopped) return;
+    initOrRestartRecognition();
+}
+
+listenBtn.onclick = () => {
+    if (intentionallyStopped) {
+        intentionallyStopped = false;
+        updateMicUI(true);
+        initOrRestartRecognition();
+    } else {
+        intentionallyStopped = true;
+        updateMicUI(false);
+        if (recognition) recognition.stop();
+    }
+};
+
+async function initVisualizer() {
+    if (visualizerActive) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 64;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        visualizerActive = true;
+        drawWaveform();
+    } catch(e) {}
+}
+
+function drawWaveform() {
+    if (!visualizerActive) return;
+    requestAnimationFrame(drawWaveform);
+    analyser.getByteFrequencyData(dataArray);
+    waveformCanvas.width = waveformCanvas.offsetWidth;
+    waveformCanvas.height = waveformCanvas.offsetHeight;
+    canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+    const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
+    let x = 0;
+    for(let i = 0; i < dataArray.length; i++) {
+        const barHeight = dataArray[i] / 3;
+        canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.3})`;
+        canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 2;
+    }
+}
+
+let dynamicDictionary = [];
+function updateDictionary() {
+    let allWords = new Set(CORE_DICTIONARY);
+    Object.values(phraseCategories).flat().forEach(phrase => {
+        let words = phrase.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+        words.forEach(w => { if(w.length > 1) allWords.add(w); });
+    });
+    dynamicDictionary = Array.from(allWords);
+}
+textInput.addEventListener('input', () => {
+    const words = textInput.value.split(/\s+/);
+    const lastWord = words[words.length - 1].toLowerCase();
+    if (lastWord.length >= 1) {
+        let matches = dynamicDictionary.filter(w => w.startsWith(lastWord) && w !== lastWord);
+        if (matches.length > 0) {
+            predictiveBar.innerHTML = '';
+            predictiveBar.classList.remove('hidden');
+            matches.slice(0, 6).forEach(match => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold px-3 py-1.5 rounded-lg shrink-0 text-sm border border-slate-600';
+                btn.textContent = match;
+                btn.onclick = () => {
+                    words[words.length - 1] = match;
+                    textInput.value = words.join(' ') + ' ';
+                    predictiveBar.classList.add('hidden');
+                };
+                predictiveBar.appendChild(btn);
+            });
+        } else predictiveBar.classList.add('hidden');
+    } else predictiveBar.classList.add('hidden');
+});
+
+function openModal(phraseText, category, index) {
+    const newText = prompt("Edit phrase:", phraseText);
+    if (newText !== null) {
+        if (index > -1) phraseCategories[category][index] = newText;
+        else phraseCategories[category].push(newText);
+        localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
+        renderPhrases();
+    }
+}
+
+editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
+addCategoryBtn.onclick = () => {
+    const newCat = prompt("New category name:");
+    if (newCat) {
+        phraseCategories[newCat] = [];
+        currentCategory = newCat;
+        localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
+        renderCategories();
+        renderPhrases();
+    }
+};
+
+let availableVoices = [];
+function populateVoiceList() {
+    availableVoices = speechSynthesis.getVoices();
+    const select = document.getElementById('voiceSelect');
+    select.innerHTML = '';
+    availableVoices.filter(v => v.lang.startsWith('en')).forEach(voice => {
+        const opt = document.createElement('option');
+        opt.textContent = `${voice.name} (${voice.lang})`;
+        opt.value = voice.voiceURI;
+        select.appendChild(opt);
+    });
+}
+speechSynthesis.onvoiceschanged = populateVoiceList;
+populateVoiceList();
+
+document.getElementById('voiceSelect').addEventListener('change', (e) => {
+    localStorage.setItem('selectedVoiceURI', e.target.value);
+});
+
+document.getElementById('ttsRateSlider').oninput = (e) => {
+    ttsRate = parseFloat(e.target.value);
+    localStorage.setItem('ttsRate', ttsRate);
+    document.getElementById('ttsRateVal').textContent = ttsRate.toFixed(1) + '×';
+};
+document.getElementById('ttsPitchSlider').oninput = (e) => {
+    ttsPitch = parseFloat(e.target.value);
+    localStorage.setItem('ttsPitch', ttsPitch);
+    document.getElementById('ttsPitchVal').textContent = ttsPitch.toFixed(1);
+};
+
+document.getElementById('openSettingsBtn').onclick = () => settingsModal.classList.remove('hidden');
+document.getElementById('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
+
+document.getElementById('exportBtn').onclick = () => {
+    const data = { phrases: phraseCategories, history: conversationHistory };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ALS_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+};
+
+function initTTS() {
+    genBtn.disabled = false;
+    btnText.innerHTML = `<span class="text-4xl">🔊</span><span>SPEAK</span>`;
+}
 
 renderQuickNeeds();
 ensureFavorites();
@@ -199,7 +573,7 @@ setTimeout(() => {
     }
 }, 800);
 
-console.log("%c✅ ALS Link ready — using your Vercel /api/grok proxy again!", "color:#22c55e; font-weight:bold");
+console.log("%c✅ ALS Link is now FULLY loaded with your Vercel /api/grok!", "color:#22c55e; font-weight:bold");
 </script>
 </body>
 </html>
