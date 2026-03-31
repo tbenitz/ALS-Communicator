@@ -40,7 +40,8 @@
         </button>
     </header>
 
-    <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-y-auto md:overflow-hidden">
+    <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden">
+        <!-- Left Panel -->
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
@@ -75,13 +76,15 @@
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
 
-            <div class="shrink-0 md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-28 md:h-auto md:min-h-[150px] shadow-sm min-h-0">
-                <div class="bg-slate-900/80 p-1 md:p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
-                <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
+            <!-- Fixed Conversation Log -->
+            <div class="flex-1 min-h-0 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
+                <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
+                <div id="conversationHistory" class="flex-1 overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
 
-        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0">
+        <!-- Right Panel - Phrases -->
+        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0 overflow-hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
@@ -102,12 +105,13 @@
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
-        <div class="modal-content w-full max-w-xl rounded-2xl p-6 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
+        <div class="modal-content w-full max-w-2xl rounded-2xl p-6 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-600 pb-3">
                 <h3 class="text-2xl md:text-3xl font-bold text-slate-100">Settings</h3>
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
 
+            <!-- ElevenLabs API -->
             <div class="flex flex-col gap-2">
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" 
@@ -115,19 +119,46 @@
                 <p class="text-xs text-slate-400">Stored only in your browser</p>
             </div>
 
+            <!-- TTS Provider -->
             <div class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">Text-to-Speech Provider</label>
                 <select id="ttsProvider" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500">
-                    <option value="browser">Browser Voice (Default)</option>
-                    <option value="elevenlabs">ElevenLabs (Higher Quality)</option>
+                    <option value="browser">Browser OS Voices</option>
+                    <option value="elevenlabs">ElevenLabs Voices</option>
                 </select>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-lg">Browser Voice</label>
+            <!-- Browser Voices Section -->
+            <div id="browserVoiceSection" class="flex flex-col gap-1">
+                <label class="font-bold text-slate-300 text-lg">Browser / OS Voice</label>
                 <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500"></select>
             </div>
 
+            <!-- ElevenLabs Voices & Settings -->
+            <div id="elevenLabsVoiceSection" class="flex flex-col gap-4 hidden">
+                <div>
+                    <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice (including clones)</label>
+                    <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500"></select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Stability</span><span id="stabilityVal">0.75</span></div>
+                        <input type="range" id="stabilitySlider" min="0" max="1" step="0.05" value="0.75" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Similarity Boost</span><span id="similarityVal">0.75</span></div>
+                        <input type="range" id="similaritySlider" min="0" max="1" step="0.05" value="0.75" class="w-full">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Style Exaggeration</span><span id="styleVal">0.0</span></div>
+                    <input type="range" id="styleSlider" min="0" max="1" step="0.05" value="0" class="w-full">
+                </div>
+            </div>
+
+            <!-- AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
                 <div class="flex justify-between font-bold text-slate-300">
                     <span>AI Context</span>
@@ -135,8 +166,8 @@
                 </div>
                 <input type="range" id="aiContextSlider" min="1" max="20" value="5" step="1" class="my-2">
                 <div class="flex gap-2 text-xs">
-                    <button id="ctxMsgBtn" onclick="setContextType('messages')" class="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium">Last X Messages</button>
-                    <button id="ctxCharBtn" onclick="setContextType('chars')" class="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium">Last X Characters</button>
+                    <button onclick="setContextType('messages')" class="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium">Last X Messages</button>
+                    <button onclick="setContextType('chars')" class="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium">Last X Characters</button>
                 </div>
             </div>
 
@@ -156,7 +187,7 @@
                 <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
             </div>
 
-            <div class="flex gap-3">
+            <div class="flex gap-3 mt-4">
                 <button id="exportBtn" class="flex-1 bg-emerald-700 hover:bg-emerald-600 py-3 rounded-xl font-bold">Export Backup</button>
                 <button id="importBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 py-3 rounded-xl font-bold">Import Backup</button>
                 <input type="file" id="importFileInput" accept=".json" class="hidden">
@@ -166,7 +197,7 @@
         </div>
     </div>
 
-    <!-- Phrase Modal -->
+    <!-- Phrase Edit Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-6 flex flex-col gap-4">
             <h3 class="text-xl font-bold border-b border-slate-600 pb-2" id="modalTitle">Edit Phrase</h3>
@@ -190,7 +221,7 @@
 
 <script>
 // ==================== STATE & CONSTANTS ====================
-const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
+const CORE_DICTIONARY = new Set(["the","be","to","of","and","a","in","that","have","I","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","are","yes","please","thank","help","need","hungry","thirsty","bathroom","pain","tired"]);
 
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait."],
@@ -211,6 +242,12 @@ let isTTSPlaying = false;
 let elevenLabsApiKey = localStorage.getItem('elevenLabsApiKey') || '';
 let ttsProvider = localStorage.getItem('ttsProvider') || 'browser';
 let contextType = localStorage.getItem('contextType') || 'messages';
+let currentElevenVoiceId = localStorage.getItem('elevenVoiceId') || '21m00Tcm4TlvDq8ikWAM';
+let elevenStability = parseFloat(localStorage.getItem('elevenStability')) || 0.75;
+let elevenSimilarity = parseFloat(localStorage.getItem('elevenSimilarity')) || 0.75;
+let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
+
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // DOM Elements
 const textInput = document.getElementById('textInput');
@@ -239,6 +276,10 @@ const settingsModal = document.getElementById('settingsModal');
 const voiceSelect = document.getElementById('voiceSelect');
 const elevenLabsApiKeyInput = document.getElementById('elevenLabsApiKey');
 const ttsProviderSelect = document.getElementById('ttsProvider');
+const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
+const stabilitySlider = document.getElementById('stabilitySlider');
+const similaritySlider = document.getElementById('similaritySlider');
+const styleSlider = document.getElementById('styleSlider');
 const aiContextSlider = document.getElementById('aiContextSlider');
 const aiContextVal = document.getElementById('aiContextVal');
 const replyLenSlider = document.getElementById('replyLenSlider');
@@ -248,42 +289,43 @@ const aiCountVal = document.getElementById('aiCountVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
 
-const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-// ==================== SETTINGS ====================
+// ==================== SETTINGS UI ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
 elevenLabsApiKeyInput.value = elevenLabsApiKey;
 ttsProviderSelect.value = ttsProvider;
 
+// Sync sliders
+stabilitySlider.value = elevenStability; document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
+similaritySlider.value = elevenSimilarity; document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+styleSlider.value = elevenStyle; document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+
+stabilitySlider.addEventListener('input', () => { elevenStability = parseFloat(stabilitySlider.value); document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2); localStorage.setItem('elevenStability', elevenStability); });
+similaritySlider.addEventListener('input', () => { elevenSimilarity = parseFloat(similaritySlider.value); document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2); localStorage.setItem('elevenSimilarity', elevenSimilarity); });
+styleSlider.addEventListener('input', () => { elevenStyle = parseFloat(styleSlider.value); document.getElementById('styleVal').textContent = elevenStyle.toFixed(2); localStorage.setItem('elevenStyle', elevenStyle); });
+
 elevenLabsApiKeyInput.addEventListener('change', () => {
     elevenLabsApiKey = elevenLabsApiKeyInput.value.trim();
     localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
+    if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
 ttsProviderSelect.addEventListener('change', () => {
     ttsProvider = ttsProviderSelect.value;
     localStorage.setItem('ttsProvider', ttsProvider);
+    document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
+    document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+    if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
 function setContextType(type) {
     contextType = type;
     localStorage.setItem('contextType', type);
-    updateContextUI();
+    aiContextVal.textContent = contextType === 'messages' ? `Last ${aiContextSlider.value} messages` : `Last ${aiContextSlider.value}k chars`;
 }
-
-function updateContextUI() {
-    aiContextVal.textContent = contextType === 'messages' 
-        ? `Last ${aiContextSlider.value} messages` 
-        : `Last ${aiContextSlider.value}k chars`;
-}
-
-aiContextSlider.addEventListener('input', updateContextUI);
-replyLenSlider.addEventListener('input', () => {
-    const labels = ["Short", "Medium", "Long"];
-    replyLenVal.textContent = labels[replyLenSlider.value - 1];
-});
+aiContextSlider.addEventListener('input', () => setContextType(contextType));
+replyLenSlider.addEventListener('input', () => { const labels = ["Short", "Medium", "Long"]; replyLenVal.textContent = labels[replyLenSlider.value - 1]; });
 aiCountSlider.addEventListener('input', () => aiCountVal.textContent = aiCountSlider.value);
 micSensSlider.addEventListener('input', () => micSensVal.textContent = micSensSlider.value + "%");
 
@@ -292,7 +334,6 @@ async function speak(text) {
     if (!text) return;
     lastSpoken = text;
     addToConversation('you', text);
-
     genBtn.disabled = true;
     btnText.innerHTML = '🔊 ...';
     isTTSPlaying = true;
@@ -315,28 +356,6 @@ async function speak(text) {
     }
 }
 
-async function speakElevenLabs(text) {
-    const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM", {
-        method: "POST",
-        headers: {
-            "Accept": "audio/mpeg",
-            "xi-api-key": elevenLabsApiKey,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            text: text,
-            model_id: "eleven_monolingual_v1",
-            voice_settings: { stability: 0.75, similarity_boost: 0.75 }
-        })
-    });
-
-    if (!res.ok) throw new Error("ElevenLabs error");
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    await new Promise(r => { audio.onended = r; audio.play(); });
-}
-
 function speakBrowser(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     const savedURI = localStorage.getItem('selectedVoiceURI');
@@ -348,13 +367,61 @@ function speakBrowser(text) {
     window.speechSynthesis.speak(utterance);
 }
 
-// ==================== AI REPLY (ON BUTTON ONLY) ====================
+async function speakElevenLabs(text) {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
+        method: "POST",
+        headers: {
+            "Accept": "audio/mpeg",
+            "xi-api-key": elevenLabsApiKey,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text: text,
+            model_id: "eleven_monolingual_v1",
+            voice_settings: {
+                stability: elevenStability,
+                similarity_boost: elevenSimilarity,
+                style: elevenStyle
+            }
+        })
+    });
+    if (!res.ok) throw new Error("ElevenLabs failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    await new Promise(r => { audio.onended = r; audio.play(); });
+}
+
+// Load ElevenLabs voices
+async function loadElevenVoices() {
+    if (!elevenLabsApiKey) return;
+    try {
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+            headers: { 'xi-api-key': elevenLabsApiKey }
+        });
+        const data = await res.json();
+        elevenVoiceSelect.innerHTML = '';
+        data.voices.forEach(voice => {
+            const opt = document.createElement('option');
+            opt.value = voice.voice_id;
+            opt.textContent = voice.name + (voice.category ? ` (${voice.category})` : '');
+            if (voice.voice_id === currentElevenVoiceId) opt.selected = true;
+            elevenVoiceSelect.appendChild(opt);
+        });
+    } catch (e) { console.error("Failed to load ElevenLabs voices", e); }
+}
+
+elevenVoiceSelect.addEventListener('change', () => {
+    currentElevenVoiceId = elevenVoiceSelect.value;
+    localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
+});
+
+// ==================== AI REPLY (BUTTON ONLY) ====================
 grokSuggestBtn.onclick = async () => {
     if (conversationHistory.length === 0) {
         suggestStatus.textContent = "Have a conversation first!";
         return;
     }
-
     suggestStatus.textContent = "Generating AI suggestions...";
     grokSuggestionsEl.innerHTML = `<div class="text-center py-8 text-slate-400">Thinking...</div>`;
 
@@ -362,43 +429,20 @@ grokSuggestBtn.onclick = async () => {
     const lengthLevel = parseInt(replyLenSlider.value);
     const limit = parseInt(aiContextSlider.value);
 
-    let contextStr = '';
-    if (contextType === 'messages') {
-        contextStr = conversationHistory.slice(-limit)
-            .map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n');
-    } else {
-        let allText = conversationHistory.map(m => m.text).join(' ');
-        contextStr = allText.slice(-limit * 1000);
-    }
+    let contextStr = contextType === 'messages' 
+        ? conversationHistory.slice(-limit).map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n')
+        : conversationHistory.map(m => m.text).join(' ').slice(-limit * 1000);
 
-    const lengthInstr = lengthLevel === 1 ? "very short (4-12 words)" :
-                       lengthLevel === 2 ? "medium (12-25 words)" : "natural detailed (25-50 words)";
+    const lengthInstr = lengthLevel === 1 ? "very short (4-12 words)" : lengthLevel === 2 ? "medium (12-25 words)" : "natural detailed (25-50 words)";
 
-    const prompt = `You are a person with ALS using a speech device. Generate ${numReplies} natural casual replies.
-
-Rules:
-- First person only
-- Very casual and human
-- No AI-like behavior
-- Length: ${lengthInstr}
-
-Recent conversation:
-${contextStr}
-
-Output ONLY the replies, one per line.`;
+    const prompt = `You are a person with ALS using a speech device. Generate ${numReplies} natural casual replies.\nRules:\n- First person only\n- Very casual and human\n- No AI-like behavior\n- Length: ${lengthInstr}\n\nRecent conversation:\n${contextStr}\n\nOutput ONLY the replies, one per line.`;
 
     try {
         const res = await fetch('/api/grok', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'grok-3-mini',
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 300,
-                temperature: 0.7
-            })
+            body: JSON.stringify({ model: 'grok-3-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 300, temperature: 0.7 })
         });
-
         const data = await res.json();
         const lines = data.choices[0].message.content.trim().split('\n')
             .map(s => s.trim().replace(/^[\d\.\-\*"\s]+/, ''))
@@ -406,15 +450,11 @@ Output ONLY the replies, one per line.`;
 
         grokSuggestionsEl.innerHTML = '';
         suggestStatus.textContent = `AI Suggestions (${lines.length}):`;
-
         lines.forEach(phrase => {
             const btn = document.createElement('button');
             btn.className = 'suggestion-btn';
             btn.textContent = phrase;
-            btn.onclick = () => {
-                textInput.value = phrase;
-                speak(phrase);
-            };
+            btn.onclick = () => { textInput.value = phrase; speak(phrase); };
             grokSuggestionsEl.appendChild(btn);
         });
     } catch (err) {
@@ -423,7 +463,7 @@ Output ONLY the replies, one per line.`;
     }
 };
 
-// ==================== PHRASE HANDLING ====================
+// ==================== REST OF THE APP (Full) ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -443,12 +483,7 @@ function renderCategories() {
         const btn = document.createElement('button');
         btn.textContent = cat;
         btn.className = `shrink-0 px-4 py-2 text-sm font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
-        btn.onclick = () => {
-            currentCategory = cat;
-            currentCategoryTitle.textContent = cat;
-            renderCategories();
-            renderPhrases();
-        };
+        btn.onclick = () => { currentCategory = cat; currentCategoryTitle.textContent = cat; renderCategories(); renderPhrases(); };
         categoryScroll.appendChild(btn);
     });
     currentCategoryTitle.textContent = currentCategory;
@@ -459,9 +494,7 @@ function renderPhrases() {
     addPhraseBtn.classList.toggle('hidden', !isEditMode);
     editCategoryBtn.classList.toggle('hidden', !isEditMode);
     editToggleBtn.textContent = isEditMode ? 'Done' : '✏️ Edit';
-    editToggleBtn.className = isEditMode 
-        ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500' 
-        : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
+    editToggleBtn.className = isEditMode ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500' : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
 
     if (phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
@@ -483,9 +516,7 @@ function appendMessageUI(speaker, text) {
     const div = document.createElement('div');
     div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
     div.innerHTML = `<div>${text}</div>`;
-    if (speaker === 'you') {
-        div.innerHTML += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save</button>`;
-    }
+    if (speaker === 'you') div.innerHTML += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save</button>`;
     convHistoryEl.appendChild(div);
     convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
 }
@@ -504,7 +535,6 @@ window.openSaveFromHistory = (text) => {
 };
 
 editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
-
 addCategoryBtn.onclick = () => {
     const name = prompt("New category name:");
     if (name && name.trim()) {
@@ -522,7 +552,6 @@ function openModal(phraseText, category, index) {
     document.getElementById('modalTitle').textContent = index === -1 ? "Add New Phrase" : "Edit Phrase";
     document.getElementById('modalDeleteBtn').classList.toggle('hidden', index === -1);
     document.getElementById('modalPhraseText').value = phraseText;
-    
     const sel = document.getElementById('modalCategorySelect');
     sel.innerHTML = '';
     Object.keys(phraseCategories).forEach(cat => {
@@ -531,7 +560,6 @@ function openModal(phraseText, category, index) {
         if (cat === category) opt.selected = true;
         sel.appendChild(opt);
     });
-
     document.getElementById('phraseModal').classList.remove('hidden');
     window.editingIndex = index;
     window.editingCategory = category;
@@ -542,12 +570,8 @@ document.getElementById('modalSaveBtn').onclick = () => {
     const newText = document.getElementById('modalPhraseText').value.trim();
     const targetCat = document.getElementById('modalCategorySelect').value;
     if (!newText) return alert("Phrase cannot be empty");
-
-    if (window.editingIndex > -1) {
-        phraseCategories[window.editingCategory].splice(window.editingIndex, 1);
-    }
+    if (window.editingIndex > -1) phraseCategories[window.editingCategory].splice(window.editingIndex, 1);
     phraseCategories[targetCat].push(newText);
-
     saveToStorage();
     document.getElementById('phraseModal').classList.add('hidden');
     currentCategory = targetCat;
@@ -574,15 +598,12 @@ editCategoryBtn.onclick = () => {
     }
 };
 
-// ==================== INPUT & PREDICTIVE ====================
+// Predictive Text
 let dynamicDictionary = Array.from(CORE_DICTIONARY);
 textInput.addEventListener('input', () => {
     const words = textInput.value.split(/\s+/);
     const last = words[words.length - 1].toLowerCase();
-    if (last.length < 1) {
-        predictiveBar.classList.add('hidden');
-        return;
-    }
+    if (last.length < 1) { predictiveBar.classList.add('hidden'); return; }
     const matches = dynamicDictionary.filter(w => w.startsWith(last) && w !== last);
     if (matches.length > 0) {
         predictiveBar.innerHTML = '';
@@ -602,7 +623,7 @@ textInput.addEventListener('input', () => {
     } else predictiveBar.classList.add('hidden');
 });
 
-// ==================== BUTTON ACTIONS ====================
+// Button Actions
 genBtn.onclick = () => {
     const text = textInput.value.trim();
     if (text) speak(text);
@@ -613,7 +634,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => textInput.value = '';
 
-// ==================== VOICE LIST ====================
+// Browser Voices
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
     const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
@@ -627,10 +648,9 @@ function populateVoiceList() {
 }
 speechSynthesis.onvoiceschanged = populateVoiceList;
 populateVoiceList();
-
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// ==================== BACKUP ====================
+// Backup
 document.getElementById('exportBtn').onclick = () => {
     const data = { phrases: phraseCategories, history: conversationHistory };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -650,12 +670,9 @@ document.getElementById('importFileInput').onchange = (e) => {
             const data = JSON.parse(ev.target.result);
             if (data.phrases) phraseCategories = data.phrases;
             if (data.history) conversationHistory = data.history;
-            saveToStorage();
-            saveConversation();
+            saveToStorage(); saveConversation();
             currentCategory = Object.keys(phraseCategories)[0];
-            renderCategories();
-            renderPhrases();
-            renderConversationHistory();
+            renderCategories(); renderPhrases(); renderConversationHistory();
             alert("Import successful!");
         } catch(err) { alert("Import failed."); }
     };
@@ -670,7 +687,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// ==================== SPEECH RECOGNITION ====================
+// Speech Recognition (unchanged from original)
 let recognition = null;
 let speechDebounceTimer = null;
 
@@ -681,39 +698,23 @@ function createRecognition() {
     rec.interimResults = true;
     rec.continuous = true;
     rec.maxAlternatives = 1;
-
     rec.onstart = () => updateMicUI(true);
-    rec.onerror = (event) => {
-        console.warn("Recognition error:", event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            intentionallyStopped = true;
-            updateMicUI(false);
-        }
-    };
+    rec.onerror = (event) => { console.warn("Recognition error:", event.error); if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { intentionallyStopped = true; updateMicUI(false); } };
     rec.onend = () => {
         updateMicUI(false);
-        if (!intentionallyStopped) {
-            setTimeout(() => {
-                if (recognition) recognition.start();
-            }, isMobileDevice ? 600 : 300);
-        }
+        if (!intentionallyStopped) setTimeout(() => { if (recognition) recognition.start(); }, isMobileDevice ? 600 : 300);
     };
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-        }
+        for (let i = event.resultIndex; i < event.results.length; i++) currentTranscript += event.results[i][0].transcript;
         if (currentTranscript.trim()) {
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
             clearTimeout(speechDebounceTimer);
             speechDebounceTimer = setTimeout(() => {
                 const finalText = currentTranscript.trim();
-                if (finalText) {
-                    addToConversation('other', finalText);
-                    // NO AUTO AI HERE - only when AI Reply button is clicked
-                }
+                if (finalText) addToConversation('other', finalText);
                 liveTranscript.textContent = '';
                 liveTranscript.classList.add('hidden');
             }, 1500);
@@ -738,10 +739,7 @@ listenBtn.onclick = () => {
     if (isTTSPlaying) return;
     if (!intentionallyStopped) {
         intentionallyStopped = true;
-        if (recognition) {
-            try { recognition.abort(); recognition.stop(); } catch(e) {}
-            recognition = null;
-        }
+        if (recognition) { try { recognition.abort(); recognition.stop(); } catch(e) {} recognition = null; }
         updateMicUI(false);
     } else {
         intentionallyStopped = false;
@@ -752,7 +750,7 @@ listenBtn.onclick = () => {
     }
 };
 
-// ==================== VISUALIZER ====================
+// Visualizer (desktop only)
 async function initVisualizer() {
     if (isMobileDevice || window.visualizerActive) return;
     try {
@@ -764,7 +762,6 @@ async function initVisualizer() {
         analyser.fftSize = 64;
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         window.visualizerActive = true;
-
         function draw() {
             if (!window.visualizerActive) return;
             requestAnimationFrame(draw);
@@ -791,7 +788,6 @@ renderPhrases();
 renderConversationHistory();
 genBtn.disabled = false;
 
-// Desktop: start mic automatically
 if (!isMobileDevice) {
     setTimeout(() => {
         intentionallyStopped = false;
@@ -802,6 +798,11 @@ if (!isMobileDevice) {
 } else {
     updateMicUI(false);
 }
+
+// Initial TTS section visibility
+document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
+document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+if (ttsProvider === 'elevenlabs') loadElevenVoices();
 
 </script>
 </body>
