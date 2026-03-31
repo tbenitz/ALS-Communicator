@@ -112,7 +112,7 @@
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" 
                        class="w-full bg-slate-800 border border-slate-600 text-white font-mono p-3 rounded-xl outline-none focus:border-emerald-500">
-                <p class="text-xs text-slate-400">Paste your full key exactly as shown in ElevenLabs dashboard</p>
+                <p class="text-xs text-slate-400">Must start with "sk_"</p>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -136,7 +136,7 @@
                     <button onclick="loadElevenVoices()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">Refresh Voices</button>
                 </div>
                 <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
-                    <option value="">Enter API key and click Refresh</option>
+                    <option value="">Enter API key then click Refresh</option>
                 </select>
             </div>
 
@@ -219,7 +219,9 @@
     </div>
 
 <script>
-// ==================== STATE ====================
+// ==================== CONSTANTS & STATE ====================
+const CORE_DICTIONARY = new Set(["the","be","to","of","and","a","in","that","have","I","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","are","yes","please","thank","help","need","hungry","thirsty","bathroom","pain","tired"]);
+
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "I need help.", "I need my medication."],
@@ -247,7 +249,7 @@ let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// Safe DOM access
+// DOM Elements
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -319,7 +321,7 @@ if (ttsProviderSelect) ttsProviderSelect.addEventListener('change', () => {
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
-// ElevenLabs sliders (safe)
+// ElevenLabs sliders
 if (stabilitySlider) {
     stabilitySlider.value = elevenStability;
     const val = document.getElementById('stabilityVal');
@@ -446,7 +448,7 @@ async function speakElevenLabs(text) {
     await new Promise(r => { audio.onended = r; audio.play(); });
 }
 
-// ==================== FIXED ELEVENLABS VOICES ====================
+// ==================== ELEVENLABS VOICES (Fixed) ====================
 async function loadElevenVoices() {
     const select = document.getElementById('elevenVoiceSelect');
     if (!select) return;
