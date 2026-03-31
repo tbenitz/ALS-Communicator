@@ -38,25 +38,26 @@
    
         canvas { image-rendering: pixelated; }
 
-        /* Fix for conversation log scroll */
+        /* FIXED: Conversation Log Scrollbar */
         #conversationHistory {
+            overflow-y: auto !important;
             scrollbar-width: thin;
-            scrollbar-color: #475569 #1e293b;
+            scrollbar-color: #64748b #1e293b;
         }
         #conversationHistory::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 10px;
         }
         #conversationHistory::-webkit-scrollbar-track {
             background: #1e293b;
-            border-radius: 4px;
+            border-radius: 6px;
         }
         #conversationHistory::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
+            background: #64748b;
+            border-radius: 6px;
+            border: 2px solid #1e293b;
         }
         #conversationHistory::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
+            background: #94a3b8;
         }
     </style>
 </head>
@@ -103,7 +104,7 @@
             </div>
             <div class="shrink-0 md:flex-grow flex flex-col bg-slate-800 rounded-xl border border-slate-700 h-28 md:h-auto md:min-h-[150px] shadow-sm min-h-0">
                 <div class="bg-slate-900/80 p-1 md:p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
-                <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0 scrollbar-thin"></div>
+                <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
         <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0">
@@ -152,7 +153,7 @@
                     <input type="password" id="elevenApiKey" placeholder="sk_..."
                            class="w-full bg-slate-800 border border-slate-600 text-white font-mono text-sm md:text-base rounded-xl p-3 outline-none focus:border-green-500">
                     <button id="saveApiKeyBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl transition-all text-sm self-start">Save & Refresh Voices</button>
-                    <p class="text-xs text-slate-400">Your key is stored only in this browser (persists across sessions).</p>
+                    <p class="text-xs text-slate-400">Your key is stored only in this browser.</p>
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice / Clone</label>
@@ -223,7 +224,7 @@
             </button>
         </div>
     </div>
-    <!-- Phrase Edit Modal (unchanged) -->
+    <!-- Phrase Edit Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
             <h3 class="text-xl md:text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
@@ -244,6 +245,7 @@
             </div>
         </div>
     </div>
+
 <script>
 // ====================== CORE SETUP ======================
 const API_URL = '/api/grok';
@@ -365,14 +367,14 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
-// ElevenLabs API Key - now persists across sessions via localStorage (already did, just clarified)
+// ElevenLabs API Key
 saveApiKeyBtn.onclick = async () => {
     const key = elevenApiKeyInput.value.trim();
     if (key) {
         elevenApiKey = key;
         localStorage.setItem('elevenApiKey', elevenApiKey);
         await fetchElevenVoices();
-        alert("ElevenLabs API key saved and voices loaded! It will persist across browser sessions.");
+        alert("ElevenLabs API key saved and voices loaded!");
     }
 };
 refreshElevenVoicesBtn.onclick = fetchElevenVoices;
@@ -681,10 +683,7 @@ function addToConversation(speaker, text) {
 }
 function scrollToBottom() {
     setTimeout(() => {
-        convHistoryEl.scrollTo({ 
-            top: convHistoryEl.scrollHeight, 
-            behavior: 'smooth' 
-        });
+        convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
     }, 10);
 }
 window.openSaveFromHistory = (text) => {
