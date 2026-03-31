@@ -112,7 +112,7 @@
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" 
                        class="w-full bg-slate-800 border border-slate-600 text-white font-mono p-3 rounded-xl outline-none focus:border-emerald-500">
-                <p class="text-xs text-slate-400">Must start with "sk_"</p>
+                <p class="text-xs text-slate-400">Paste your full key exactly as shown in ElevenLabs dashboard</p>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -136,7 +136,7 @@
                     <button onclick="loadElevenVoices()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">Refresh Voices</button>
                 </div>
                 <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
-                    <option value="">Loading voices...</option>
+                    <option value="">Enter API key and click Refresh</option>
                 </select>
             </div>
 
@@ -220,8 +220,6 @@
 
 <script>
 // ==================== STATE ====================
-const CORE_DICTIONARY = new Set(["the","be","to","of","and","a","in","that","have","I","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","are","yes","please","thank","help","need","hungry","thirsty","bathroom","pain","tired"]);
-
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "I need help.", "I need my medication."],
@@ -249,7 +247,7 @@ let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// DOM Elements - accessed safely
+// Safe DOM access
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -262,7 +260,7 @@ const suggestStatus = document.getElementById('suggestStatus');
 const convHistoryEl = document.getElementById('conversationHistory');
 const liveTranscript = document.getElementById('liveTranscript');
 const waveformCanvas = document.getElementById('waveformCanvas');
-const canvasCtx = waveformCanvas.getContext('2d');
+const canvasCtx = waveformCanvas ? waveformCanvas.getContext('2d') : null;
 const categoryScroll = document.getElementById('categoryScroll');
 const phraseGridEl = document.getElementById('phraseGrid');
 const currentCategoryTitle = document.getElementById('currentCategoryTitle');
@@ -296,63 +294,71 @@ const micSensVal = document.getElementById('micSensVal');
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
-elevenLabsApiKeyInput.value = elevenLabsApiKey;
-ttsProviderSelect.value = ttsProvider;
-useTextInputContextCheckbox.checked = useTextInputContext;
+if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.value = elevenLabsApiKey;
+if (ttsProviderSelect) ttsProviderSelect.value = ttsProvider;
+if (useTextInputContextCheckbox) useTextInputContextCheckbox.checked = useTextInputContext;
 
-useTextInputContextCheckbox.addEventListener('change', () => {
+if (useTextInputContextCheckbox) useTextInputContextCheckbox.addEventListener('change', () => {
     useTextInputContext = useTextInputContextCheckbox.checked;
     localStorage.setItem('useTextInputContext', useTextInputContext);
 });
 
-elevenLabsApiKeyInput.addEventListener('change', () => {
+if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.addEventListener('change', () => {
     elevenLabsApiKey = elevenLabsApiKeyInput.value.trim();
     localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
-ttsProviderSelect.addEventListener('change', () => {
+if (ttsProviderSelect) ttsProviderSelect.addEventListener('change', () => {
     ttsProvider = ttsProviderSelect.value;
     localStorage.setItem('ttsProvider', ttsProvider);
-    document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
-    document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+    const browserSection = document.getElementById('browserVoiceSection');
+    const elevenSection = document.getElementById('elevenLabsVoiceSection');
+    if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
+    if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
-// ElevenLabs sliders (safe check)
+// ElevenLabs sliders (safe)
 if (stabilitySlider) {
     stabilitySlider.value = elevenStability;
-    document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
+    const val = document.getElementById('stabilityVal');
+    if (val) val.textContent = elevenStability.toFixed(2);
 }
 if (similaritySlider) {
     similaritySlider.value = elevenSimilarity;
-    document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+    const val = document.getElementById('similarityVal');
+    if (val) val.textContent = elevenSimilarity.toFixed(2);
 }
 if (styleSlider) {
     styleSlider.value = elevenStyle;
-    document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+    const val = document.getElementById('styleVal');
+    if (val) val.textContent = elevenStyle.toFixed(2);
 }
 
 if (stabilitySlider) stabilitySlider.addEventListener('input', () => {
     elevenStability = parseFloat(stabilitySlider.value);
-    if (document.getElementById('stabilityVal')) document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
+    const val = document.getElementById('stabilityVal');
+    if (val) val.textContent = elevenStability.toFixed(2);
     localStorage.setItem('elevenStability', elevenStability);
 });
 if (similaritySlider) similaritySlider.addEventListener('input', () => {
     elevenSimilarity = parseFloat(similaritySlider.value);
-    if (document.getElementById('similarityVal')) document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+    const val = document.getElementById('similarityVal');
+    if (val) val.textContent = elevenSimilarity.toFixed(2);
     localStorage.setItem('elevenSimilarity', elevenSimilarity);
 });
 if (styleSlider) styleSlider.addEventListener('input', () => {
     elevenStyle = parseFloat(styleSlider.value);
-    if (document.getElementById('styleVal')) document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+    const val = document.getElementById('styleVal');
+    if (val) val.textContent = elevenStyle.toFixed(2);
     localStorage.setItem('elevenStyle', elevenStyle);
 });
 
 function setContextType(type) {
     contextType = type;
     localStorage.setItem('contextType', type);
-    if (aiContextVal) aiContextVal.textContent = contextType === 'messages' ? `Last ${aiContextSlider.value} messages` : `Last ${aiContextSlider.value}k chars`;
+    if (aiContextVal) aiContextVal.textContent = contextType === 'messages' ? `Last ${aiContextSlider ? aiContextSlider.value : 5} messages` : `Last ${aiContextSlider ? aiContextSlider.value : 5}k chars`;
 }
 if (aiContextSlider) aiContextSlider.addEventListener('input', () => setContextType(contextType));
 if (replyLenSlider) replyLenSlider.addEventListener('input', () => {
@@ -447,7 +453,7 @@ async function loadElevenVoices() {
     select.innerHTML = '<option value="">Loading voices...</option>';
 
     if (!elevenLabsApiKey || elevenLabsApiKey.length < 10) {
-        select.innerHTML = '<option value="">Please enter a valid API key</option>';
+        select.innerHTML = '<option value="">Please enter a valid API key first</option>';
         return;
     }
 
@@ -460,7 +466,7 @@ async function loadElevenVoices() {
         });
 
         if (res.status === 401) {
-            select.innerHTML = '<option value="">Invalid API key - check your key</option>';
+            select.innerHTML = '<option value="">401 Unauthorized - Invalid API key</option>';
             return;
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -469,7 +475,7 @@ async function loadElevenVoices() {
         select.innerHTML = '';
 
         if (!data.voices || data.voices.length === 0) {
-            select.innerHTML = '<option value="">No voices found</option>';
+            select.innerHTML = '<option value="">No voices found in your account</option>';
             return;
         }
 
@@ -482,7 +488,7 @@ async function loadElevenVoices() {
         });
     } catch (e) {
         console.error("Failed to load voices:", e);
-        select.innerHTML = '<option value="">Failed to load - check API key or network</option>';
+        select.innerHTML = '<option value="">Failed to load voices. Check API key and internet.</option>';
     }
 }
 
@@ -551,7 +557,7 @@ grokSuggestBtn.onclick = async () => {
     }
 };
 
-// ==================== PHRASE & CONVERSATION FUNCTIONS ====================
+// ==================== PHRASE & CONVERSATION ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -885,8 +891,10 @@ if (!isMobileDevice) {
 }
 
 // Initial TTS section visibility
-if (document.getElementById('browserVoiceSection')) document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
-if (document.getElementById('elevenLabsVoiceSection')) document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+const browserSection = document.getElementById('browserVoiceSection');
+const elevenSection = document.getElementById('elevenLabsVoiceSection');
+if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
+if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
 
 </script>
