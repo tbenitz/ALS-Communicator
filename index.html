@@ -29,32 +29,27 @@
         @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .live-text { animation: pulse-text 1.5s infinite; }
         canvas { image-rendering: pixelated; }
-        button { min-height: 48px; }
     </style>
 </head>
 <body class="flex flex-col h-[100dvh] overflow-hidden bg-[#121212] text-slate-200">
-
-    <header class="flex justify-between items-center bg-gray-900 p-3 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
+    <header class="flex justify-between items-center bg-gray-900 p-2 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
         <h1 class="text-lg md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="inline">ALS Communicator</span></h1>
         <button id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm text-sm md:text-base">
             ⚙️ <span class="hidden sm:inline">Settings</span>
         </button>
     </header>
-
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden">
-        <!-- Left Panel -->
-        <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0 overflow-hidden">
+        <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
-                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-20 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
+                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
                 <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
             </div>
-
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-1 md:gap-2">
                 <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-2 md:py-3 disabled:opacity-50">
                     <span id="btnText" class="flex items-center gap-1 md:flex-col"><span class="text-2xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
-                <button id="listenBtn" class="col-span-1 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
-                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON
+                <button id="listenBtn" class="col-span-1 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF
                 </button>
                 <button id="grokSuggestBtn" class="col-span-1 md:col-span-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
                     <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🤖</span>AI Reply
@@ -66,24 +61,19 @@
                     <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">❌</span>Clear
                 </button>
             </div>
-
             <div class="shrink-0 flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 relative h-8 md:h-12">
                 <canvas id="waveformCanvas" class="absolute inset-0 w-full h-full hidden opacity-80"></canvas>
                 <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-2 md:px-3 text-indigo-300 italic text-xs md:text-sm font-bold live-text hidden text-shadow-md truncate"></div>
             </div>
-
             <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-1.5 md:p-2 rounded-xl border border-slate-700/50">
                 <div id="suggestStatus" class="text-[10px] md:text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
-
             <div class="flex-1 min-h-0 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
                 <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
                 <div id="conversationHistory" class="flex-1 overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
-
-        <!-- Right Panel -->
         <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0 overflow-hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
@@ -93,12 +83,12 @@
                     <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">✏️ Edit</button>
                 </div>
             </div>
-      
+       
             <div class="flex justify-between items-center px-3 pt-1.5 md:pt-2 pb-1 shrink-0">
                 <h2 id="currentCategoryTitle" class="text-lg md:text-xl font-bold text-slate-200">Basics</h2>
                 <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-[10px] md:text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
             </div>
-      
+       
             <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-2 p-2 md:p-3 content-start min-h-0"></div>
         </div>
     </main>
@@ -123,10 +113,12 @@
                     <option value="elevenlabs">ElevenLabs Voices</option>
                 </select>
             </div>
+            <!-- Browser Voice -->
             <div id="browserVoiceSection" class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">Browser / OS Voice</label>
                 <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500"></select>
             </div>
+            <!-- ElevenLabs Voice Section -->
             <div id="elevenLabsVoiceSection" class="flex flex-col gap-4 hidden">
                 <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice</label>
@@ -136,6 +128,7 @@
                     <option value="">Enter API key then click Refresh</option>
                 </select>
             </div>
+            <!-- Tap Action -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Tap Action</label>
                 <div class="flex gap-3 h-12">
@@ -144,11 +137,13 @@
                 </div>
                 <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose what happens when you tap a phrase.</p>
             </div>
+            <!-- Use Text Input for Context -->
             <div class="flex items-center gap-3 border-t border-slate-700 pt-3">
                 <input type="checkbox" id="useTextInputContext" class="w-5 h-5 accent-green-500">
                 <label for="useTextInputContext" class="font-bold text-slate-300 text-lg cursor-pointer">Use Text Input for Context</label>
             </div>
             <p class="text-xs text-slate-400 -mt-1">Add current text box content to help guide AI replies.</p>
+            <!-- AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
                 <div class="flex justify-between font-bold text-slate-300">
                     <span>AI Context</span>
@@ -221,12 +216,8 @@ let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
 let clickAction = localStorage.getItem('clickAction') || 'speak';
 let lastSpoken = '';
 let isEditMode = false;
+let intentionallyStopped = true;
 let isTTSPlaying = false;
-
-// Mic state - starts ON and stays ON
-let recognition = null;
-let isListening = true;           // ← Changed: starts ON
-let intentionallyStopped = false;
 
 // Settings
 let elevenLabsApiKey = localStorage.getItem('elevenLabsApiKey') || '';
@@ -237,7 +228,6 @@ let currentElevenVoiceId = localStorage.getItem('elevenVoiceId') || '21m00Tcm4Tl
 let elevenStability = parseFloat(localStorage.getItem('elevenStability')) || 0.75;
 let elevenSimilarity = parseFloat(localStorage.getItem('elevenSimilarity')) || 0.75;
 let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
-let elevenSpeed = parseFloat(localStorage.getItem('elevenSpeed')) || 1.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -278,74 +268,8 @@ const replyLenSlider = document.getElementById('replyLenSlider');
 const replyLenVal = document.getElementById('replyLenVal');
 const aiCountSlider = document.getElementById('aiCountSlider');
 const aiCountVal = document.getElementById('aiCountVal');
-
-// ==================== MIC - STARTS ON AND STAYS ON ====================
-function createRecognition() {
-    if (!('webkitSpeechRecognition' in window)) return null;
-    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US';
-    rec.interimResults = true;
-    rec.continuous = true;
-    rec.maxAlternatives = 1;
-
-    rec.onstart = () => { isListening = true; updateMicUI(true); };
-    rec.onerror = (event) => {
-        console.warn("Recognition error:", event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            intentionallyStopped = true;
-        }
-    };
-    rec.onend = () => {
-        // Restart silently if not intentionally stopped - this is what keeps the mic "on"
-        if (!intentionallyStopped) {
-            setTimeout(() => {
-                if (recognition) recognition.start();
-            }, 300);
-        }
-    };
-    rec.onresult = (event) => {
-        if (isTTSPlaying) return;
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-        }
-        if (currentTranscript.trim()) {
-            liveTranscript.textContent = '🗣️ ' + currentTranscript.trim();
-            liveTranscript.classList.remove('hidden');
-            setTimeout(() => {
-                if (currentTranscript.trim().length > 2) addToConversation('other', currentTranscript.trim());
-                liveTranscript.classList.add('hidden');
-            }, 1500);
-        }
-    };
-    return rec;
-}
-
-function updateMicUI(listening) {
-    if (listening) {
-        listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
-    } else {
-        listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
-        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
-    }
-}
-
-listenBtn.onclick = () => {
-    if (isTTSPlaying) return;
-    if (isListening) {
-        intentionallyStopped = true;
-        if (recognition) recognition.stop();
-        isListening = false;
-        updateMicUI(false);
-    } else {
-        intentionallyStopped = false;
-        if (!recognition) recognition = createRecognition();
-        if (recognition) recognition.start();
-        isListening = true;
-        updateMicUI(true);
-    }
-};
+const micSensSlider = document.getElementById('micSensSlider');
+const micSensVal = document.getElementById('micSensVal');
 
 // ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
@@ -369,13 +293,16 @@ if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.addEventListener('change', () =
 if (ttsProviderSelect) ttsProviderSelect.addEventListener('change', () => {
     ttsProvider = ttsProviderSelect.value;
     localStorage.setItem('ttsProvider', ttsProvider);
-    document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
-    document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+    const browserSection = document.getElementById('browserVoiceSection');
+    const elevenSection = document.getElementById('elevenLabsVoiceSection');
+    if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
+    if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
 // Tap Action
 function updateActionUI() {
+    if (!btnActionSpeak || !btnActionType) return;
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
         btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -384,6 +311,7 @@ function updateActionUI() {
         btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
     }
 }
+
 if (btnActionSpeak) btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
 if (btnActionType) btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
 updateActionUI();
@@ -396,6 +324,7 @@ async function speak(text) {
     if (genBtn) genBtn.disabled = true;
     if (btnText) btnText.innerHTML = '🔊 ...';
     isTTSPlaying = true;
+
     try {
         if (ttsProvider === 'elevenlabs' && elevenLabsApiKey?.trim()) {
             await speakElevenLabs(text);
@@ -404,7 +333,7 @@ async function speak(text) {
         }
     } catch (e) {
         console.error("TTS Error:", e);
-        speakBrowser(text);
+        speakBrowser(text);  // Automatic fallback
     } finally {
         setTimeout(() => {
             if (genBtn) genBtn.disabled = false;
@@ -427,7 +356,10 @@ function speakBrowser(text) {
 
 async function speakElevenLabs(text) {
     const key = elevenLabsApiKey.trim();
-    if (!key || !key.startsWith('sk_')) throw new Error("Invalid ElevenLabs API key.");
+    if (!key || !key.startsWith('sk_')) {
+        throw new Error("Invalid ElevenLabs API key. It must start with 'sk_'.");
+    }
+
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
         method: "POST",
         headers: {
@@ -438,27 +370,42 @@ async function speakElevenLabs(text) {
         body: JSON.stringify({
             text: text,
             model_id: "eleven_monolingual_v1",
-            voice_settings: {
-                stability: elevenStability,
-                similarity_boost: elevenSimilarity,
-                style: elevenStyle,
-                speed: elevenSpeed
+            voice_settings: { 
+                stability: elevenStability, 
+                similarity_boost: elevenSimilarity, 
+                style: elevenStyle 
             }
         })
     });
+
     if (!res.ok) {
         let errorMsg = `ElevenLabs Error (${res.status})`;
+        try {
+            const errData = await res.json();
+            if (errData.detail) errorMsg += `: ${errData.detail}`;
+        } catch (_) {}
+
+        if (res.status === 401) errorMsg = "ElevenLabs: Invalid API key (401). Please check your key in Settings.";
+        else if (res.status === 400) errorMsg = "ElevenLabs: Bad request (400) – text too long or invalid voice.";
+        else if (res.status === 404) errorMsg = "ElevenLabs: Voice not found (404). Refresh voices.";
+        else if (res.status === 429) errorMsg = "ElevenLabs: Rate limit exceeded (429). Try again later.";
+        else if (res.status === 402) errorMsg = "ElevenLabs: Quota exceeded. Check your plan.";
+
+        console.error(errorMsg);
         alert(errorMsg + "\n\nFalling back to browser voice.");
         throw new Error(errorMsg);
     }
+
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
+
     await new Promise((resolve, reject) => {
         audio.onended = resolve;
         audio.onerror = () => reject(new Error("Audio playback failed"));
         audio.play().catch(reject);
     });
+
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -466,19 +413,37 @@ async function speakElevenLabs(text) {
 async function loadElevenVoices() {
     const select = document.getElementById('elevenVoiceSelect');
     if (!select) return;
+
     select.innerHTML = '<option value="">Loading voices...</option>';
+
     const key = elevenLabsApiKey?.trim();
     if (!key || key.length < 10) {
-        select.innerHTML = '<option value="">Please enter a valid API key first</option>';
+        select.innerHTML = '<option value="">Please enter a valid API key first (must start with sk_)</option>';
         return;
     }
+
     try {
         const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': key, 'Accept': 'application/json' }
+            headers: {
+                'xi-api-key': key,
+                'Accept': 'application/json'
+            }
         });
+
+        if (res.status === 401) {
+            select.innerHTML = '<option value="">401 Unauthorized – Invalid API key</option>';
+            return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const data = await res.json();
         select.innerHTML = '';
+
+        if (!data.voices || data.voices.length === 0) {
+            select.innerHTML = '<option value="">No voices found in your account</option>';
+            return;
+        }
+
         data.voices.forEach(voice => {
             const opt = document.createElement('option');
             opt.value = voice.voice_id;
@@ -488,13 +453,71 @@ async function loadElevenVoices() {
         });
     } catch (e) {
         console.error("Failed to load voices:", e);
-        select.innerHTML = '<option value="">Failed to load voices. Check API key.</option>';
+        select.innerHTML = '<option value="">Failed to load voices. Check API key and connection.</option>';
     }
 }
+
 if (elevenVoiceSelect) elevenVoiceSelect.addEventListener('change', () => {
     currentElevenVoiceId = elevenVoiceSelect.value;
     localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
 });
+
+// ==================== AI REPLY ====================
+grokSuggestBtn.onclick = async () => {
+    if (conversationHistory.length === 0 && !textInput.value.trim()) {
+        suggestStatus.textContent = "Have a conversation or type something first!";
+        return;
+    }
+    suggestStatus.textContent = "Generating AI suggestions...";
+    grokSuggestionsEl.innerHTML = `<div class="text-center py-8 text-slate-400">Thinking...</div>`;
+
+    const numReplies = parseInt(aiCountSlider ? aiCountSlider.value : 3);
+    const lengthLevel = parseInt(replyLenSlider ? replyLenSlider.value : 1);
+    const limit = parseInt(aiContextSlider ? aiContextSlider.value : 5);
+
+    let contextParts = [];
+    if (contextType === 'messages') {
+        contextParts.push(conversationHistory.slice(-limit)
+            .map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n'));
+    } else {
+        let allText = conversationHistory.map(m => m.text).join(' ');
+        contextParts.push(allText.slice(-limit * 1000));
+    }
+
+    if (useTextInputContext && textInput.value.trim()) {
+        contextParts.push(`Current partial message: "${textInput.value.trim()}"`);
+    }
+
+    const contextStr = contextParts.join('\n\n');
+    const lengthInstr = lengthLevel === 1 ? "very short (4-12 words)" : lengthLevel === 2 ? "medium (12-25 words)" : "natural detailed (25-50 words)";
+
+    const prompt = `You are a person with ALS using a speech device. Generate ${numReplies} natural casual replies.\nRules:\n- First person only\n- Very casual and human\n- No AI-like behavior\n- Length: ${lengthInstr}\n\nContext:\n${contextStr}\n\nOutput ONLY the replies, one per line.`;
+
+    try {
+        const res = await fetch('/api/grok', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'grok-3-mini', messages: [{ role: 'user', content: prompt }], max_tokens: 300, temperature: 0.7 })
+        });
+        const data = await res.json();
+        const lines = data.choices[0].message.content.trim().split('\n')
+            .map(s => s.trim().replace(/^[\d\.\-\*"\s]+/, ''))
+            .filter(s => s.length > 3);
+
+        grokSuggestionsEl.innerHTML = '';
+        suggestStatus.textContent = `AI Suggestions (${lines.length}):`;
+        lines.forEach(phrase => {
+            const btn = document.createElement('button');
+            btn.className = 'suggestion-btn';
+            btn.textContent = phrase;
+            btn.onclick = () => { textInput.value = phrase; speak(phrase); };
+            grokSuggestionsEl.appendChild(btn);
+        });
+    } catch (err) {
+        suggestStatus.textContent = 'AI service unavailable.';
+        console.error(err);
+    }
+};
 
 // ==================== PHRASE & CONVERSATION ====================
 function handlePhraseTap(phrase) {
@@ -530,6 +553,7 @@ function renderPhrases() {
     editToggleBtn.className = isEditMode
         ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500'
         : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
+
     if (phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
             const btn = document.createElement('button');
@@ -613,6 +637,7 @@ document.getElementById('modalSaveBtn').onclick = () => {
     renderCategories();
     renderPhrases();
 };
+
 document.getElementById('modalDeleteBtn').onclick = () => {
     if (window.editingIndex > -1 && confirm("Delete this phrase?")) {
         phraseCategories[window.editingCategory].splice(window.editingIndex, 1);
@@ -621,6 +646,7 @@ document.getElementById('modalDeleteBtn').onclick = () => {
         renderPhrases();
     }
 };
+
 editCategoryBtn.onclick = () => {
     if (confirm(`Delete category "${currentCategory}"?`)) {
         delete phraseCategories[currentCategory];
@@ -636,9 +662,9 @@ let dynamicDictionary = Array.from(CORE_DICTIONARY);
 textInput.addEventListener('input', () => {
     const words = textInput.value.split(/\s+/);
     const last = words[words.length - 1].toLowerCase();
-    if (last.length < 1) {
-        predictiveBar.classList.add('hidden');
-        return;
+    if (last.length < 1) { 
+        predictiveBar.classList.add('hidden'); 
+        return; 
     }
     const matches = dynamicDictionary.filter(w => w.startsWith(last) && w !== last);
     if (matches.length > 0) {
@@ -685,7 +711,7 @@ speechSynthesis.onvoiceschanged = populateVoiceList;
 populateVoiceList();
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// Backup / Import
+// Backup
 document.getElementById('exportBtn').onclick = () => {
     const data = { phrases: phraseCategories, history: conversationHistory };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -694,6 +720,7 @@ document.getElementById('exportBtn').onclick = () => {
     a.download = `ALS_Backup_${new Date().toISOString().slice(0,10)}.json`;
     a.click();
 };
+
 document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
 document.getElementById('importFileInput').onchange = (e) => {
     const file = e.target.files[0];
@@ -712,6 +739,7 @@ document.getElementById('importFileInput').onchange = (e) => {
     };
     reader.readAsText(file);
 };
+
 document.getElementById('clearHistoryBtn').onclick = () => {
     if (confirm("Clear all conversation history?")) {
         conversationHistory = [];
@@ -720,26 +748,138 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
+// ==================== SPEECH RECOGNITION & VISUALIZER ====================
+let recognition = null;
+let speechDebounceTimer = null;
+
+function createRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return null;
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => updateMicUI(true);
+    rec.onerror = (event) => { 
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { 
+            intentionallyStopped = true; 
+            updateMicUI(false); 
+        } 
+    };
+    rec.onend = () => { 
+        updateMicUI(false); 
+        if (!intentionallyStopped) setTimeout(() => { 
+            if (recognition) recognition.start(); 
+        }, isMobileDevice ? 600 : 300); 
+    };
+    rec.onresult = (event) => {
+        if (isTTSPlaying) return;
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) 
+            currentTranscript += event.results[i][0].transcript;
+        
+        if (currentTranscript.trim()) {
+            liveTranscript.textContent = '🗣️ ' + currentTranscript;
+            liveTranscript.classList.remove('hidden');
+            clearTimeout(speechDebounceTimer);
+            speechDebounceTimer = setTimeout(() => {
+                const finalText = currentTranscript.trim();
+                if (finalText) addToConversation('other', finalText);
+                liveTranscript.textContent = '';
+                liveTranscript.classList.add('hidden');
+            }, 1500);
+        }
+    };
+    return rec;
+}
+
+function updateMicUI(isListening) {
+    if (isListening) {
+        listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+        listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
+    } else {
+        listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+        listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
+    }
+}
+
+listenBtn.onclick = () => {
+    if (isTTSPlaying) return;
+    if (!intentionallyStopped) {
+        intentionallyStopped = true;
+        if (recognition) { 
+            try { recognition.abort(); recognition.stop(); } catch(e) {} 
+            recognition = null; 
+        }
+        updateMicUI(false);
+    } else {
+        intentionallyStopped = false;
+        updateMicUI(true);
+        if (!recognition) recognition = createRecognition();
+        if (recognition) recognition.start();
+        if (!isMobileDevice) initVisualizer();
+    }
+};
+
+async function initVisualizer() {
+    if (isMobileDevice || window.visualizerActive) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 64;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        window.visualizerActive = true;
+
+        function draw() {
+            if (!window.visualizerActive) return;
+            requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            waveformCanvas.width = waveformCanvas.offsetWidth;
+            waveformCanvas.height = waveformCanvas.offsetHeight;
+            canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
+            let x = 0;
+            for(let i = 0; i < dataArray.length; i++) {
+                const barHeight = dataArray[i] / 4;
+                canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.2})`;
+                canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 2;
+            }
+        }
+        draw();
+    } catch (e) { console.warn("Visualizer failed", e); }
+}
+
 // ==================== INIT ====================
 renderCategories();
 renderPhrases();
 renderConversationHistory();
+
 if (genBtn) genBtn.disabled = false;
 
 const browserSection = document.getElementById('browserVoiceSection');
 const elevenSection = document.getElementById('elevenLabsVoiceSection');
 if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
 if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
 
-// Start mic ON and keep it ON
-setTimeout(() => {
-    intentionallyStopped = false;
-    if (!recognition) recognition = createRecognition();
-    if (recognition) recognition.start();
-    updateMicUI(true);
-}, 600);
-
+// Start mic on desktop
+if (!isMobileDevice) {
+    setTimeout(() => {
+        intentionallyStopped = false;
+        if (!recognition) recognition = createRecognition();
+        if (recognition) recognition.start();
+        initVisualizer();
+    }, 800);
+} else {
+    updateMicUI(false);
+}
 </script>
 </body>
 </html>
