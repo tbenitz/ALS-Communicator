@@ -21,82 +21,23 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="range"] { 
-            -webkit-appearance: none; 
-            width: 100%; 
-            height: 16px; 
-            background: #334155; 
-            outline: none; 
-            border-radius: 8px; 
+            -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; 
         }
         input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; 
-            appearance: none; 
-            width: 32px; 
-            height: 32px; 
-            border-radius: 50%; 
-            background: #22c55e; 
-            cursor: pointer; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
+            -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); 
         }
-        @keyframes pulse-border { 
-            0% { border-color: #3b82f6; } 
-            50% { border-color: #93c5fd; } 
-            100% { border-color: #3b82f6; } 
-        }
+        @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
-        .suggestion-btn { 
-            background: #166534; 
-            border: 2px solid #22c55e; 
-            font-size: 1.15rem; 
-            white-space: normal; 
-            word-wrap: break-word; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 0.75rem; 
-            transition: all 0.2s; 
-            border-radius: 0.75rem; 
-            color: #f8fafc; 
-            font-weight: 700; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
-        }
+        .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
-        .msg { 
-            padding: 0.5rem 0.75rem; 
-            border-radius: 1rem; 
-            margin-bottom: 0.5rem; 
-            max-width: 90%; 
-            position: relative; 
-            word-wrap: break-word; 
-            font-size: 1rem; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-        }
+        .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .msg-other { background: #334155; align-self: flex-start; color: #f8fafc; border-bottom-left-radius: 0.25rem; }
         .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
-        .save-phrase-btn { 
-            font-size: 0.7rem; 
-            background: #0f172a; 
-            color: #cbd5e1; 
-            padding: 4px 8px; 
-            border-radius: 8px; 
-            margin-top: 6px; 
-            display: inline-block; 
-            cursor: pointer; 
-            border: 1px solid #475569; 
-            transition: background 0.2s; 
-        }
+        .save-phrase-btn { font-size: 0.7rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
         .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
         .modal-overlay { backdrop-filter: blur(5px); }
-        .modal-content { 
-            background: #1e293b; 
-            border: 1px solid #334155; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); 
-        }
-        @keyframes pulse-text { 
-            0% { opacity: 0.6; } 
-            50% { opacity: 1; } 
-            100% { opacity: 0.6; } 
-        }
+        .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
+        @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .live-text { animation: pulse-text 1.5s infinite; }
         canvas { image-rendering: pixelated; }
     </style>
@@ -212,9 +153,8 @@
                 <label class="font-bold text-slate-300 text-lg">Speech-to-Text Provider</label>
                 <select id="sttProvider" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500">
                     <option value="browser">Default OS / Browser (Web Speech API)</option>
-                    <option value="elevenlabs">ElevenLabs Scribe</option>
+                    <option value="elevenlabs">ElevenLabs Scribe (Browser Mode)</option>
                 </select>
-                <p class="text-xs text-slate-400">ElevenLabs Scribe is currently using browser mode for continuous listening.</p>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
@@ -223,32 +163,11 @@
                     <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
                     <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
                 </div>
-                <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose what happens when you tap a phrase.</p>
             </div>
 
             <div class="flex items-center gap-3 border-t border-slate-700 pt-3">
                 <input type="checkbox" id="useTextInputContext" class="w-5 h-5 accent-green-500">
                 <label for="useTextInputContext" class="font-bold text-slate-300 text-lg cursor-pointer">Use Text Input for Context</label>
-            </div>
-            <p class="text-xs text-slate-400 -mt-1">Add current text box content to help guide AI replies.</p>
-
-            <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
-                <div class="flex justify-between font-bold text-slate-300">
-                    <span>AI Context</span>
-                    <span id="aiContextVal" class="text-green-400">Last 5 messages</span>
-                </div>
-                <input type="range" id="aiContextSlider" min="1" max="20" value="5" step="1" class="my-2">
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300"><span>AI Reply Length</span><span id="replyLenVal" class="text-green-400">Short</span></div>
-                    <input type="range" id="replyLenSlider" min="1" max="3" value="1" step="1" class="my-2">
-                </div>
-                <div class="flex flex-col gap-1">
-                    <div class="flex justify-between font-bold text-slate-300"><span>Number of Replies</span><span id="aiCountVal" class="text-green-400">3</span></div>
-                    <input type="range" id="aiCountSlider" min="1" max="9" value="3" step="1" class="my-2">
-                </div>
             </div>
 
             <div class="flex gap-3 mt-4">
@@ -341,8 +260,9 @@ const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
 const useTextInputContextCheckbox = document.getElementById('useTextInputContext');
 
-// Speech Recognition (continuous, no auto restart)
+// Speech Recognition (NO auto-restart)
 let recognition = null;
+let speechDebounceTimer = null;
 
 // ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
@@ -425,20 +345,13 @@ function speakBrowser(text) {
 
 async function speakElevenLabs(text) {
     const key = elevenLabsApiKey.trim();
+    if (!key || !key.startsWith('sk_')) throw new Error("Invalid ElevenLabs API key.");
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
         method: "POST",
-        headers: {
-            "Accept": "audio/mpeg",
-            "xi-api-key": key,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            text: text,
-            model_id: "eleven_monolingual_v1",
-            voice_settings: { stability: 0.75, similarity_boost: 0.75 }
-        })
+        headers: { "Accept": "audio/mpeg", "xi-api-key": key, "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text, model_id: "eleven_monolingual_v1", voice_settings: { stability: 0.75, similarity_boost: 0.75 } })
     });
-    if (!res.ok) throw new Error("TTS failed");
+    if (!res.ok) throw new Error("ElevenLabs TTS failed");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
@@ -453,9 +366,7 @@ async function loadElevenVoices() {
     const key = elevenLabsApiKey?.trim();
     if (!key) return;
     try {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': key }
-        });
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
         const data = await res.json();
         select.innerHTML = '';
         data.voices.forEach(voice => {
@@ -470,7 +381,7 @@ async function loadElevenVoices() {
     }
 }
 
-// ==================== PHRASE & CONVERSATION FUNCTIONS ====================
+// ==================== PHRASE & CONVERSATION ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -636,9 +547,12 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => textInput.value = '';
 
-// ==================== SPEECH RECOGNITION - CONTINUOUS ====================
+// ==================== SPEECH RECOGNITION - NO AUTO RESTART ====================
 function createRecognition() {
-    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) return null;
+    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+        alert("Speech recognition is not supported in this browser.");
+        return null;
+    }
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     rec.lang = 'en-US';
     rec.interimResults = true;
@@ -646,8 +560,11 @@ function createRecognition() {
     rec.maxAlternatives = 1;
 
     rec.onstart = () => updateMicUI(true);
-    rec.onerror = (event) => console.warn("Mic error:", event.error);
-    rec.onend = () => updateMicUI(false);   // No auto-restart
+    rec.onerror = (event) => console.warn("Recognition error:", event.error);
+    rec.onend = () => {
+        // NO AUTO RESTART - as requested
+        updateMicUI(false);
+    };
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let transcript = '';
@@ -659,9 +576,10 @@ function createRecognition() {
             liveTranscript.classList.remove('hidden');
             clearTimeout(speechDebounceTimer);
             speechDebounceTimer = setTimeout(() => {
-                if (transcript.trim()) addToConversation('other', transcript.trim());
+                const finalText = transcript.trim();
+                if (finalText) addToConversation('other', finalText);
                 liveTranscript.classList.add('hidden');
-            }, 1200);
+            }, 1500);
         }
     };
     return rec;
@@ -681,10 +599,14 @@ function updateMicUI(listening) {
 function startListening() {
     if (isListening) return;
     if (!recognition) recognition = createRecognition();
-    if (recognition) recognition.start();
+    if (recognition) {
+        recognition.start();
+        isListening = true;
+    }
 }
 
 function stopListening() {
+    isListening = false;
     if (recognition) {
         try { recognition.stop(); } catch(e) {}
     }
@@ -706,10 +628,10 @@ renderPhrases();
 renderConversationHistory();
 genBtn.disabled = false;
 
-// Auto start mic on both desktop and mobile
+// Auto start mic on page load (mobile + desktop)
 setTimeout(() => {
     startListening();
-}, 600);
+}, 800);
 
 </script>
 </body>
