@@ -100,7 +100,7 @@
         </div>
     </main>
 
-    <!-- Settings Modal - FULL -->
+    <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-2xl rounded-2xl p-6 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-600 pb-3">
@@ -131,9 +131,12 @@
             <!-- ElevenLabs Voice Section -->
             <div id="elevenLabsVoiceSection" class="flex flex-col gap-4 hidden">
                 <div>
-                    <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice (including clones)</label>
-                    <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500"></select>
+                    <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice</label>
+                    <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
+                        <option value="">Loading voices...</option>
+                    </select>
                 </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Stability</span><span id="stabilityVal">0.75</span></div>
@@ -150,15 +153,22 @@
                 </div>
             </div>
 
-            <!-- Tap Action (RESTORED) -->
+            <!-- Tap Action -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
+                <label class="font-bold text-slate-300 text-lg">Tap Action</label>
                 <div class="flex gap-3 h-12">
                     <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
                     <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
                 </div>
-                <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose whether clicking a phrase speaks it right away, or adds it to the box.</p>
+                <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose what happens when you tap a phrase.</p>
             </div>
+
+            <!-- New: Use Text Input for Context -->
+            <div class="flex items-center gap-3 border-t border-slate-700 pt-3">
+                <input type="checkbox" id="useTextInputContext" class="w-5 h-5 accent-green-500">
+                <label for="useTextInputContext" class="font-bold text-slate-300 text-lg cursor-pointer">Use Text Input for Context</label>
+            </div>
+            <p class="text-xs text-slate-400 -mt-1">When enabled, current text in the input box will be added to AI context to help guide replies.</p>
 
             <!-- AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
@@ -240,10 +250,11 @@ let isEditMode = false;
 let intentionallyStopped = true;
 let isTTSPlaying = false;
 
-// ElevenLabs settings
+// Settings
 let elevenLabsApiKey = localStorage.getItem('elevenLabsApiKey') || '';
 let ttsProvider = localStorage.getItem('ttsProvider') || 'browser';
 let contextType = localStorage.getItem('contextType') || 'messages';
+let useTextInputContext = localStorage.getItem('useTextInputContext') === 'true';
 let currentElevenVoiceId = localStorage.getItem('elevenVoiceId') || '21m00Tcm4TlvDq8ikWAM';
 let elevenStability = parseFloat(localStorage.getItem('elevenStability')) || 0.75;
 let elevenSimilarity = parseFloat(localStorage.getItem('elevenSimilarity')) || 0.75;
@@ -251,7 +262,7 @@ let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// DOM
+// DOM Elements
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -284,6 +295,7 @@ const similaritySlider = document.getElementById('similaritySlider');
 const styleSlider = document.getElementById('styleSlider');
 const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
+const useTextInputContextCheckbox = document.getElementById('useTextInputContext');
 const aiContextSlider = document.getElementById('aiContextSlider');
 const aiContextVal = document.getElementById('aiContextVal');
 const replyLenSlider = document.getElementById('replyLenSlider');
@@ -293,26 +305,18 @@ const aiCountVal = document.getElementById('aiCountVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
 
-// ==================== TAP ACTION (RESTORED) ====================
-function updateActionUI() {
-    if (clickAction === 'speak') {
-        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
-        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
-    } else {
-        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
-        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
-    }
-}
-btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
-btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
-updateActionUI();
-
 // ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
 elevenLabsApiKeyInput.value = elevenLabsApiKey;
 ttsProviderSelect.value = ttsProvider;
+useTextInputContextCheckbox.checked = useTextInputContext;
+
+useTextInputContextCheckbox.addEventListener('change', () => {
+    useTextInputContext = useTextInputContextCheckbox.checked;
+    localStorage.setItem('useTextInputContext', useTextInputContext);
+});
 
 elevenLabsApiKeyInput.addEventListener('change', () => {
     elevenLabsApiKey = elevenLabsApiKeyInput.value.trim();
@@ -361,6 +365,20 @@ replyLenSlider.addEventListener('input', () => {
 });
 aiCountSlider.addEventListener('input', () => aiCountVal.textContent = aiCountSlider.value);
 micSensSlider.addEventListener('input', () => micSensVal.textContent = micSensSlider.value + "%");
+
+// Tap Action
+function updateActionUI() {
+    if (clickAction === 'speak') {
+        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+    } else {
+        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+    }
+}
+btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
+btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
+updateActionUI();
 
 // ==================== TTS ====================
 async function speak(text) {
@@ -417,21 +435,42 @@ async function speakElevenLabs(text) {
     await new Promise(r => { audio.onended = r; audio.play(); });
 }
 
-// Load ElevenLabs voices
+// Load ElevenLabs voices (fixed version)
 async function loadElevenVoices() {
-    if (!elevenLabsApiKey) return;
+    const select = document.getElementById('elevenVoiceSelect');
+    select.innerHTML = '<option value="">Loading voices...</option>';
+
+    if (!elevenLabsApiKey) {
+        select.innerHTML = '<option value="">Enter API key first</option>';
+        return;
+    }
+
     try {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': elevenLabsApiKey } });
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+            headers: { 'xi-api-key': elevenLabsApiKey }
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const data = await res.json();
-        elevenVoiceSelect.innerHTML = '';
+        select.innerHTML = '';
+
+        if (!data.voices || data.voices.length === 0) {
+            select.innerHTML = '<option value="">No voices found</option>';
+            return;
+        }
+
         data.voices.forEach(voice => {
             const opt = document.createElement('option');
             opt.value = voice.voice_id;
             opt.textContent = voice.name + (voice.category ? ` (${voice.category})` : '');
             if (voice.voice_id === currentElevenVoiceId) opt.selected = true;
-            elevenVoiceSelect.appendChild(opt);
+            select.appendChild(opt);
         });
-    } catch (e) { console.error("Failed to load voices", e); }
+    } catch (e) {
+        console.error("Failed to load voices:", e);
+        select.innerHTML = '<option value="">Failed to load - check API key</option>';
+    }
 }
 
 elevenVoiceSelect.addEventListener('change', () => {
@@ -439,12 +478,13 @@ elevenVoiceSelect.addEventListener('change', () => {
     localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
 });
 
-// ==================== AI REPLY (BUTTON ONLY) ====================
+// ==================== AI REPLY (with optional text input context) ====================
 grokSuggestBtn.onclick = async () => {
-    if (conversationHistory.length === 0) {
-        suggestStatus.textContent = "Have a conversation first!";
+    if (conversationHistory.length === 0 && !textInput.value.trim()) {
+        suggestStatus.textContent = "Have a conversation or type something first!";
         return;
     }
+
     suggestStatus.textContent = "Generating AI suggestions...";
     grokSuggestionsEl.innerHTML = `<div class="text-center py-8 text-slate-400">Thinking...</div>`;
 
@@ -452,13 +492,27 @@ grokSuggestBtn.onclick = async () => {
     const lengthLevel = parseInt(replyLenSlider.value);
     const limit = parseInt(aiContextSlider.value);
 
-    let contextStr = contextType === 'messages' 
-        ? conversationHistory.slice(-limit).map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n')
-        : conversationHistory.map(m => m.text).join(' ').slice(-limit * 1000);
+    let contextParts = [];
+
+    // Conversation history context
+    if (contextType === 'messages') {
+        contextParts.push(conversationHistory.slice(-limit)
+            .map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n'));
+    } else {
+        let allText = conversationHistory.map(m => m.text).join(' ');
+        contextParts.push(allText.slice(-limit * 1000));
+    }
+
+    // New: Text input context
+    if (useTextInputContext && textInput.value.trim()) {
+        contextParts.push(`Current partial message from you: "${textInput.value.trim()}"`);
+    }
+
+    const contextStr = contextParts.join('\n\n');
 
     const lengthInstr = lengthLevel === 1 ? "very short (4-12 words)" : lengthLevel === 2 ? "medium (12-25 words)" : "natural detailed (25-50 words)";
 
-    const prompt = `You are a person with ALS using a speech device. Generate ${numReplies} natural casual replies.\nRules:\n- First person only\n- Very casual and human\n- No AI-like behavior\n- Length: ${lengthInstr}\n\nRecent conversation:\n${contextStr}\n\nOutput ONLY the replies, one per line.`;
+    const prompt = `You are a person with ALS using a speech device. Generate ${numReplies} natural casual replies.\nRules:\n- First person only\n- Very casual and human\n- No AI-like behavior\n- Length: ${lengthInstr}\n\nContext:\n${contextStr}\n\nOutput ONLY the replies, one per line.`;
 
     try {
         const res = await fetch('/api/grok', {
@@ -482,10 +536,11 @@ grokSuggestBtn.onclick = async () => {
         });
     } catch (err) {
         suggestStatus.textContent = 'AI service unavailable.';
+        console.error(err);
     }
 };
 
-// ==================== PHRASE & CONVERSATION FUNCTIONS ====================
+// ==================== REST OF THE APP (full) ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -622,7 +677,7 @@ editCategoryBtn.onclick = () => {
     }
 };
 
-// Predictive
+// Predictive Text
 let dynamicDictionary = Array.from(CORE_DICTIONARY);
 textInput.addEventListener('input', () => {
     const words = textInput.value.split(/\s+/);
@@ -647,7 +702,7 @@ textInput.addEventListener('input', () => {
     } else predictiveBar.classList.add('hidden');
 });
 
-// Speak button
+// Buttons
 genBtn.onclick = () => {
     const text = textInput.value.trim();
     if (text) speak(text);
@@ -658,7 +713,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => textInput.value = '';
 
-// Browser voices
+// Browser Voices
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
     const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
@@ -819,7 +874,7 @@ if (!isMobileDevice) {
     updateMicUI(false);
 }
 
-// Initial visibility
+// Initial TTS section visibility
 document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
 document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
