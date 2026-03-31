@@ -6,26 +6,15 @@
     <title>ALS Communicator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { 
-            background-color: #121212; 
-            color: #e2e8f0; 
-            margin: 0; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            height: 100dvh;
-            overflow: hidden;
-        }
+        body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; height: 100dvh; overflow: hidden; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        input[type="range"] { 
-            -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; 
-        }
-        input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); 
-        }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
         .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -152,8 +141,8 @@
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
                 <label class="font-bold text-slate-300 text-lg">Speech-to-Text Provider</label>
                 <select id="sttProvider" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500">
-                    <option value="browser">Default OS / Browser (Web Speech API)</option>
-                    <option value="elevenlabs">ElevenLabs Scribe (Browser Mode)</option>
+                    <option value="browser">Default OS / Browser</option>
+                    <option value="elevenlabs">ElevenLabs Scribe</option>
                 </select>
             </div>
 
@@ -260,7 +249,7 @@ const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
 const useTextInputContextCheckbox = document.getElementById('useTextInputContext');
 
-// Speech Recognition (NO auto-restart)
+// Speech Recognition
 let recognition = null;
 let speechDebounceTimer = null;
 
@@ -547,10 +536,52 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => textInput.value = '';
 
+// Backup / Import
+document.getElementById('exportBtn').onclick = () => {
+    const data = { phrases: phraseCategories, history: conversationHistory };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ALS_Backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+};
+
+document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
+document.getElementById('importFileInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try {
+            const data = JSON.parse(ev.target.result);
+            if (data.phrases) phraseCategories = data.phrases;
+            if (data.history) conversationHistory = data.history || [];
+            saveToStorage();
+            saveConversation();
+            currentCategory = Object.keys(phraseCategories)[0] || "Basics";
+            renderCategories();
+            renderPhrases();
+            renderConversationHistory();
+            alert("Import successful!");
+        } catch(err) {
+            alert("Import failed. Invalid file.");
+        }
+    };
+    reader.readAsText(file);
+};
+
+document.getElementById('clearHistoryBtn').onclick = () => {
+    if (confirm("Clear all conversation history?")) {
+        conversationHistory = [];
+        saveConversation();
+        renderConversationHistory();
+    }
+};
+
 // ==================== SPEECH RECOGNITION - NO AUTO RESTART ====================
 function createRecognition() {
     if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
-        alert("Speech recognition is not supported in this browser.");
+        alert("Speech recognition not supported in this browser.");
         return null;
     }
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -628,7 +659,7 @@ renderPhrases();
 renderConversationHistory();
 genBtn.disabled = false;
 
-// Auto start mic on page load (mobile + desktop)
+// Auto start mic on page load
 setTimeout(() => {
     startListening();
 }, 800);
