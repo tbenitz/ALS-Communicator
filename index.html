@@ -6,44 +6,138 @@
     <title>ALS Communicator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { 
+            background-color: #121212; 
+            color: #e2e8f0; 
+            margin: 0; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            height: 100dvh;
+            overflow: hidden;
+        }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
-        .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
-        .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
-        .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .msg-other { background: #334155; align-self: flex-start; color: #f8fafc; border-bottom-left-radius: 0.25rem; }
-        .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
-        .save-phrase-btn { font-size: 0.7rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
-        .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
+        input[type="range"] { 
+            -webkit-appearance: none; 
+            width: 100%; 
+            height: 16px; 
+            background: #334155; 
+            outline: none; 
+            border-radius: 8px; 
+        }
+        input[type="range"]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            appearance: none; 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 50%; 
+            background: #22c55e; 
+            cursor: pointer; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
+        }
+        @keyframes pulse-border { 
+            0% { border-color: #3b82f6; } 
+            50% { border-color: #93c5fd; } 
+            100% { border-color: #3b82f6; } 
+        }
+        .edit-mode-btn { 
+            border: 3px dashed #3b82f6; 
+            animation: pulse-border 2s infinite; 
+        }
+        .suggestion-btn { 
+            background: #166534; 
+            border: 2px solid #22c55e; 
+            font-size: 1.15rem; 
+            white-space: normal; 
+            word-wrap: break-word; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 0.75rem; 
+            transition: all 0.2s; 
+            border-radius: 0.75rem; 
+            color: #f8fafc; 
+            font-weight: 700; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        }
+        .suggestion-btn:hover { 
+            background: #15803d; 
+            transform: scale(1.02); 
+        }
+        .msg { 
+            padding: 0.5rem 0.75rem; 
+            border-radius: 1rem; 
+            margin-bottom: 0.5rem; 
+            max-width: 90%; 
+            position: relative; 
+            word-wrap: break-word; 
+            font-size: 1rem; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+        }
+        .msg-other { 
+            background: #334155; 
+            align-self: flex-start; 
+            color: #f8fafc; 
+            border-bottom-left-radius: 0.25rem; 
+        }
+        .msg-you { 
+            background: #166534; 
+            align-self: flex-end; 
+            color: #f0fdf4; 
+            border-bottom-right-radius: 0.25rem; 
+        }
+        .save-phrase-btn { 
+            font-size: 0.7rem; 
+            background: #0f172a; 
+            color: #cbd5e1; 
+            padding: 4px 8px; 
+            border-radius: 8px; 
+            margin-top: 6px; 
+            display: inline-block; 
+            cursor: pointer; 
+            border: 1px solid #475569; 
+            transition: background 0.2s; 
+        }
+        .save-phrase-btn:hover { 
+            background: #1e293b; 
+            color: #fff; 
+            border-color: #94a3b8; 
+        }
         .modal-overlay { backdrop-filter: blur(5px); }
-        .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
-        @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        .modal-content { 
+            background: #1e293b; 
+            border: 1px solid #334155; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); 
+        }
+        @keyframes pulse-text { 
+            0% { opacity: 0.6; } 
+            50% { opacity: 1; } 
+            100% { opacity: 0.6; } 
+        }
         .live-text { animation: pulse-text 1.5s infinite; }
         canvas { image-rendering: pixelated; }
     </style>
 </head>
 <body class="flex flex-col h-[100dvh] overflow-hidden bg-[#121212] text-slate-200">
+
     <header class="flex justify-between items-center bg-gray-900 p-2 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
         <h1 class="text-lg md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="inline">ALS Communicator</span></h1>
         <button id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm text-sm md:text-base">
             ⚙️ <span class="hidden sm:inline">Settings</span>
         </button>
     </header>
+
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden">
+        <!-- Left Column -->
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
                 <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
             </div>
+
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-1 md:gap-2">
                 <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-2 md:py-3 disabled:opacity-50">
                     <span id="btnText" class="flex items-center gap-1 md:flex-col"><span class="text-2xl md:text-4xl leading-none">🔊</span>Speak</span>
@@ -61,19 +155,24 @@
                     <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">❌</span>Clear
                 </button>
             </div>
+
             <div class="shrink-0 flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 relative h-8 md:h-12">
                 <canvas id="waveformCanvas" class="absolute inset-0 w-full h-full hidden opacity-80"></canvas>
                 <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-2 md:px-3 text-indigo-300 italic text-xs md:text-sm font-bold live-text hidden text-shadow-md truncate"></div>
             </div>
+
             <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-1.5 md:p-2 rounded-xl border border-slate-700/50">
                 <div id="suggestStatus" class="text-[10px] md:text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
+
             <div class="flex-1 min-h-0 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
                 <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
                 <div id="conversationHistory" class="flex-1 overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
+
+        <!-- Right Column -->
         <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0 overflow-hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
@@ -133,14 +232,14 @@
                 </select>
             </div>
 
-            <!-- New: Speech-to-Text Provider -->
+            <!-- Speech-to-Text Provider -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
                 <label class="font-bold text-slate-300 text-lg">Speech-to-Text Provider</label>
                 <select id="sttProvider" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500">
                     <option value="browser">Default OS / Browser (Web Speech API)</option>
                     <option value="elevenlabs">ElevenLabs Scribe</option>
                 </select>
-                <p class="text-xs text-slate-400">ElevenLabs Scribe offers higher accuracy but uses more data and battery.</p>
+                <p class="text-xs text-slate-400">ElevenLabs Scribe offers higher accuracy but uses more data.</p>
             </div>
 
             <!-- Tap Action -->
@@ -236,7 +335,7 @@ let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
 let clickAction = localStorage.getItem('clickAction') || 'speak';
 let lastSpoken = '';
 let isEditMode = false;
-let intentionallyStopped = true;
+let isListening = false;
 let isTTSPlaying = false;
 
 // Settings
@@ -246,9 +345,6 @@ let sttProvider = localStorage.getItem('sttProvider') || 'browser';
 let contextType = localStorage.getItem('contextType') || 'messages';
 let useTextInputContext = localStorage.getItem('useTextInputContext') === 'true';
 let currentElevenVoiceId = localStorage.getItem('elevenVoiceId') || '21m00Tcm4TlvDq8ikWAM';
-let elevenStability = parseFloat(localStorage.getItem('elevenStability')) || 0.75;
-let elevenSimilarity = parseFloat(localStorage.getItem('elevenSimilarity')) || 0.75;
-let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -290,59 +386,46 @@ const replyLenSlider = document.getElementById('replyLenSlider');
 const replyLenVal = document.getElementById('replyLenVal');
 const aiCountSlider = document.getElementById('aiCountSlider');
 const aiCountVal = document.getElementById('aiCountVal');
-const micSensSlider = document.getElementById('micSensSlider');
-const micSensVal = document.getElementById('micSensVal');
 
-// Speech Recognition variables
+// Speech variables
 let recognition = null;
 let mediaRecorder = null;
 let audioChunks = [];
-let sttInterval = null;
 let speechDebounceTimer = null;
-let visualizerActive = false;
 
 // ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
-if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.value = elevenLabsApiKey;
-if (ttsProviderSelect) ttsProviderSelect.value = ttsProvider;
-if (sttProviderSelect) sttProviderSelect.value = sttProvider;
-if (useTextInputContextCheckbox) useTextInputContextCheckbox.checked = useTextInputContext;
+elevenLabsApiKeyInput.value = elevenLabsApiKey;
+ttsProviderSelect.value = ttsProvider;
+sttProviderSelect.value = sttProvider;
+useTextInputContextCheckbox.checked = useTextInputContext;
 
-if (useTextInputContextCheckbox) useTextInputContextCheckbox.addEventListener('change', () => {
+useTextInputContextCheckbox.addEventListener('change', () => {
     useTextInputContext = useTextInputContextCheckbox.checked;
     localStorage.setItem('useTextInputContext', useTextInputContext);
 });
 
-if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.addEventListener('change', () => {
+elevenLabsApiKeyInput.addEventListener('change', () => {
     elevenLabsApiKey = elevenLabsApiKeyInput.value.trim();
     localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
-    if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
-if (ttsProviderSelect) ttsProviderSelect.addEventListener('change', () => {
+ttsProviderSelect.addEventListener('change', () => {
     ttsProvider = ttsProviderSelect.value;
     localStorage.setItem('ttsProvider', ttsProvider);
-    const browserSection = document.getElementById('browserVoiceSection');
-    const elevenSection = document.getElementById('elevenLabsVoiceSection');
-    if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
-    if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
-    if (ttsProvider === 'elevenlabs') loadElevenVoices();
+    document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
+    document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 });
 
-if (sttProviderSelect) sttProviderSelect.addEventListener('change', () => {
+sttProviderSelect.addEventListener('change', () => {
     sttProvider = sttProviderSelect.value;
     localStorage.setItem('sttProvider', sttProvider);
-    if (!intentionallyStopped) {
-        stopListening();
-        setTimeout(startListening, 300);
-    }
 });
 
 // Tap Action
 function updateActionUI() {
-    if (!btnActionSpeak || !btnActionType) return;
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
         btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -351,8 +434,8 @@ function updateActionUI() {
         btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
     }
 }
-if (btnActionSpeak) btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
-if (btnActionType) btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
+btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
+btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
 updateActionUI();
 
 // ==================== TTS ====================
@@ -360,8 +443,8 @@ async function speak(text) {
     if (!text?.trim()) return;
     lastSpoken = text;
     addToConversation('you', text);
-    if (genBtn) genBtn.disabled = true;
-    if (btnText) btnText.innerHTML = '🔊 ...';
+    genBtn.disabled = true;
+    btnText.innerHTML = '🔊 ...';
     isTTSPlaying = true;
     try {
         if (ttsProvider === 'elevenlabs' && elevenLabsApiKey?.trim()) {
@@ -374,8 +457,8 @@ async function speak(text) {
         speakBrowser(text);
     } finally {
         setTimeout(() => {
-            if (genBtn) genBtn.disabled = false;
-            if (btnText) btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
+            genBtn.disabled = false;
+            btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
             isTTSPlaying = false;
         }, 300);
     }
@@ -394,7 +477,9 @@ function speakBrowser(text) {
 
 async function speakElevenLabs(text) {
     const key = elevenLabsApiKey.trim();
-    if (!key || !key.startsWith('sk_')) throw new Error("Invalid ElevenLabs API key.");
+    if (!key || !key.startsWith('sk_')) {
+        throw new Error("Invalid ElevenLabs API key.");
+    }
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
         method: "POST",
         headers: {
@@ -406,28 +491,20 @@ async function speakElevenLabs(text) {
             text: text,
             model_id: "eleven_monolingual_v1",
             voice_settings: {
-                stability: elevenStability,
-                similarity_boost: elevenSimilarity,
-                style: elevenStyle
+                stability: 0.75,
+                similarity_boost: 0.75
             }
         })
     });
-    if (!res.ok) {
-        let errorMsg = `ElevenLabs Error (${res.status})`;
-        if (res.status === 401) errorMsg = "ElevenLabs: Invalid API key.";
-        else if (res.status === 429) errorMsg = "ElevenLabs: Rate limit exceeded.";
-        alert(errorMsg + "\n\nFalling back to browser voice.");
-        throw new Error(errorMsg);
-    }
+    if (!res.ok) throw new Error("ElevenLabs TTS failed");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
         audio.onended = resolve;
-        audio.onerror = () => reject(new Error("Audio playback failed"));
-        audio.play().catch(reject);
+        audio.play();
     });
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    URL.revokeObjectURL(url);
 }
 
 // ==================== ELEVENLABS VOICES ====================
@@ -442,7 +519,10 @@ async function loadElevenVoices() {
     }
     try {
         const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': key, 'Accept': 'application/json' }
+            headers: {
+                'xi-api-key': key,
+                'Accept': 'application/json'
+            }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -455,10 +535,11 @@ async function loadElevenVoices() {
             select.appendChild(opt);
         });
     } catch (e) {
+        console.error("Failed to load voices:", e);
         select.innerHTML = '<option value="">Failed to load voices. Check API key.</option>';
     }
 }
-if (elevenVoiceSelect) elevenVoiceSelect.addEventListener('change', () => {
+elevenVoiceSelect.addEventListener('change', () => {
     currentElevenVoiceId = elevenVoiceSelect.value;
     localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
 });
@@ -471,12 +552,13 @@ grokSuggestBtn.onclick = async () => {
     }
     suggestStatus.textContent = "Generating AI suggestions...";
     grokSuggestionsEl.innerHTML = `<div class="text-center py-8 text-slate-400">Thinking...</div>`;
-    const numReplies = parseInt(aiCountSlider ? aiCountSlider.value : 3);
-    const lengthLevel = parseInt(replyLenSlider ? replyLenSlider.value : 1);
-    const limit = parseInt(aiContextSlider ? aiContextSlider.value : 5);
+    const numReplies = parseInt(aiCountSlider.value || 3);
+    const lengthLevel = parseInt(replyLenSlider.value || 1);
+    const limit = parseInt(aiContextSlider.value || 5);
     let contextParts = [];
     if (contextType === 'messages') {
-        contextParts.push(conversationHistory.slice(-limit).map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n'));
+        contextParts.push(conversationHistory.slice(-limit)
+            .map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n'));
     } else {
         let allText = conversationHistory.map(m => m.text).join(' ');
         contextParts.push(allText.slice(-limit * 1000));
@@ -523,8 +605,13 @@ function handlePhraseTap(phrase) {
     }
 }
 
-function saveToStorage() { localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); }
-function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
+function saveToStorage() { 
+    localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); 
+}
+
+function saveConversation() { 
+    localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); 
+}
 
 function renderCategories() {
     categoryScroll.innerHTML = '';
@@ -532,7 +619,12 @@ function renderCategories() {
         const btn = document.createElement('button');
         btn.textContent = cat;
         btn.className = `shrink-0 px-4 py-2 text-sm font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
-        btn.onclick = () => { currentCategory = cat; currentCategoryTitle.textContent = cat; renderCategories(); renderPhrases(); };
+        btn.onclick = () => { 
+            currentCategory = cat; 
+            currentCategoryTitle.textContent = cat; 
+            renderCategories(); 
+            renderPhrases(); 
+        };
         categoryScroll.appendChild(btn);
     });
     currentCategoryTitle.textContent = currentCategory;
@@ -546,6 +638,7 @@ function renderPhrases() {
     editToggleBtn.className = isEditMode
         ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500'
         : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
+    
     if (phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
             const btn = document.createElement('button');
@@ -566,7 +659,9 @@ function appendMessageUI(speaker, text) {
     const div = document.createElement('div');
     div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
     div.innerHTML = `<div>${text}</div>`;
-    if (speaker === 'you') div.innerHTML += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save</button>`;
+    if (speaker === 'you') {
+        div.innerHTML += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save</button>`;
+    }
     convHistoryEl.appendChild(div);
     convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
 }
@@ -584,7 +679,11 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
-editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
+editToggleBtn.onclick = () => { 
+    isEditMode = !isEditMode; 
+    renderPhrases(); 
+};
+
 addCategoryBtn.onclick = () => {
     const name = prompt("New category name:");
     if (name && name.trim()) {
@@ -595,6 +694,7 @@ addCategoryBtn.onclick = () => {
         renderPhrases();
     }
 };
+
 addPhraseBtn.onclick = () => openModal("", currentCategory, -1);
 
 function openModal(phraseText, category, index) {
@@ -605,7 +705,8 @@ function openModal(phraseText, category, index) {
     sel.innerHTML = '';
     Object.keys(phraseCategories).forEach(cat => {
         const opt = document.createElement('option');
-        opt.value = cat; opt.textContent = cat;
+        opt.value = cat; 
+        opt.textContent = cat;
         if (cat === category) opt.selected = true;
         sel.appendChild(opt);
     });
@@ -627,6 +728,7 @@ document.getElementById('modalSaveBtn').onclick = () => {
     renderCategories();
     renderPhrases();
 };
+
 document.getElementById('modalDeleteBtn').onclick = () => {
     if (window.editingIndex > -1 && confirm("Delete this phrase?")) {
         phraseCategories[window.editingCategory].splice(window.editingIndex, 1);
@@ -635,6 +737,7 @@ document.getElementById('modalDeleteBtn').onclick = () => {
         renderPhrases();
     }
 };
+
 editCategoryBtn.onclick = () => {
     if (confirm(`Delete category "${currentCategory}"?`)) {
         delete phraseCategories[currentCategory];
@@ -670,7 +773,9 @@ textInput.addEventListener('input', () => {
             };
             predictiveBar.appendChild(b);
         });
-    } else predictiveBar.classList.add('hidden');
+    } else {
+        predictiveBar.classList.add('hidden');
+    }
 });
 
 genBtn.onclick = () => {
@@ -679,7 +784,11 @@ genBtn.onclick = () => {
     textInput.value = '';
     predictiveBar.classList.add('hidden');
 };
-replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
+
+replayBtn.onclick = () => { 
+    if (lastSpoken) speak(lastSpoken); 
+};
+
 document.getElementById('clearBtn').onclick = () => textInput.value = '';
 
 // Browser Voices
@@ -698,7 +807,7 @@ speechSynthesis.onvoiceschanged = populateVoiceList;
 populateVoiceList();
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// Backup
+// Backup / Import
 document.getElementById('exportBtn').onclick = () => {
     const data = { phrases: phraseCategories, history: conversationHistory };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -707,6 +816,7 @@ document.getElementById('exportBtn').onclick = () => {
     a.download = `ALS_Backup_${new Date().toISOString().slice(0,10)}.json`;
     a.click();
 };
+
 document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
 document.getElementById('importFileInput').onchange = (e) => {
     const file = e.target.files[0];
@@ -717,14 +827,20 @@ document.getElementById('importFileInput').onchange = (e) => {
             const data = JSON.parse(ev.target.result);
             if (data.phrases) phraseCategories = data.phrases;
             if (data.history) conversationHistory = data.history;
-            saveToStorage(); saveConversation();
-            currentCategory = Object.keys(phraseCategories)[0];
-            renderCategories(); renderPhrases(); renderConversationHistory();
+            saveToStorage(); 
+            saveConversation();
+            currentCategory = Object.keys(phraseCategories)[0] || "Basics";
+            renderCategories(); 
+            renderPhrases(); 
+            renderConversationHistory();
             alert("Import successful!");
-        } catch(err) { alert("Import failed."); }
+        } catch(err) { 
+            alert("Import failed."); 
+        }
     };
     reader.readAsText(file);
 };
+
 document.getElementById('clearHistoryBtn').onclick = () => {
     if (confirm("Clear all conversation history?")) {
         conversationHistory = [];
@@ -733,9 +849,9 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// ==================== SPEECH RECOGNITION ====================
+// ==================== SPEECH RECOGNITION - CONTINUOUS, NO AUTO RESTART ====================
 function createBrowserRecognition() {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return null;
+    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) return null;
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     rec.lang = 'en-US';
     rec.interimResults = true;
@@ -743,23 +859,14 @@ function createBrowserRecognition() {
     rec.maxAlternatives = 1;
 
     rec.onstart = () => updateMicUI(true);
-    rec.onerror = (event) => {
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') intentionallyStopped = true;
-    };
-    rec.onend = () => {
-        updateMicUI(false);
-        if (!intentionallyStopped) {
-            setTimeout(() => {
-                if (recognition) recognition.start();
-            }, isMobileDevice ? 600 : 300);
-        }
-    };
+    rec.onerror = (event) => console.warn("Recognition error:", event.error);
+    rec.onend = () => updateMicUI(false);  // No auto-restart - stays off until user taps again
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++)
+        for (let i = event.resultIndex; i < event.results.length; i++) {
             currentTranscript += event.results[i][0].transcript;
-       
+        }
         if (currentTranscript.trim()) {
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
@@ -767,7 +874,6 @@ function createBrowserRecognition() {
             speechDebounceTimer = setTimeout(() => {
                 const finalText = currentTranscript.trim();
                 if (finalText) addToConversation('other', finalText);
-                liveTranscript.textContent = '';
                 liveTranscript.classList.add('hidden');
             }, 1500);
         }
@@ -781,7 +887,7 @@ async function startElevenLabsSTT() {
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
         audioChunks = [];
 
-        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
         mediaRecorder.onstop = async () => {
             if (audioChunks.length === 0) return;
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -789,20 +895,13 @@ async function startElevenLabsSTT() {
             await transcribeWithElevenLabs(audioBlob);
         };
 
-        mediaRecorder.start();
-        sttInterval = setInterval(() => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                setTimeout(() => { if (mediaRecorder) mediaRecorder.start(); }, 100);
-            }
-        }, 4500);
-
+        // Start once and keep recording continuously (large timeslice)
+        mediaRecorder.start(30000);
         updateMicUI(true);
     } catch (e) {
-        console.error("ElevenLabs STT start failed:", e);
-        alert("Could not start ElevenLabs Scribe. Falling back to browser mic.");
+        console.error("ElevenLabs STT failed:", e);
+        alert("Could not start ElevenLabs Scribe. Falling back to browser.");
         sttProvider = 'browser';
-        localStorage.setItem('sttProvider', 'browser');
         sttProviderSelect.value = 'browser';
         startListening();
     }
@@ -813,28 +912,26 @@ async function transcribeWithElevenLabs(blob) {
     const formData = new FormData();
     formData.append('file', blob, 'audio.webm');
     formData.append('model_id', 'scribe_v2');
-
     try {
         const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
             method: 'POST',
             headers: { 'xi-api-key': elevenLabsApiKey },
             body: formData
         });
-        if (!res.ok) throw new Error('STT request failed');
-        const data = await res.json();
-        if (data.text && data.text.trim()) {
-            const finalText = data.text.trim();
-            addToConversation('other', finalText);
-            liveTranscript.textContent = '🗣️ ' + finalText;
-            setTimeout(() => { liveTranscript.classList.add('hidden'); }, 2000);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.text && data.text.trim()) {
+                addToConversation('other', data.text.trim());
+            }
         }
     } catch (e) {
-        console.warn("ElevenLabs Scribe transcription error:", e);
+        console.warn("ElevenLabs Scribe error:", e);
     }
 }
 
-function updateMicUI(isListening) {
-    if (isListening) {
+function updateMicUI(listening) {
+    isListening = listening;
+    if (listening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
         listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
         listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
@@ -845,42 +942,40 @@ function updateMicUI(isListening) {
     }
 }
 
-function stopListening() {
-    intentionallyStopped = true;
-    if (recognition) {
-        try { recognition.stop(); } catch(e) {}
-        recognition = null;
-    }
-    if (mediaRecorder) {
-        try { mediaRecorder.stop(); } catch(e) {}
-        clearInterval(sttInterval);
-        mediaRecorder = null;
-    }
-    updateMicUI(false);
-}
-
 function startListening() {
-    intentionallyStopped = false;
+    if (isListening) return;
     if (sttProvider === 'elevenlabs' && elevenLabsApiKey) {
         startElevenLabsSTT();
     } else {
         if (!recognition) recognition = createBrowserRecognition();
         if (recognition) recognition.start();
     }
-    if (!isMobileDevice) initVisualizer();
+}
+
+function stopListening() {
+    if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+        recognition = null;
+    }
+    if (mediaRecorder) {
+        try { mediaRecorder.stop(); } catch(e) {}
+        mediaRecorder = null;
+    }
+    updateMicUI(false);
 }
 
 listenBtn.onclick = () => {
     if (isTTSPlaying) return;
-    if (!intentionallyStopped) {
+    if (isListening) {
         stopListening();
     } else {
         startListening();
     }
 };
 
+// Visualizer
 async function initVisualizer() {
-    if (isMobileDevice || visualizerActive) return;
+    if (isMobileDevice) return;
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -889,9 +984,7 @@ async function initVisualizer() {
         microphone.connect(analyser);
         analyser.fftSize = 64;
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        visualizerActive = true;
         function draw() {
-            if (!visualizerActive) return;
             requestAnimationFrame(draw);
             analyser.getByteFrequencyData(dataArray);
             waveformCanvas.width = waveformCanvas.offsetWidth;
@@ -914,22 +1007,17 @@ async function initVisualizer() {
 renderCategories();
 renderPhrases();
 renderConversationHistory();
-if (genBtn) genBtn.disabled = false;
+genBtn.disabled = false;
 
-const browserSection = document.getElementById('browserVoiceSection');
-const elevenSection = document.getElementById('elevenLabsVoiceSection');
-if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
-if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
+document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
 
-// Start mic on desktop
+// Start listening automatically on desktop only
 if (!isMobileDevice) {
-    setTimeout(() => {
-        startListening();
-    }, 800);
-} else {
-    updateMicUI(false);
+    setTimeout(() => startListening(), 800);
 }
+
 </script>
 </body>
 </html>
