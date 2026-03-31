@@ -6,94 +6,26 @@
     <title>ALS Communicator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { 
-            background-color: #121212; 
-            color: #e2e8f0; 
-            margin: 0; 
-            font-family: system-ui, -apple-system, sans-serif; 
-        }
+        body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        input[type="range"] { 
-            -webkit-appearance: none; 
-            width: 100%; 
-            height: 16px; 
-            background: #334155; 
-            outline: none; 
-            border-radius: 8px; 
-        }
-        input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; 
-            appearance: none; 
-            width: 32px; 
-            height: 32px; 
-            border-radius: 50%; 
-            background: #22c55e; 
-            cursor: pointer; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); 
-        }
-        
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
-        
-        .suggestion-btn { 
-            background: #166534; 
-            border: 2px solid #22c55e; 
-            font-size: 1.1rem; 
-            white-space: normal; 
-            word-wrap: break-word; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 0.75rem; 
-            transition: all 0.2s; 
-            border-radius: 0.75rem; 
-            color: #f8fafc; 
-            font-weight: 700; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
-            min-height: 52px;
-        }
+        .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
-        
-        .msg { 
-            padding: 0.75rem 1rem; 
-            border-radius: 1rem; 
-            margin-bottom: 0.75rem; 
-            max-width: 90%; 
-            position: relative; 
-            word-wrap: break-word; 
-            font-size: 1rem; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-        }
+        .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .msg-other { background: #334155; align-self: flex-start; color: #f8fafc; border-bottom-left-radius: 0.25rem; }
         .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
-        
-        .save-phrase-btn { 
-            font-size: 0.75rem; 
-            background: #0f172a; 
-            color: #cbd5e1; 
-            padding: 4px 10px; 
-            border-radius: 8px; 
-            margin-top: 8px; 
-            display: inline-block; 
-            cursor: pointer; 
-            border: 1px solid #475569; 
-            transition: background 0.2s; 
-        }
+        .save-phrase-btn { font-size: 0.7rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
         .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
-        
         .modal-overlay { backdrop-filter: blur(5px); }
-        .modal-content { 
-            background: #1e293b; 
-            border: 1px solid #334155; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); 
-        }
-        
+        .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
         @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .live-text { animation: pulse-text 1.5s infinite; }
         canvas { image-rendering: pixelated; }
@@ -103,89 +35,87 @@
 <body class="flex flex-col h-[100dvh] overflow-hidden bg-[#121212] text-slate-200">
 
     <header class="flex justify-between items-center bg-gray-900 p-3 md:p-4 border-b border-gray-800 shrink-0 z-20 shadow-md">
-        <h1 class="text-xl md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="inline">ALS Communicator</span></h1>
-        <button id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm text-sm md:text-base">
+        <h1 class="text-lg md:text-2xl font-bold text-white tracking-wide flex items-center gap-2">🗣️ <span class="inline">ALS Communicator</span></h1>
+        <button id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow-sm text-sm md:text-base">
             ⚙️ <span class="hidden sm:inline">Settings</span>
         </button>
     </header>
 
-    <main class="flex-grow flex flex-col md:flex-row gap-3 md:gap-4 p-3 md:p-4 min-h-0 overflow-hidden">
+    <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden">
         <!-- Left Panel -->
-        <div class="w-full md:w-1/2 flex flex-col gap-3 min-h-0 flex-shrink-0">
-            <div class="relative flex flex-col gap-2 shrink-0">
-                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-2xl p-3 md:p-4 text-lg md:text-2xl focus:border-green-500 outline-none resize-none h-24 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
-                <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-xl border border-slate-700 flex items-center px-3 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm"></div>
+        <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0 overflow-hidden">
+            <div class="relative shrink-0 flex flex-col gap-1">
+                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-20 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
+                <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
             </div>
 
-            <div class="shrink-0 grid grid-cols-2 sm:grid-cols-5 gap-2 md:gap-3">
-                <button id="genBtn" disabled class="col-span-2 sm:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-lg md:text-xl rounded-2xl shadow-md transition-all flex items-center justify-center py-3 disabled:opacity-50 gap-2">
-                    <span id="btnText" class="flex items-center gap-2"><span class="text-3xl">🔊</span><span class="hidden sm:inline">Speak</span></span>
+            <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-1 md:gap-2">
+                <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-2 md:py-3 disabled:opacity-50">
+                    <span id="btnText" class="flex items-center gap-1 md:flex-col"><span class="text-2xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
-                <button id="listenBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-md py-3 transition-all flex flex-col items-center justify-center">
-                    <span class="text-2xl mb-1">🎤</span><span class="text-xs sm:text-sm">Mic OFF</span>
+                <button id="listenBtn" class="col-span-1 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON
                 </button>
-                <button id="grokSuggestBtn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-md py-3 transition-all flex flex-col items-center justify-center">
-                    <span class="text-2xl mb-1">🤖</span><span class="text-xs sm:text-sm">AI Reply</span>
+                <button id="grokSuggestBtn" class="col-span-1 md:col-span-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🤖</span>AI Reply
                 </button>
-                <button id="replayBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-md py-3 transition-all flex flex-col items-center justify-center">
-                    <span class="text-2xl mb-1">🔄</span><span class="text-xs sm:text-sm">Replay</span>
+                <button id="replayBtn" class="col-span-1 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🔄</span>Replay
                 </button>
-                <button id="clearBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold text-sm sm:text-base rounded-2xl shadow-md py-3 transition-all flex flex-col items-center justify-center">
-                    <span class="text-2xl mb-1">❌</span><span class="text-xs sm:text-sm">Clear</span>
+                <button id="clearBtn" class="col-span-1 md:col-span-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">❌</span>Clear
                 </button>
             </div>
 
-            <div class="shrink-0 h-14 bg-slate-900 rounded-2xl overflow-hidden border border-slate-700 relative">
+            <div class="shrink-0 flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 relative h-8 md:h-12">
                 <canvas id="waveformCanvas" class="absolute inset-0 w-full h-full hidden opacity-80"></canvas>
-                <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-4 text-indigo-300 italic text-sm font-bold live-text hidden"></div>
+                <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-2 md:px-3 text-indigo-300 italic text-xs md:text-sm font-bold live-text hidden text-shadow-md truncate"></div>
             </div>
 
-            <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
-                <div id="suggestStatus" class="text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
-                <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar gap-2 pb-2"></div>
+            <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-1.5 md:p-2 rounded-xl border border-slate-700/50">
+                <div id="suggestStatus" class="text-[10px] md:text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
+                <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
 
-            <div class="flex-1 min-h-0 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 shadow-sm overflow-hidden">
-                <div class="bg-slate-900/80 p-3 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-sm">Conversation Log</div>
-                <div id="conversationHistory" class="flex-1 overflow-y-auto p-3 flex flex-col gap-3 min-h-0"></div>
+            <div class="flex-1 min-h-0 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
+                <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
+                <div id="conversationHistory" class="flex-1 overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
 
-        <!-- Right Panel: Phrases -->
-        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 min-h-[420px] md:min-h-0 shadow-sm overflow-hidden">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-900 border-b border-slate-700 gap-3 shrink-0">
+        <!-- Right Panel -->
+        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0 overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
-                    <button id="addCategoryBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl font-bold border border-slate-500 transition-all text-sm shadow-sm">+ Cat</button>
-                    <button id="addPhraseBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold border border-blue-500 transition-all text-sm hidden shadow-sm">+ Phrase</button>
-                    <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl font-bold border border-slate-500 transition-all text-sm shadow-sm">✏️ Edit</button>
+                    <button id="addCategoryBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">+ Cat</button>
+                    <button id="addPhraseBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-xs md:text-sm hidden shadow-sm">+ Phrase</button>
+                    <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">✏️ Edit</button>
                 </div>
             </div>
       
-            <div class="flex justify-between items-center px-4 pt-2 pb-1 shrink-0">
-                <h2 id="currentCategoryTitle" class="text-lg font-bold text-slate-200">Basics</h2>
-                <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-xs font-bold bg-slate-900 px-3 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
+            <div class="flex justify-between items-center px-3 pt-1.5 md:pt-2 pb-1 shrink-0">
+                <h2 id="currentCategoryTitle" class="text-lg md:text-xl font-bold text-slate-200">Basics</h2>
+                <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-[10px] md:text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
             </div>
       
-            <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-3 p-3 content-start min-h-0"></div>
+            <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-2 p-2 md:p-3 content-start min-h-0"></div>
         </div>
     </main>
 
-    <!-- Settings Modal (now with full ElevenLabs controls) -->
+    <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-2xl rounded-2xl p-6 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-600 pb-3">
                 <h3 class="text-2xl md:text-3xl font-bold text-slate-100">Settings</h3>
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
-            
             <div class="flex flex-col gap-2">
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx"
                        class="w-full bg-slate-800 border border-slate-600 text-white font-mono p-3 rounded-xl outline-none focus:border-emerald-500">
                 <p class="text-xs text-slate-400">Must start with "sk_"</p>
             </div>
-            
             <div class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">Text-to-Speech Provider</label>
                 <select id="ttsProvider" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500">
@@ -193,60 +123,32 @@
                     <option value="elevenlabs">ElevenLabs Voices</option>
                 </select>
             </div>
-            
-            <!-- Browser Voice -->
             <div id="browserVoiceSection" class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">Browser / OS Voice</label>
                 <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500"></select>
             </div>
-            
-            <!-- ElevenLabs Voice + Settings -->
-            <div id="elevenLabsVoiceSection" class="flex flex-col gap-6 hidden">
-                <div>
+            <div id="elevenLabsVoiceSection" class="flex flex-col gap-4 hidden">
+                <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice</label>
-                    <button onclick="loadElevenVoices()" class="ml-3 text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">Refresh Voices</button>
-                    <select id="elevenVoiceSelect" class="w-full mt-2 bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
-                        <option value="">Enter API key then click Refresh</option>
-                    </select>
+                    <button onclick="loadElevenVoices()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">Refresh Voices</button>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <div class="flex justify-between font-bold text-slate-300 text-sm"><span>Stability</span><span id="stabilityVal" class="text-green-400">0.75</span></div>
-                        <input type="range" id="stabilitySlider" min="0" max="1" value="0.75" step="0.05" class="my-2">
-                    </div>
-                    <div>
-                        <div class="flex justify-between font-bold text-slate-300 text-sm"><span>Similarity Boost</span><span id="similarityVal" class="text-green-400">0.75</span></div>
-                        <input type="range" id="similaritySlider" min="0" max="1" value="0.75" step="0.05" class="my-2">
-                    </div>
-                    <div>
-                        <div class="flex justify-between font-bold text-slate-300 text-sm"><span>Style Exaggeration</span><span id="styleVal" class="text-green-400">0.0</span></div>
-                        <input type="range" id="styleSlider" min="0" max="1" value="0" step="0.05" class="my-2">
-                    </div>
-                    <div>
-                        <div class="flex justify-between font-bold text-slate-300 text-sm"><span>Speed</span><span id="speedVal" class="text-green-400">1.0</span></div>
-                        <input type="range" id="speedSlider" min="0.25" max="2" value="1" step="0.05" class="my-2">
-                    </div>
-                </div>
+                <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
+                    <option value="">Enter API key then click Refresh</option>
+                </select>
             </div>
-            
-            <!-- Tap Action -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Tap Action</label>
                 <div class="flex gap-3 h-12">
-                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-base rounded-xl transition-all shadow-md">Speak Instantly</button>
-                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-base rounded-xl transition-all shadow-md">Add to Text Box</button>
+                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
+                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
                 </div>
-                <p class="text-xs text-slate-400 mt-1">Choose what happens when you tap a phrase.</p>
+                <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose what happens when you tap a phrase.</p>
             </div>
-            
             <div class="flex items-center gap-3 border-t border-slate-700 pt-3">
                 <input type="checkbox" id="useTextInputContext" class="w-5 h-5 accent-green-500">
                 <label for="useTextInputContext" class="font-bold text-slate-300 text-lg cursor-pointer">Use Text Input for Context</label>
             </div>
             <p class="text-xs text-slate-400 -mt-1">Add current text box content to help guide AI replies.</p>
-            
-            <!-- AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
                 <div class="flex justify-between font-bold text-slate-300">
                     <span>AI Context</span>
@@ -258,7 +160,6 @@
                     <button onclick="setContextType('chars')" class="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium">Last X Characters</button>
                 </div>
             </div>
-            
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between font-bold text-slate-300"><span>AI Reply Length</span><span id="replyLenVal" class="text-green-400">Short</span></div>
@@ -269,7 +170,10 @@
                     <input type="range" id="aiCountSlider" min="1" max="9" value="3" step="1" class="my-2">
                 </div>
             </div>
-            
+            <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
+                <div class="flex justify-between font-bold text-slate-300"><span>Mic Sensitivity</span><span id="micSensVal" class="text-green-400">80%</span></div>
+                <input type="range" id="micSensSlider" min="10" max="100" value="80" step="1" class="my-2">
+            </div>
             <div class="flex gap-3 mt-4">
                 <button id="exportBtn" class="flex-1 bg-emerald-700 hover:bg-emerald-600 py-3 rounded-xl font-bold">Export Backup</button>
                 <button id="importBtn" class="flex-1 bg-blue-700 hover:bg-blue-600 py-3 rounded-xl font-bold">Import Backup</button>
@@ -279,7 +183,7 @@
         </div>
     </div>
 
-    <!-- Phrase Modal (unchanged) -->
+    <!-- Phrase Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-6 flex flex-col gap-4">
             <h3 class="text-xl font-bold border-b border-slate-600 pb-2" id="modalTitle">Edit Phrase</h3>
@@ -317,13 +221,18 @@ let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
 let clickAction = localStorage.getItem('clickAction') || 'speak';
 let lastSpoken = '';
 let isEditMode = false;
-let intentionallyStopped = true;
 let isTTSPlaying = false;
-let isListening = false;
 
-// ElevenLabs Settings (now with speed)
+// Mic state - starts ON and stays ON
+let recognition = null;
+let isListening = true;           // ← Changed: starts ON
+let intentionallyStopped = false;
+
+// Settings
 let elevenLabsApiKey = localStorage.getItem('elevenLabsApiKey') || '';
 let ttsProvider = localStorage.getItem('ttsProvider') || 'browser';
+let contextType = localStorage.getItem('contextType') || 'messages';
+let useTextInputContext = localStorage.getItem('useTextInputContext') === 'true';
 let currentElevenVoiceId = localStorage.getItem('elevenVoiceId') || '21m00Tcm4TlvDq8ikWAM';
 let elevenStability = parseFloat(localStorage.getItem('elevenStability')) || 0.75;
 let elevenSimilarity = parseFloat(localStorage.getItem('elevenSimilarity')) || 0.75;
@@ -332,7 +241,7 @@ let elevenSpeed = parseFloat(localStorage.getItem('elevenSpeed')) || 1.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// DOM Elements (all previous + new sliders)
+// DOM Elements
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -363,72 +272,93 @@ const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
 const useTextInputContextCheckbox = document.getElementById('useTextInputContext');
+const aiContextSlider = document.getElementById('aiContextSlider');
+const aiContextVal = document.getElementById('aiContextVal');
+const replyLenSlider = document.getElementById('replyLenSlider');
+const replyLenVal = document.getElementById('replyLenVal');
+const aiCountSlider = document.getElementById('aiCountSlider');
+const aiCountVal = document.getElementById('aiCountVal');
 
-// New ElevenLabs sliders
-const stabilitySlider = document.getElementById('stabilitySlider');
-const similaritySlider = document.getElementById('similaritySlider');
-const styleSlider = document.getElementById('styleSlider');
-const speedSlider = document.getElementById('speedSlider');
-const stabilityVal = document.getElementById('stabilityVal');
-const similarityVal = document.getElementById('similarityVal');
-const styleVal = document.getElementById('styleVal');
-const speedVal = document.getElementById('speedVal');
+// ==================== MIC - STARTS ON AND STAYS ON ====================
+function createRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return null;
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
 
-// ==================== SETTINGS UI SETUP ====================
+    rec.onstart = () => { isListening = true; updateMicUI(true); };
+    rec.onerror = (event) => {
+        console.warn("Recognition error:", event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            intentionallyStopped = true;
+        }
+    };
+    rec.onend = () => {
+        // Restart silently if not intentionally stopped - this is what keeps the mic "on"
+        if (!intentionallyStopped) {
+            setTimeout(() => {
+                if (recognition) recognition.start();
+            }, 300);
+        }
+    };
+    rec.onresult = (event) => {
+        if (isTTSPlaying) return;
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript.trim()) {
+            liveTranscript.textContent = '🗣️ ' + currentTranscript.trim();
+            liveTranscript.classList.remove('hidden');
+            setTimeout(() => {
+                if (currentTranscript.trim().length > 2) addToConversation('other', currentTranscript.trim());
+                liveTranscript.classList.add('hidden');
+            }, 1500);
+        }
+    };
+    return rec;
+}
+
+function updateMicUI(listening) {
+    if (listening) {
+        listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
+    } else {
+        listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
+    }
+}
+
+listenBtn.onclick = () => {
+    if (isTTSPlaying) return;
+    if (isListening) {
+        intentionallyStopped = true;
+        if (recognition) recognition.stop();
+        isListening = false;
+        updateMicUI(false);
+    } else {
+        intentionallyStopped = false;
+        if (!recognition) recognition = createRecognition();
+        if (recognition) recognition.start();
+        isListening = true;
+        updateMicUI(true);
+    }
+};
+
+// ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
 if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.value = elevenLabsApiKey;
 if (ttsProviderSelect) ttsProviderSelect.value = ttsProvider;
+if (useTextInputContextCheckbox) useTextInputContextCheckbox.checked = useTextInputContext;
 
-// Initialize ElevenLabs sliders
-function updateElevenSliderDisplays() {
-    if (stabilityVal) stabilityVal.textContent = elevenStability.toFixed(2);
-    if (similarityVal) similarityVal.textContent = elevenSimilarity.toFixed(2);
-    if (styleVal) styleVal.textContent = elevenStyle.toFixed(2);
-    if (speedVal) speedVal.textContent = elevenSpeed.toFixed(2);
-}
-
-if (stabilitySlider) {
-    stabilitySlider.value = elevenStability;
-    stabilitySlider.oninput = () => {
-        elevenStability = parseFloat(stabilitySlider.value);
-        localStorage.setItem('elevenStability', elevenStability);
-        updateElevenSliderDisplays();
-    };
-}
-if (similaritySlider) {
-    similaritySlider.value = elevenSimilarity;
-    similaritySlider.oninput = () => {
-        elevenSimilarity = parseFloat(similaritySlider.value);
-        localStorage.setItem('elevenSimilarity', elevenSimilarity);
-        updateElevenSliderDisplays();
-    };
-}
-if (styleSlider) {
-    styleSlider.value = elevenStyle;
-    styleSlider.oninput = () => {
-        elevenStyle = parseFloat(styleSlider.value);
-        localStorage.setItem('elevenStyle', elevenStyle);
-        updateElevenSliderDisplays();
-    };
-}
-if (speedSlider) {
-    speedSlider.value = elevenSpeed;
-    speedSlider.oninput = () => {
-        elevenSpeed = parseFloat(speedSlider.value);
-        localStorage.setItem('elevenSpeed', elevenSpeed);
-        updateElevenSliderDisplays();
-    };
-}
-updateElevenSliderDisplays();
-
-if (useTextInputContextCheckbox) {
-    useTextInputContextCheckbox.checked = localStorage.getItem('useTextInputContext') === 'true';
-    useTextInputContextCheckbox.addEventListener('change', () => {
-        localStorage.setItem('useTextInputContext', useTextInputContextCheckbox.checked);
-    });
-}
+if (useTextInputContextCheckbox) useTextInputContextCheckbox.addEventListener('change', () => {
+    useTextInputContext = useTextInputContextCheckbox.checked;
+    localStorage.setItem('useTextInputContext', useTextInputContext);
+});
 
 if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.addEventListener('change', () => {
     elevenLabsApiKey = elevenLabsApiKeyInput.value.trim();
@@ -439,29 +369,26 @@ if (elevenLabsApiKeyInput) elevenLabsApiKeyInput.addEventListener('change', () =
 if (ttsProviderSelect) ttsProviderSelect.addEventListener('change', () => {
     ttsProvider = ttsProviderSelect.value;
     localStorage.setItem('ttsProvider', ttsProvider);
-    const browserSection = document.getElementById('browserVoiceSection');
-    const elevenSection = document.getElementById('elevenLabsVoiceSection');
-    if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'elevenlabs');
-    if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+    document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
+    document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
 // Tap Action
 function updateActionUI() {
-    if (!btnActionSpeak || !btnActionType) return;
     if (clickAction === 'speak') {
-        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-base rounded-xl transition-all shadow-md';
-        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-base rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
     } else {
-        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-base rounded-xl transition-all shadow-md';
-        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-base rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
     }
 }
 if (btnActionSpeak) btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
 if (btnActionType) btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
 updateActionUI();
 
-// ==================== TTS with new Speed setting ====================
+// ==================== TTS ====================
 async function speak(text) {
     if (!text?.trim()) return;
     lastSpoken = text;
@@ -481,7 +408,7 @@ async function speak(text) {
     } finally {
         setTimeout(() => {
             if (genBtn) genBtn.disabled = false;
-            if (btnText) btnText.innerHTML = '<span class="text-3xl">🔊</span><span class="hidden sm:inline"> Speak</span>';
+            if (btnText) btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
             isTTSPlaying = false;
         }, 300);
     }
@@ -501,7 +428,6 @@ function speakBrowser(text) {
 async function speakElevenLabs(text) {
     const key = elevenLabsApiKey.trim();
     if (!key || !key.startsWith('sk_')) throw new Error("Invalid ElevenLabs API key.");
-    
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
         method: "POST",
         headers: {
@@ -520,15 +446,11 @@ async function speakElevenLabs(text) {
             }
         })
     });
-    
     if (!res.ok) {
         let errorMsg = `ElevenLabs Error (${res.status})`;
-        if (res.status === 401) errorMsg = "ElevenLabs: Invalid API key.";
-        else if (res.status === 429) errorMsg = "ElevenLabs: Rate limit exceeded.";
         alert(errorMsg + "\n\nFalling back to browser voice.");
         throw new Error(errorMsg);
     }
-    
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
@@ -574,9 +496,7 @@ if (elevenVoiceSelect) elevenVoiceSelect.addEventListener('change', () => {
     localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
 });
 
-// ==================== (Rest of your original JS - AI, phrases, conversation, predictive, backup, etc.) ====================
-// For brevity in this response I kept the structure clean, but all functions below are the full working versions from before.
-
+// ==================== PHRASE & CONVERSATION ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -595,13 +515,8 @@ function renderCategories() {
     Object.keys(phraseCategories).forEach(cat => {
         const btn = document.createElement('button');
         btn.textContent = cat;
-        btn.className = `shrink-0 px-5 py-2 text-sm font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
-        btn.onclick = () => { 
-            currentCategory = cat; 
-            currentCategoryTitle.textContent = cat; 
-            renderCategories(); 
-            renderPhrases(); 
-        };
+        btn.className = `shrink-0 px-4 py-2 text-sm font-bold rounded-xl transition-all ${cat === currentCategory ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`;
+        btn.onclick = () => { currentCategory = cat; currentCategoryTitle.textContent = cat; renderCategories(); renderPhrases(); };
         categoryScroll.appendChild(btn);
     });
     currentCategoryTitle.textContent = currentCategory;
@@ -612,15 +527,14 @@ function renderPhrases() {
     addPhraseBtn.classList.toggle('hidden', !isEditMode);
     editCategoryBtn.classList.toggle('hidden', !isEditMode);
     editToggleBtn.textContent = isEditMode ? 'Done' : '✏️ Edit';
-    editToggleBtn.className = isEditMode 
-        ? 'bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold border border-blue-500' 
-        : 'bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl font-bold border border-slate-500';
-    
+    editToggleBtn.className = isEditMode
+        ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500'
+        : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
     if (phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
             const btn = document.createElement('button');
             btn.textContent = phrase;
-            btn.className = `p-4 text-base font-bold rounded-2xl transition-all shadow-md min-h-[72px] flex items-center justify-center text-center ${isEditMode ? 'bg-slate-800 text-blue-300 edit-mode-btn' : 'bg-slate-700 hover:bg-slate-600 text-white'}`;
+            btn.className = `p-3 text-base font-bold rounded-xl transition-all shadow-md min-h-[70px] flex items-center justify-center text-center ${isEditMode ? 'bg-slate-800 text-blue-300 edit-mode-btn' : 'bg-slate-700 hover:bg-slate-600 text-white'}`;
             btn.onclick = () => isEditMode ? openModal(phrase, currentCategory, idx) : handlePhraseTap(phrase);
             phraseGridEl.appendChild(btn);
         });
@@ -636,7 +550,7 @@ function appendMessageUI(speaker, text) {
     const div = document.createElement('div');
     div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
     div.innerHTML = `<div>${text}</div>`;
-    if (speaker === 'you') div.innerHTML += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save as Phrase</button>`;
+    if (speaker === 'you') div.innerHTML += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save</button>`;
     convHistoryEl.appendChild(div);
     convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
 }
@@ -806,112 +720,6 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// ==================== SPEECH RECOGNITION (stable) ====================
-let recognition = null;
-let speechDebounceTimer = null;
-
-function createRecognition() {
-    if (!('webkitSpeechRecognition' in window)) return null;
-    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US';
-    rec.interimResults = true;
-    rec.continuous = true;
-    rec.maxAlternatives = 1;
-
-    rec.onstart = () => { isListening = true; updateMicUI(true); };
-    rec.onerror = (event) => {
-        console.warn("Recognition error:", event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            intentionallyStopped = true;
-            updateMicUI(false);
-        }
-    };
-    rec.onend = () => {
-        isListening = false;
-        updateMicUI(false);
-        if (!isMobileDevice && !intentionallyStopped && !isTTSPlaying) {
-            setTimeout(() => {
-                if (recognition && !isListening) recognition.start();
-            }, 400);
-        }
-    };
-    rec.onresult = (event) => {
-        if (isTTSPlaying) return;
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-        }
-        if (currentTranscript.trim()) {
-            liveTranscript.textContent = '🗣️ ' + currentTranscript.trim();
-            liveTranscript.classList.remove('hidden');
-            clearTimeout(speechDebounceTimer);
-            speechDebounceTimer = setTimeout(() => {
-                const finalText = currentTranscript.trim();
-                if (finalText.length > 2) addToConversation('other', finalText);
-                liveTranscript.classList.add('hidden');
-            }, 1300);
-        }
-    };
-    return rec;
-}
-
-function updateMicUI(listening) {
-    if (listening) {
-        listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-        listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
-        listenBtn.innerHTML = `<span class="text-2xl mb-1 animate-pulse">🔴</span><span class="text-xs sm:text-sm">Mic ON</span>`;
-    } else {
-        listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
-        listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
-        listenBtn.innerHTML = `<span class="text-2xl mb-1">🎤</span><span class="text-xs sm:text-sm">Mic OFF</span>`;
-    }
-}
-
-listenBtn.onclick = () => {
-    if (isTTSPlaying) return;
-    if (isListening) {
-        intentionallyStopped = true;
-        if (recognition) try { recognition.stop(); } catch(e) {}
-        isListening = false;
-    } else {
-        intentionallyStopped = false;
-        if (!recognition) recognition = createRecognition();
-        if (recognition) recognition.start();
-        if (!isMobileDevice) initVisualizer();
-    }
-};
-
-async function initVisualizer() {
-    if (isMobileDevice || window.visualizerActive) return;
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const analyser = audioContext.createAnalyser();
-        const microphone = audioContext.createMediaStreamSource(stream);
-        microphone.connect(analyser);
-        analyser.fftSize = 64;
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        window.visualizerActive = true;
-        function draw() {
-            if (!window.visualizerActive) return;
-            requestAnimationFrame(draw);
-            analyser.getByteFrequencyData(dataArray);
-            waveformCanvas.width = waveformCanvas.offsetWidth;
-            waveformCanvas.height = waveformCanvas.offsetHeight;
-            canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-            const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
-            let x = 0;
-            for(let i = 0; i < dataArray.length; i++) {
-                const barHeight = dataArray[i] / 4;
-                canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.2})`;
-                canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 2;
-            }
-        }
-        draw();
-    } catch (e) { console.warn("Visualizer failed", e); }
-}
-
 // ==================== INIT ====================
 renderCategories();
 renderPhrases();
@@ -924,16 +732,14 @@ if (browserSection) browserSection.classList.toggle('hidden', ttsProvider === 'e
 if (elevenSection) elevenSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
 
-if (!isMobileDevice) {
-    setTimeout(() => {
-        intentionallyStopped = false;
-        if (!recognition) recognition = createRecognition();
-        if (recognition) recognition.start();
-        initVisualizer();
-    }, 800);
-} else {
-    updateMicUI(false);
-}
+// Start mic ON and keep it ON
+setTimeout(() => {
+    intentionallyStopped = false;
+    if (!recognition) recognition = createRecognition();
+    if (recognition) recognition.start();
+    updateMicUI(true);
+}, 600);
+
 </script>
 </body>
 </html>
