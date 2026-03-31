@@ -38,11 +38,12 @@
   
         canvas { image-rendering: pixelated; }
 
-        /* FIXED: Conversation Log Scrollbar - YOUR ORIGINAL FIX */
+        /* FIXED: Conversation Log Scrollbar */
         #conversationHistory {
             overflow-y: auto !important;
             scrollbar-width: thin;
             scrollbar-color: #64748b #1e293b;
+            max-height: 100%;
         }
         #conversationHistory::-webkit-scrollbar {
             width: 10px;
@@ -180,6 +181,16 @@
                 </div>
                 <p class="text-xs text-slate-400">These 4 settings let you fine-tune your chosen voice or clone.</p>
             </div>
+
+            <!-- New Checkbox for AI Context -->
+            <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
+                <label class="font-bold text-slate-300 text-lg flex items-center gap-2">
+                    <input type="checkbox" id="useUnsentContext" class="w-5 h-5 accent-green-500" checked>
+                    Use unsent text in input box as extra AI context
+                </label>
+                <p class="text-[10px] md:text-xs text-slate-400">When checked, the current text in the box will help guide AI reply suggestions.</p>
+            </div>
+
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
                 <div class="flex gap-3 h-12">
@@ -272,6 +283,7 @@ const openSettingsBtn = document.getElementById('openSettingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 
+// ElevenLabs elements
 const ttsProviderSelect = document.getElementById('ttsProviderSelect');
 const osVoiceSection = document.getElementById('osVoiceSection');
 const elevenlabsSection = document.getElementById('elevenlabsSection');
@@ -288,6 +300,7 @@ const simVal = document.getElementById('simVal');
 const styleVal = document.getElementById('styleVal');
 const boostVal = document.getElementById('boostVal');
 
+// Original settings elements
 const voiceSelect = document.getElementById('voiceSelect');
 const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
@@ -299,6 +312,9 @@ const aiContextSlider = document.getElementById('aiContextSlider');
 const aiContextVal = document.getElementById('aiContextVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
+
+// New checkbox
+const useUnsentContext = document.getElementById('useUnsentContext');
 
 // Data
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
@@ -340,7 +356,11 @@ let elevenSettings = JSON.parse(localStorage.getItem('elevenSettings')) || {
 let availableVoices = [];
 
 // ====================== SETTINGS & UI ======================
-openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
+openSettingsBtn.onclick = () => {
+    elevenApiKeyInput.value = elevenApiKey;  // Show saved key
+    settingsModal.classList.remove('hidden');
+};
+
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
 function updateActionUI() {
@@ -815,13 +835,12 @@ replyLenSlider.addEventListener('input', e => {
 });
 aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
 
-// ====================== GROK AI - FIXED ======================
+// ====================== GROK AI ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const lengthLevel = parseInt(replyLenSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
     if (lengthLevel === 3 && numReplies > 5) numReplies = 5;
-
     let lengthInstruction = "extremely short (2-8 words)";
     let maxTokens = numReplies * 25;
     if (lengthLevel === 2) { lengthInstruction = "medium length (10-20 words)"; maxTokens = numReplies * 40; }
@@ -829,7 +848,13 @@ async function generateGrokSuggestions() {
 
     grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6 md:col-span-3">AI Thinking (${numReplies} replies)...</div>`;
 
-    const recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
+    let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
+
+    // New feature: Include unsent text as context if checkbox is checked
+    const unsentText = textInput.value.trim();
+    if (useUnsentContext.checked && unsentText) {
+        recentConv += `\nCurrent unsent text from user: ${unsentText}`;
+    }
 
     const prompt = `You are a human named "ALS User" talking to your partner in your house.
 You use a text-to-speech device to speak.
@@ -855,7 +880,6 @@ Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
                 temperature: 0.5
             })
         });
-
         if (!res.ok) throw new Error();
         const data = await res.json();
         const suggestions = data.choices[0].message.content.trim().split('\n')
@@ -879,8 +903,11 @@ Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
 }
 
 grokSuggestBtn.onclick = () => {
-    if (conversationHistory.length > 0) generateGrokSuggestions();
-    else suggestStatus.textContent = 'Have a conversation first!';
+    if (conversationHistory.length > 0 || (useUnsentContext.checked && textInput.value.trim())) {
+        generateGrokSuggestions();
+    } else {
+        suggestStatus.textContent = 'Have a conversation first!';
+    }
 };
 
 // ====================== MIC & VISUALIZER ======================
@@ -989,7 +1016,7 @@ listenBtn.onclick = () => {
     }
 };
 
-// Audio Visualizer
+// Audio Visualizer (Desktop)
 async function initVisualizer() {
     if (isMobileDevice || visualizerActive) return;
     try {
