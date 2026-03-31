@@ -112,6 +112,7 @@
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" 
                        class="w-full bg-slate-800 border border-slate-600 text-white font-mono p-3 rounded-xl outline-none focus:border-emerald-500">
+                <p class="text-xs text-slate-400">Make sure the key starts with "sk_" and has no extra spaces</p>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -130,27 +131,13 @@
 
             <!-- ElevenLabs Voice Section -->
             <div id="elevenLabsVoiceSection" class="flex flex-col gap-4 hidden">
-                <div>
+                <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice</label>
-                    <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
-                        <option value="">Loading voices...</option>
-                    </select>
+                    <button onclick="loadElevenVoices()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg">Refresh Voices</button>
                 </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Stability</span><span id="stabilityVal">0.75</span></div>
-                        <input type="range" id="stabilitySlider" min="0" max="1" step="0.05" value="0.75" class="w-full">
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Similarity Boost</span><span id="similarityVal">0.75</span></div>
-                        <input type="range" id="similaritySlider" min="0" max="1" step="0.05" value="0.75" class="w-full">
-                    </div>
-                </div>
-                <div>
-                    <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Style Exaggeration</span><span id="styleVal">0.0</span></div>
-                    <input type="range" id="styleSlider" min="0" max="1" step="0.05" value="0" class="w-full">
-                </div>
+                <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500">
+                    <option value="">Loading voices...</option>
+                </select>
             </div>
 
             <!-- Tap Action -->
@@ -163,12 +150,12 @@
                 <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose what happens when you tap a phrase.</p>
             </div>
 
-            <!-- New: Use Text Input for Context -->
+            <!-- Use Text Input for Context -->
             <div class="flex items-center gap-3 border-t border-slate-700 pt-3">
                 <input type="checkbox" id="useTextInputContext" class="w-5 h-5 accent-green-500">
                 <label for="useTextInputContext" class="font-bold text-slate-300 text-lg cursor-pointer">Use Text Input for Context</label>
             </div>
-            <p class="text-xs text-slate-400 -mt-1">When enabled, current text in the input box will be added to AI context to help guide replies.</p>
+            <p class="text-xs text-slate-400 -mt-1">Add whatever is typed in the main box to help guide AI replies.</p>
 
             <!-- AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
@@ -262,7 +249,7 @@ let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// DOM Elements
+// DOM
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -305,7 +292,7 @@ const aiCountVal = document.getElementById('aiCountVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
 
-// ==================== SETTINGS ====================
+// ==================== SETTINGS UI ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
@@ -421,42 +408,53 @@ function speakBrowser(text) {
 async function speakElevenLabs(text) {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
         method: "POST",
-        headers: { "Accept": "audio/mpeg", "xi-api-key": elevenLabsApiKey, "Content-Type": "application/json" },
+        headers: {
+            "Accept": "audio/mpeg",
+            "xi-api-key": elevenLabsApiKey,
+            "Content-Type": "application/json"
+        },
         body: JSON.stringify({
             text: text,
             model_id: "eleven_monolingual_v1",
             voice_settings: { stability: elevenStability, similarity_boost: elevenSimilarity, style: elevenStyle }
         })
     });
-    if (!res.ok) throw new Error("ElevenLabs failed");
+    if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     await new Promise(r => { audio.onended = r; audio.play(); });
 }
 
-// Load ElevenLabs voices (fixed version)
+// ==================== FIXED ELEVENLABS VOICES LOADING ====================
 async function loadElevenVoices() {
     const select = document.getElementById('elevenVoiceSelect');
     select.innerHTML = '<option value="">Loading voices...</option>';
 
-    if (!elevenLabsApiKey) {
-        select.innerHTML = '<option value="">Enter API key first</option>';
+    if (!elevenLabsApiKey || elevenLabsApiKey.length < 10) {
+        select.innerHTML = '<option value="">Please enter a valid API key</option>';
         return;
     }
 
     try {
         const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': elevenLabsApiKey }
+            headers: {
+                'xi-api-key': elevenLabsApiKey.trim(),
+                'Accept': 'application/json'
+            }
         });
 
+        if (res.status === 401) {
+            select.innerHTML = '<option value="">Invalid API key - check your key</option>';
+            return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
         select.innerHTML = '';
 
         if (!data.voices || data.voices.length === 0) {
-            select.innerHTML = '<option value="">No voices found</option>';
+            select.innerHTML = '<option value="">No voices found in your account</option>';
             return;
         }
 
@@ -469,7 +467,7 @@ async function loadElevenVoices() {
         });
     } catch (e) {
         console.error("Failed to load voices:", e);
-        select.innerHTML = '<option value="">Failed to load - check API key</option>';
+        select.innerHTML = '<option value="">Failed to load voices - check API key or network</option>';
     }
 }
 
@@ -478,7 +476,7 @@ elevenVoiceSelect.addEventListener('change', () => {
     localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
 });
 
-// ==================== AI REPLY (with optional text input context) ====================
+// ==================== AI REPLY ====================
 grokSuggestBtn.onclick = async () => {
     if (conversationHistory.length === 0 && !textInput.value.trim()) {
         suggestStatus.textContent = "Have a conversation or type something first!";
@@ -494,7 +492,6 @@ grokSuggestBtn.onclick = async () => {
 
     let contextParts = [];
 
-    // Conversation history context
     if (contextType === 'messages') {
         contextParts.push(conversationHistory.slice(-limit)
             .map(m => `${m.speaker === 'you' ? 'You' : 'Partner'}: ${m.text}`).join('\n'));
@@ -503,9 +500,8 @@ grokSuggestBtn.onclick = async () => {
         contextParts.push(allText.slice(-limit * 1000));
     }
 
-    // New: Text input context
     if (useTextInputContext && textInput.value.trim()) {
-        contextParts.push(`Current partial message from you: "${textInput.value.trim()}"`);
+        contextParts.push(`Current partial message: "${textInput.value.trim()}"`);
     }
 
     const contextStr = contextParts.join('\n\n');
@@ -540,7 +536,7 @@ grokSuggestBtn.onclick = async () => {
     }
 };
 
-// ==================== REST OF THE APP (full) ====================
+// ==================== REST OF APP (full - same as before) ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -702,7 +698,6 @@ textInput.addEventListener('input', () => {
     } else predictiveBar.classList.add('hidden');
 });
 
-// Buttons
 genBtn.onclick = () => {
     const text = textInput.value.trim();
     if (text) speak(text);
@@ -729,7 +724,7 @@ speechSynthesis.onvoiceschanged = populateVoiceList;
 populateVoiceList();
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// Backup
+// Backup functions (export/import/clear) - same as before
 document.getElementById('exportBtn').onclick = () => {
     const data = { phrases: phraseCategories, history: conversationHistory };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -766,7 +761,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// Speech Recognition
+// Speech Recognition, Visualizer, etc. (unchanged)
 let recognition = null;
 let speechDebounceTimer = null;
 
