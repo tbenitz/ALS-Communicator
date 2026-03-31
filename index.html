@@ -38,7 +38,7 @@
   
         canvas { image-rendering: pixelated; }
 
-        /* FIXED: Conversation Log Scrollbar */
+        /* YOUR ORIGINAL SCROLLBAR FIX - RESTORED */
         #conversationHistory {
             overflow-y: auto !important;
             scrollbar-width: thin;
@@ -71,7 +71,6 @@
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-y-auto md:overflow-hidden">
   
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
-      
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
                 <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
@@ -315,16 +314,11 @@ let aiReplyLength = parseInt(localStorage.getItem('alsReplyLen')) || 1;
 let aiReplyCount = parseInt(localStorage.getItem('alsAiCount')) || 3;
 let conversationHistory = JSON.parse(localStorage.getItem('alsHistory')) || [];
 
-// ElevenLabs persistence - FIXED
+// ElevenLabs - FIXED PERSISTENCE
 let elevenApiKey = localStorage.getItem('elevenlabs_api_key') || "";
 let ttsProvider = localStorage.getItem('alsTtsProvider') || 'os';
 let selectedElevenVoiceId = localStorage.getItem('selectedElevenVoiceId') || '';
-let elevenSettings = JSON.parse(localStorage.getItem('elevenSettings')) || {
-    stability: 0.75,
-    similarity_boost: 0.85,
-    style: 0.0,
-    speaker_boost: true
-};
+let elevenSettings = JSON.parse(localStorage.getItem('elevenSettings')) || { stability: 0.75, similarity_boost: 0.85, style: 0.0, speaker_boost: true };
 let elevenVoices = [];
 
 // Phrase Modal
@@ -363,11 +357,8 @@ function renderPhrases() {
         btn.className = `suggestion-btn relative ${isEditMode ? 'edit-mode-btn' : ''}`;
         btn.textContent = phrase;
         btn.onclick = () => {
-            if (isEditMode) {
-                openPhraseModal(phrase, index);
-            } else {
-                handlePhraseClick(phrase);
-            }
+            if (isEditMode) openPhraseModal(phrase, index);
+            else handlePhraseClick(phrase);
         };
         phraseGridEl.appendChild(btn);
     });
@@ -389,11 +380,9 @@ function renderConversationHistory() {
     conversationHistory.slice(-20).forEach((entry) => {
         const wrap = document.createElement('div');
         wrap.className = `flex flex-col ${entry.isYou ? 'items-end' : 'items-start'}`;
-       
         const msg = document.createElement('div');
         msg.className = `msg ${entry.isYou ? 'msg-you' : 'msg-other'}`;
         msg.textContent = entry.text;
-       
         if (!entry.isYou) {
             const saveBtn = document.createElement('div');
             saveBtn.className = 'save-phrase-btn';
@@ -401,11 +390,19 @@ function renderConversationHistory() {
             saveBtn.onclick = () => openPhraseModal(entry.text);
             msg.appendChild(saveBtn);
         }
-       
         wrap.appendChild(msg);
         convHistoryEl.appendChild(wrap);
     });
-    convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
+    // FIXED: Force scroll to bottom
+    setTimeout(() => { convHistoryEl.scrollTop = convHistoryEl.scrollHeight; }, 50);
+}
+
+function addToHistory(text, isYou) {
+    conversationHistory.push({ text, isYou, timestamp: Date.now() });
+    if (conversationHistory.length > 50) conversationHistory.shift();
+    localStorage.setItem('alsHistory', JSON.stringify(conversationHistory));
+    renderConversationHistory();
+    if (isYou) getAISuggestions();
 }
 
 // ====================== SETTINGS & UI ======================
@@ -443,21 +440,12 @@ function updateSettingsFields() {
     updateElevenSliders();
 }
 
-// ====================== CORE ACTIONS ======================
-function addToHistory(text, isYou) {
-    conversationHistory.push({ text, isYou, timestamp: Date.now() });
-    if (conversationHistory.length > 50) conversationHistory.shift();
-    localStorage.setItem('alsHistory', JSON.stringify(conversationHistory));
-    renderConversationHistory();
-    if (isYou) getAISuggestions();
-}
-
+// ====================== TTS ======================
 async function speak(text) {
     if (!text) return;
-   
     btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none animate-pulse">⏳</span>Speaking';
     genBtn.disabled = true;
-   
+
     if (ttsProvider === 'elevenlabs' && elevenApiKey && selectedElevenVoiceId) {
         try {
             const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedElevenVoiceId}`, {
@@ -484,7 +472,7 @@ async function speak(text) {
             audio.play();
             return;
         } catch (e) {
-            console.error("ElevenLabs failed, falling back to OS voice");
+            console.error("ElevenLabs failed, falling back");
         }
     }
     fallbackSpeak(text);
@@ -505,7 +493,6 @@ function fallbackSpeak(text) {
 async function getAISuggestions() {
     grokSuggestionsEl.innerHTML = '';
     suggestStatus.textContent = "AI is thinking...";
-   
     const context = conversationHistory.slice(-aiContextLimit).map(m => `${m.isYou ? 'User' : 'Partner'}: ${m.text}`).join('\n');
     const lengthHint = aiReplyLength === 1 ? "short" : (aiReplyLength === 2 ? "medium" : "detailed");
    
@@ -543,7 +530,6 @@ function openPhraseModal(text = "", index = null) {
     editingPhraseIndex = index;
     modalPhraseText.value = text;
     modalTitle.textContent = index !== null ? "Edit Phrase" : "Add New Phrase";
-   
     modalCategorySelect.innerHTML = '';
     Object.keys(phraseCategories).forEach(cat => {
         const opt = document.createElement('option');
@@ -552,40 +538,40 @@ function openPhraseModal(text = "", index = null) {
         opt.selected = (cat === currentCategory);
         modalCategorySelect.appendChild(opt);
     });
-   
     modalDeleteBtn.classList.toggle('hidden', index === null);
     phraseModal.classList.remove('hidden');
 }
 
 // ====================== EVENT LISTENERS ======================
-saveApiKeyBtn.addEventListener('click', () => {
+saveApiKeyBtn.addEventListener('click', async () => {
     const newKey = elevenApiKeyInput.value.trim();
     if (newKey) {
         elevenApiKey = newKey;
         localStorage.setItem('elevenlabs_api_key', newKey);
-        fetchElevenVoices();
-        alert("API Key saved and voices updated!");
+        await fetchElevenVoices();
+        alert("API Key saved and voices loaded!");
     }
 });
 
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
-        const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
             headers: { 'xi-api-key': elevenApiKey }
         });
-        const data = await response.json();
-        elevenVoices = data.voices || [];
-       
-        elevenVoiceSelect.innerHTML = '';
-        elevenVoices.forEach(v => {
-            const opt = document.createElement('option');
-            opt.value = v.voice_id;
-            opt.textContent = v.name;
-            if (v.voice_id === selectedElevenVoiceId) opt.selected = true;
-            elevenVoiceSelect.appendChild(opt);
-        });
-    } catch (e) { console.error("Voices fetch failed", e); }
+        if (res.ok) {
+            const data = await res.json();
+            elevenVoices = data.voices || [];
+            elevenVoiceSelect.innerHTML = '';
+            elevenVoices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.voice_id;
+                opt.textContent = v.name;
+                if (v.voice_id === selectedElevenVoiceId) opt.selected = true;
+                elevenVoiceSelect.appendChild(opt);
+            });
+        }
+    } catch (e) { console.error("Failed to load ElevenLabs voices", e); }
 }
 
 elevenVoiceSelect.onchange = () => {
@@ -599,26 +585,10 @@ ttsProviderSelect.onchange = (e) => {
     updateTTSProviderUI(); 
 };
 
-stabSlider.oninput = () => { 
-    elevenSettings.stability = parseFloat(stabSlider.value); 
-    updateElevenSliders(); 
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); 
-};
-simSlider.oninput = () => { 
-    elevenSettings.similarity_boost = parseFloat(simSlider.value); 
-    updateElevenSliders(); 
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); 
-};
-styleSlider.oninput = () => { 
-    elevenSettings.style = parseFloat(styleSlider.value); 
-    updateElevenSliders(); 
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); 
-};
-boostSlider.oninput = () => { 
-    elevenSettings.speaker_boost = boostSlider.value == "1"; 
-    updateElevenSliders(); 
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); 
-};
+stabSlider.oninput = () => { elevenSettings.stability = parseFloat(stabSlider.value); updateElevenSliders(); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); };
+simSlider.oninput = () => { elevenSettings.similarity_boost = parseFloat(simSlider.value); updateElevenSliders(); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); };
+styleSlider.oninput = () => { elevenSettings.style = parseFloat(styleSlider.value); updateElevenSliders(); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); };
+boostSlider.oninput = () => { elevenSettings.speaker_boost = boostSlider.value == "1"; updateElevenSliders(); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); };
 
 refreshElevenVoicesBtn.onclick = fetchElevenVoices;
 
@@ -682,18 +652,15 @@ modalSaveBtn.onclick = () => {
     const text = modalPhraseText.value.trim();
     const cat = modalCategorySelect.value;
     if (!text) return;
-   
     if (editingPhraseIndex !== null) {
-        if (cat === currentCategory) {
-            phraseCategories[cat][editingPhraseIndex] = text;
-        } else {
+        if (cat === currentCategory) phraseCategories[cat][editingPhraseIndex] = text;
+        else {
             phraseCategories[currentCategory].splice(editingPhraseIndex, 1);
             phraseCategories[cat].push(text);
         }
     } else {
         phraseCategories[cat].push(text);
     }
-   
     localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
     phraseModal.classList.add('hidden');
     renderPhrases();
@@ -749,7 +716,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// ====================== VOICES & VISUALIZER & MIC ======================
+// ====================== VOICES & MIC ======================
 function populateVoiceList() {
     const voices = speechSynthesis.getVoices();
     voiceSelect.innerHTML = '';
