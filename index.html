@@ -112,7 +112,7 @@
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" 
                        class="w-full bg-slate-800 border border-slate-600 text-white font-mono p-3 rounded-xl outline-none focus:border-emerald-500">
-                <p class="text-xs text-slate-400">Make sure the key starts with "sk_" and has no extra spaces</p>
+                <p class="text-xs text-slate-400">Must start with "sk_"</p>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -155,7 +155,7 @@
                 <input type="checkbox" id="useTextInputContext" class="w-5 h-5 accent-green-500">
                 <label for="useTextInputContext" class="font-bold text-slate-300 text-lg cursor-pointer">Use Text Input for Context</label>
             </div>
-            <p class="text-xs text-slate-400 -mt-1">Add whatever is typed in the main box to help guide AI replies.</p>
+            <p class="text-xs text-slate-400 -mt-1">Add current text box content to help guide AI replies.</p>
 
             <!-- AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
@@ -249,7 +249,7 @@ let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// DOM
+// DOM Elements - accessed safely
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -292,7 +292,7 @@ const aiCountVal = document.getElementById('aiCountVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
 
-// ==================== SETTINGS UI ====================
+// ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
@@ -319,42 +319,56 @@ ttsProviderSelect.addEventListener('change', () => {
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
-// ElevenLabs sliders
-stabilitySlider.value = elevenStability; document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
-similaritySlider.value = elevenSimilarity; document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
-styleSlider.value = elevenStyle; document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
-
-stabilitySlider.addEventListener('input', () => {
-    elevenStability = parseFloat(stabilitySlider.value);
+// ElevenLabs sliders (safe check)
+if (stabilitySlider) {
+    stabilitySlider.value = elevenStability;
     document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
+}
+if (similaritySlider) {
+    similaritySlider.value = elevenSimilarity;
+    document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+}
+if (styleSlider) {
+    styleSlider.value = elevenStyle;
+    document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+}
+
+if (stabilitySlider) stabilitySlider.addEventListener('input', () => {
+    elevenStability = parseFloat(stabilitySlider.value);
+    if (document.getElementById('stabilityVal')) document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
     localStorage.setItem('elevenStability', elevenStability);
 });
-similaritySlider.addEventListener('input', () => {
+if (similaritySlider) similaritySlider.addEventListener('input', () => {
     elevenSimilarity = parseFloat(similaritySlider.value);
-    document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+    if (document.getElementById('similarityVal')) document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
     localStorage.setItem('elevenSimilarity', elevenSimilarity);
 });
-styleSlider.addEventListener('input', () => {
+if (styleSlider) styleSlider.addEventListener('input', () => {
     elevenStyle = parseFloat(styleSlider.value);
-    document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+    if (document.getElementById('styleVal')) document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
     localStorage.setItem('elevenStyle', elevenStyle);
 });
 
 function setContextType(type) {
     contextType = type;
     localStorage.setItem('contextType', type);
-    aiContextVal.textContent = contextType === 'messages' ? `Last ${aiContextSlider.value} messages` : `Last ${aiContextSlider.value}k chars`;
+    if (aiContextVal) aiContextVal.textContent = contextType === 'messages' ? `Last ${aiContextSlider.value} messages` : `Last ${aiContextSlider.value}k chars`;
 }
-aiContextSlider.addEventListener('input', () => setContextType(contextType));
-replyLenSlider.addEventListener('input', () => {
+if (aiContextSlider) aiContextSlider.addEventListener('input', () => setContextType(contextType));
+if (replyLenSlider) replyLenSlider.addEventListener('input', () => {
     const labels = ["Short", "Medium", "Long"];
-    replyLenVal.textContent = labels[replyLenSlider.value - 1];
+    if (replyLenVal) replyLenVal.textContent = labels[replyLenSlider.value - 1];
 });
-aiCountSlider.addEventListener('input', () => aiCountVal.textContent = aiCountSlider.value);
-micSensSlider.addEventListener('input', () => micSensVal.textContent = micSensSlider.value + "%");
+if (aiCountSlider) aiCountSlider.addEventListener('input', () => {
+    if (aiCountVal) aiCountVal.textContent = aiCountSlider.value;
+});
+if (micSensSlider) micSensSlider.addEventListener('input', () => {
+    if (micSensVal) micSensVal.textContent = micSensSlider.value + "%";
+});
 
 // Tap Action
 function updateActionUI() {
+    if (!btnActionSpeak || !btnActionType) return;
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
         btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -363,8 +377,8 @@ function updateActionUI() {
         btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
     }
 }
-btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
-btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
+if (btnActionSpeak) btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
+if (btnActionType) btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
 updateActionUI();
 
 // ==================== TTS ====================
@@ -372,8 +386,8 @@ async function speak(text) {
     if (!text) return;
     lastSpoken = text;
     addToConversation('you', text);
-    genBtn.disabled = true;
-    btnText.innerHTML = '🔊 ...';
+    if (genBtn) genBtn.disabled = true;
+    if (btnText) btnText.innerHTML = '🔊 ...';
     isTTSPlaying = true;
 
     try {
@@ -387,8 +401,8 @@ async function speak(text) {
         speakBrowser(text);
     } finally {
         setTimeout(() => {
-            genBtn.disabled = false;
-            btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
+            if (genBtn) genBtn.disabled = false;
+            if (btnText) btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
             isTTSPlaying = false;
         }, 300);
     }
@@ -419,16 +433,17 @@ async function speakElevenLabs(text) {
             voice_settings: { stability: elevenStability, similarity_boost: elevenSimilarity, style: elevenStyle }
         })
     });
-    if (!res.ok) throw new Error(`ElevenLabs TTS failed: ${res.status}`);
+    if (!res.ok) throw new Error(`ElevenLabs failed: ${res.status}`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     await new Promise(r => { audio.onended = r; audio.play(); });
 }
 
-// ==================== FIXED ELEVENLABS VOICES LOADING ====================
+// ==================== FIXED ELEVENLABS VOICES ====================
 async function loadElevenVoices() {
     const select = document.getElementById('elevenVoiceSelect');
+    if (!select) return;
     select.innerHTML = '<option value="">Loading voices...</option>';
 
     if (!elevenLabsApiKey || elevenLabsApiKey.length < 10) {
@@ -454,7 +469,7 @@ async function loadElevenVoices() {
         select.innerHTML = '';
 
         if (!data.voices || data.voices.length === 0) {
-            select.innerHTML = '<option value="">No voices found in your account</option>';
+            select.innerHTML = '<option value="">No voices found</option>';
             return;
         }
 
@@ -467,11 +482,11 @@ async function loadElevenVoices() {
         });
     } catch (e) {
         console.error("Failed to load voices:", e);
-        select.innerHTML = '<option value="">Failed to load voices - check API key or network</option>';
+        select.innerHTML = '<option value="">Failed to load - check API key or network</option>';
     }
 }
 
-elevenVoiceSelect.addEventListener('change', () => {
+if (elevenVoiceSelect) elevenVoiceSelect.addEventListener('change', () => {
     currentElevenVoiceId = elevenVoiceSelect.value;
     localStorage.setItem('elevenVoiceId', currentElevenVoiceId);
 });
@@ -486,9 +501,9 @@ grokSuggestBtn.onclick = async () => {
     suggestStatus.textContent = "Generating AI suggestions...";
     grokSuggestionsEl.innerHTML = `<div class="text-center py-8 text-slate-400">Thinking...</div>`;
 
-    const numReplies = parseInt(aiCountSlider.value);
-    const lengthLevel = parseInt(replyLenSlider.value);
-    const limit = parseInt(aiContextSlider.value);
+    const numReplies = parseInt(aiCountSlider ? aiCountSlider.value : 3);
+    const lengthLevel = parseInt(replyLenSlider ? replyLenSlider.value : 1);
+    const limit = parseInt(aiContextSlider ? aiContextSlider.value : 5);
 
     let contextParts = [];
 
@@ -536,7 +551,7 @@ grokSuggestBtn.onclick = async () => {
     }
 };
 
-// ==================== REST OF APP (full - same as before) ====================
+// ==================== PHRASE & CONVERSATION FUNCTIONS ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -724,7 +739,7 @@ speechSynthesis.onvoiceschanged = populateVoiceList;
 populateVoiceList();
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// Backup functions (export/import/clear) - same as before
+// Backup
 document.getElementById('exportBtn').onclick = () => {
     const data = { phrases: phraseCategories, history: conversationHistory };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -761,7 +776,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// Speech Recognition, Visualizer, etc. (unchanged)
+// Speech Recognition
 let recognition = null;
 let speechDebounceTimer = null;
 
@@ -856,7 +871,7 @@ async function initVisualizer() {
 renderCategories();
 renderPhrases();
 renderConversationHistory();
-genBtn.disabled = false;
+if (genBtn) genBtn.disabled = false;
 
 if (!isMobileDevice) {
     setTimeout(() => {
@@ -870,8 +885,8 @@ if (!isMobileDevice) {
 }
 
 // Initial TTS section visibility
-document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
-document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+if (document.getElementById('browserVoiceSection')) document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
+if (document.getElementById('elevenLabsVoiceSection')) document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
 
 </script>
