@@ -283,7 +283,6 @@ const openSettingsBtn = document.getElementById('openSettingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 
-// ElevenLabs elements
 const ttsProviderSelect = document.getElementById('ttsProviderSelect');
 const osVoiceSection = document.getElementById('osVoiceSection');
 const elevenlabsSection = document.getElementById('elevenlabsSection');
@@ -300,7 +299,6 @@ const simVal = document.getElementById('simVal');
 const styleVal = document.getElementById('styleVal');
 const boostVal = document.getElementById('boostVal');
 
-// Original settings elements
 const voiceSelect = document.getElementById('voiceSelect');
 const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
@@ -357,7 +355,7 @@ let availableVoices = [];
 
 // ====================== SETTINGS & UI ======================
 openSettingsBtn.onclick = () => {
-    elevenApiKeyInput.value = elevenApiKey;  // Show saved key
+    elevenApiKeyInput.value = elevenApiKey;   // Show saved key
     settingsModal.classList.remove('hidden');
 };
 
@@ -835,7 +833,7 @@ replyLenSlider.addEventListener('input', e => {
 });
 aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
 
-// ====================== GROK AI ======================
+// ====================== GROK AI - ONLY ON BUTTON PRESS ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const lengthLevel = parseInt(replyLenSlider.value);
@@ -850,7 +848,7 @@ async function generateGrokSuggestions() {
 
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
 
-    // New feature: Include unsent text as context if checkbox is checked
+    // Include unsent text if checkbox is checked
     const unsentText = textInput.value.trim();
     if (useUnsentContext.checked && unsentText) {
         recentConv += `\nCurrent unsent text from user: ${unsentText}`;
@@ -902,12 +900,9 @@ Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
     }
 }
 
+// ONLY trigger AI when button is pressed
 grokSuggestBtn.onclick = () => {
-    if (conversationHistory.length > 0 || (useUnsentContext.checked && textInput.value.trim())) {
-        generateGrokSuggestions();
-    } else {
-        suggestStatus.textContent = 'Have a conversation first!';
-    }
+    generateGrokSuggestions();
 };
 
 // ====================== MIC & VISUALIZER ======================
@@ -969,8 +964,6 @@ function createRecognition() {
                 const finalText = currentTranscript.trim();
                 if (finalText) {
                     addToConversation('other', finalText);
-                    suggestStatus.textContent = 'Generating AI suggestions...';
-                    generateGrokSuggestions();
                 }
                 liveTranscript.textContent = '';
                 liveTranscript.classList.add('hidden');
@@ -1016,7 +1009,7 @@ listenBtn.onclick = () => {
     }
 };
 
-// Audio Visualizer (Desktop)
+// Audio Visualizer
 async function initVisualizer() {
     if (isMobileDevice || visualizerActive) return;
     try {
