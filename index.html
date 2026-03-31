@@ -41,7 +41,6 @@
     </header>
 
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden">
-        <!-- Left Panel -->
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
@@ -76,14 +75,12 @@
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
 
-            <!-- Fixed Conversation Log -->
             <div class="flex-1 min-h-0 flex flex-col bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
                 <div class="bg-slate-900/80 p-2 border-b border-slate-700 text-center font-bold text-slate-300 shrink-0 text-xs md:text-base">Conversation Log</div>
                 <div id="conversationHistory" class="flex-1 overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
             </div>
         </div>
 
-        <!-- Right Panel - Phrases -->
         <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0 overflow-hidden">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
@@ -103,7 +100,7 @@
         </div>
     </main>
 
-    <!-- Settings Modal -->
+    <!-- Settings Modal - FULL -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-2xl rounded-2xl p-6 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-600 pb-3">
@@ -111,15 +108,12 @@
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
 
-            <!-- ElevenLabs API -->
             <div class="flex flex-col gap-2">
                 <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                 <input type="password" id="elevenLabsApiKey" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" 
                        class="w-full bg-slate-800 border border-slate-600 text-white font-mono p-3 rounded-xl outline-none focus:border-emerald-500">
-                <p class="text-xs text-slate-400">Stored only in your browser</p>
             </div>
 
-            <!-- TTS Provider -->
             <div class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">Text-to-Speech Provider</label>
                 <select id="ttsProvider" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500">
@@ -128,19 +122,18 @@
                 </select>
             </div>
 
-            <!-- Browser Voices Section -->
+            <!-- Browser Voice -->
             <div id="browserVoiceSection" class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">Browser / OS Voice</label>
                 <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-blue-500"></select>
             </div>
 
-            <!-- ElevenLabs Voices & Settings -->
+            <!-- ElevenLabs Voice Section -->
             <div id="elevenLabsVoiceSection" class="flex flex-col gap-4 hidden">
                 <div>
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice (including clones)</label>
                     <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl outline-none focus:border-emerald-500"></select>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Stability</span><span id="stabilityVal">0.75</span></div>
@@ -151,11 +144,20 @@
                         <input type="range" id="similaritySlider" min="0" max="1" step="0.05" value="0.75" class="w-full">
                     </div>
                 </div>
-
                 <div>
                     <div class="flex justify-between text-sm font-bold text-slate-300 mb-1"><span>Style Exaggeration</span><span id="styleVal">0.0</span></div>
                     <input type="range" id="styleSlider" min="0" max="1" step="0.05" value="0" class="w-full">
                 </div>
+            </div>
+
+            <!-- Tap Action (RESTORED) -->
+            <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
+                <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
+                <div class="flex gap-3 h-12">
+                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
+                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
+                </div>
+                <p class="text-[10px] md:text-xs text-slate-400 mt-1">Choose whether clicking a phrase speaks it right away, or adds it to the box.</p>
             </div>
 
             <!-- AI Context -->
@@ -197,7 +199,7 @@
         </div>
     </div>
 
-    <!-- Phrase Edit Modal -->
+    <!-- Phrase Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-6 flex flex-col gap-4">
             <h3 class="text-xl font-bold border-b border-slate-600 pb-2" id="modalTitle">Edit Phrase</h3>
@@ -220,7 +222,7 @@
     </div>
 
 <script>
-// ==================== STATE & CONSTANTS ====================
+// ==================== STATE ====================
 const CORE_DICTIONARY = new Set(["the","be","to","of","and","a","in","that","have","I","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","are","yes","please","thank","help","need","hungry","thirsty","bathroom","pain","tired"]);
 
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
@@ -232,13 +234,13 @@ let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
 
 let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
 let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
-let clickAction = 'speak';
+let clickAction = localStorage.getItem('clickAction') || 'speak';
 let lastSpoken = '';
 let isEditMode = false;
 let intentionallyStopped = true;
 let isTTSPlaying = false;
 
-// Settings
+// ElevenLabs settings
 let elevenLabsApiKey = localStorage.getItem('elevenLabsApiKey') || '';
 let ttsProvider = localStorage.getItem('ttsProvider') || 'browser';
 let contextType = localStorage.getItem('contextType') || 'messages';
@@ -249,7 +251,7 @@ let elevenStyle = parseFloat(localStorage.getItem('elevenStyle')) || 0.0;
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// DOM Elements
+// DOM
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -280,6 +282,8 @@ const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const stabilitySlider = document.getElementById('stabilitySlider');
 const similaritySlider = document.getElementById('similaritySlider');
 const styleSlider = document.getElementById('styleSlider');
+const btnActionSpeak = document.getElementById('btnActionSpeak');
+const btnActionType = document.getElementById('btnActionType');
 const aiContextSlider = document.getElementById('aiContextSlider');
 const aiContextVal = document.getElementById('aiContextVal');
 const replyLenSlider = document.getElementById('replyLenSlider');
@@ -289,21 +293,26 @@ const aiCountVal = document.getElementById('aiCountVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
 
-// ==================== SETTINGS UI ====================
+// ==================== TAP ACTION (RESTORED) ====================
+function updateActionUI() {
+    if (clickAction === 'speak') {
+        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+    } else {
+        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+    }
+}
+btnActionSpeak.onclick = () => { clickAction = 'speak'; localStorage.setItem('clickAction', 'speak'); updateActionUI(); };
+btnActionType.onclick = () => { clickAction = 'type'; localStorage.setItem('clickAction', 'type'); updateActionUI(); };
+updateActionUI();
+
+// ==================== SETTINGS ====================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
 elevenLabsApiKeyInput.value = elevenLabsApiKey;
 ttsProviderSelect.value = ttsProvider;
-
-// Sync sliders
-stabilitySlider.value = elevenStability; document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
-similaritySlider.value = elevenSimilarity; document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
-styleSlider.value = elevenStyle; document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
-
-stabilitySlider.addEventListener('input', () => { elevenStability = parseFloat(stabilitySlider.value); document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2); localStorage.setItem('elevenStability', elevenStability); });
-similaritySlider.addEventListener('input', () => { elevenSimilarity = parseFloat(similaritySlider.value); document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2); localStorage.setItem('elevenSimilarity', elevenSimilarity); });
-styleSlider.addEventListener('input', () => { elevenStyle = parseFloat(styleSlider.value); document.getElementById('styleVal').textContent = elevenStyle.toFixed(2); localStorage.setItem('elevenStyle', elevenStyle); });
 
 elevenLabsApiKeyInput.addEventListener('change', () => {
     elevenLabsApiKey = elevenLabsApiKeyInput.value.trim();
@@ -319,13 +328,37 @@ ttsProviderSelect.addEventListener('change', () => {
     if (ttsProvider === 'elevenlabs') loadElevenVoices();
 });
 
+// ElevenLabs sliders
+stabilitySlider.value = elevenStability; document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
+similaritySlider.value = elevenSimilarity; document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+styleSlider.value = elevenStyle; document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+
+stabilitySlider.addEventListener('input', () => {
+    elevenStability = parseFloat(stabilitySlider.value);
+    document.getElementById('stabilityVal').textContent = elevenStability.toFixed(2);
+    localStorage.setItem('elevenStability', elevenStability);
+});
+similaritySlider.addEventListener('input', () => {
+    elevenSimilarity = parseFloat(similaritySlider.value);
+    document.getElementById('similarityVal').textContent = elevenSimilarity.toFixed(2);
+    localStorage.setItem('elevenSimilarity', elevenSimilarity);
+});
+styleSlider.addEventListener('input', () => {
+    elevenStyle = parseFloat(styleSlider.value);
+    document.getElementById('styleVal').textContent = elevenStyle.toFixed(2);
+    localStorage.setItem('elevenStyle', elevenStyle);
+});
+
 function setContextType(type) {
     contextType = type;
     localStorage.setItem('contextType', type);
     aiContextVal.textContent = contextType === 'messages' ? `Last ${aiContextSlider.value} messages` : `Last ${aiContextSlider.value}k chars`;
 }
 aiContextSlider.addEventListener('input', () => setContextType(contextType));
-replyLenSlider.addEventListener('input', () => { const labels = ["Short", "Medium", "Long"]; replyLenVal.textContent = labels[replyLenSlider.value - 1]; });
+replyLenSlider.addEventListener('input', () => {
+    const labels = ["Short", "Medium", "Long"];
+    replyLenVal.textContent = labels[replyLenSlider.value - 1];
+});
 aiCountSlider.addEventListener('input', () => aiCountVal.textContent = aiCountSlider.value);
 micSensSlider.addEventListener('input', () => micSensVal.textContent = micSensSlider.value + "%");
 
@@ -370,19 +403,11 @@ function speakBrowser(text) {
 async function speakElevenLabs(text) {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentElevenVoiceId}`, {
         method: "POST",
-        headers: {
-            "Accept": "audio/mpeg",
-            "xi-api-key": elevenLabsApiKey,
-            "Content-Type": "application/json"
-        },
+        headers: { "Accept": "audio/mpeg", "xi-api-key": elevenLabsApiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
             text: text,
             model_id: "eleven_monolingual_v1",
-            voice_settings: {
-                stability: elevenStability,
-                similarity_boost: elevenSimilarity,
-                style: elevenStyle
-            }
+            voice_settings: { stability: elevenStability, similarity_boost: elevenSimilarity, style: elevenStyle }
         })
     });
     if (!res.ok) throw new Error("ElevenLabs failed");
@@ -396,9 +421,7 @@ async function speakElevenLabs(text) {
 async function loadElevenVoices() {
     if (!elevenLabsApiKey) return;
     try {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': elevenLabsApiKey }
-        });
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': elevenLabsApiKey } });
         const data = await res.json();
         elevenVoiceSelect.innerHTML = '';
         data.voices.forEach(voice => {
@@ -408,7 +431,7 @@ async function loadElevenVoices() {
             if (voice.voice_id === currentElevenVoiceId) opt.selected = true;
             elevenVoiceSelect.appendChild(opt);
         });
-    } catch (e) { console.error("Failed to load ElevenLabs voices", e); }
+    } catch (e) { console.error("Failed to load voices", e); }
 }
 
 elevenVoiceSelect.addEventListener('change', () => {
@@ -459,11 +482,10 @@ grokSuggestBtn.onclick = async () => {
         });
     } catch (err) {
         suggestStatus.textContent = 'AI service unavailable.';
-        console.error(err);
     }
 };
 
-// ==================== REST OF THE APP (Full) ====================
+// ==================== PHRASE & CONVERSATION FUNCTIONS ====================
 function handlePhraseTap(phrase) {
     if (clickAction === 'speak') {
         textInput.value = phrase;
@@ -494,7 +516,9 @@ function renderPhrases() {
     addPhraseBtn.classList.toggle('hidden', !isEditMode);
     editCategoryBtn.classList.toggle('hidden', !isEditMode);
     editToggleBtn.textContent = isEditMode ? 'Done' : '✏️ Edit';
-    editToggleBtn.className = isEditMode ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500' : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
+    editToggleBtn.className = isEditMode 
+        ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-bold border border-blue-500' 
+        : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg font-bold border border-slate-500';
 
     if (phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
@@ -598,7 +622,7 @@ editCategoryBtn.onclick = () => {
     }
 };
 
-// Predictive Text
+// Predictive
 let dynamicDictionary = Array.from(CORE_DICTIONARY);
 textInput.addEventListener('input', () => {
     const words = textInput.value.split(/\s+/);
@@ -623,7 +647,7 @@ textInput.addEventListener('input', () => {
     } else predictiveBar.classList.add('hidden');
 });
 
-// Button Actions
+// Speak button
 genBtn.onclick = () => {
     const text = textInput.value.trim();
     if (text) speak(text);
@@ -634,7 +658,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => textInput.value = '';
 
-// Browser Voices
+// Browser voices
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
     const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
@@ -687,7 +711,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// Speech Recognition (unchanged from original)
+// Speech Recognition
 let recognition = null;
 let speechDebounceTimer = null;
 
@@ -699,11 +723,8 @@ function createRecognition() {
     rec.continuous = true;
     rec.maxAlternatives = 1;
     rec.onstart = () => updateMicUI(true);
-    rec.onerror = (event) => { console.warn("Recognition error:", event.error); if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { intentionallyStopped = true; updateMicUI(false); } };
-    rec.onend = () => {
-        updateMicUI(false);
-        if (!intentionallyStopped) setTimeout(() => { if (recognition) recognition.start(); }, isMobileDevice ? 600 : 300);
-    };
+    rec.onerror = (event) => { if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { intentionallyStopped = true; updateMicUI(false); } };
+    rec.onend = () => { updateMicUI(false); if (!intentionallyStopped) setTimeout(() => { if (recognition) recognition.start(); }, isMobileDevice ? 600 : 300); };
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
@@ -750,7 +771,6 @@ listenBtn.onclick = () => {
     }
 };
 
-// Visualizer (desktop only)
 async function initVisualizer() {
     if (isMobileDevice || window.visualizerActive) return;
     try {
@@ -799,7 +819,7 @@ if (!isMobileDevice) {
     updateMicUI(false);
 }
 
-// Initial TTS section visibility
+// Initial visibility
 document.getElementById('browserVoiceSection').classList.toggle('hidden', ttsProvider === 'elevenlabs');
 document.getElementById('elevenLabsVoiceSection').classList.toggle('hidden', ttsProvider !== 'elevenlabs');
 if (ttsProvider === 'elevenlabs') loadElevenVoices();
