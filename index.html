@@ -7,37 +7,36 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
-  
+ 
         /* Custom Scrollbars */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-  
+ 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-  
+ 
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
-  
+
         .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.15rem; white-space: normal; word-wrap: break-word; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.02); }
-  
+ 
         .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .msg-other { background: #334155; align-self: flex-start; color: #f8fafc; border-bottom-left-radius: 0.25rem; }
         .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
         .save-phrase-btn { font-size: 0.7rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
         .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
-  
+ 
         .modal-overlay { backdrop-filter: blur(5px); }
         .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
         @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .live-text { animation: pulse-text 1.5s infinite; }
-  
+ 
         canvas { image-rendering: pixelated; }
-
         /* FIXED: Conversation Log Scrollbar */
         #conversationHistory {
             overflow-y: auto !important;
@@ -70,20 +69,20 @@
         </button>
     </header>
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-y-auto md:overflow-hidden">
-  
+ 
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
-      
+     
             <div class="relative shrink-0 flex flex-col gap-1">
-                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
+                <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here or paste from Live Transcribe..."></textarea>
                 <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
             </div>
-      
+     
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-1 md:gap-2">
                 <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-2 md:py-3 disabled:opacity-50 relative overflow-hidden">
                     <span id="btnText" class="z-10 relative flex items-center gap-1 md:flex-col"><span class="text-2xl md:text-4xl leading-none">🔊</span>Speak</span>
                 </button>
                 <button id="listenBtn" class="col-span-1 md:col-span-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
-                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF
+                    <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Live Transcribe
                 </button>
                 <button id="grokSuggestBtn" class="col-span-1 md:col-span-1 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] sm:text-xs md:text-lg rounded-xl shadow-md py-1.5 md:py-2 transition-all flex flex-col items-center justify-center text-center leading-tight">
                     <span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🤖</span>AI Reply
@@ -98,6 +97,9 @@
             <div class="shrink-0 flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-slate-700 relative h-8 md:h-12">
                 <canvas id="waveformCanvas" class="absolute inset-0 w-full h-full hidden opacity-80"></canvas>
                 <div id="liveTranscript" class="z-10 absolute inset-0 flex items-center px-2 md:px-3 text-indigo-300 italic text-xs md:text-sm font-bold live-text hidden text-shadow-md truncate"></div>
+                <div id="transcribeHelper" class="z-10 absolute inset-0 hidden flex items-center justify-center px-3 text-amber-300 text-xs md:text-sm font-medium text-center">
+                    Google Live Transcribe is recommended for continuous listening.<br>Open it from Android Accessibility settings and copy-paste here.
+                </div>
             </div>
             <div class="shrink-0 flex flex-col gap-1 bg-slate-800/50 p-1.5 md:p-2 rounded-xl border border-slate-700/50">
                 <div id="suggestStatus" class="text-[10px] md:text-xs text-slate-400 font-semibold px-1 uppercase tracking-wider">AI Suggestions (Waiting...)</div>
@@ -117,16 +119,15 @@
                     <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">✏️ Edit</button>
                 </div>
             </div>
-      
+     
             <div class="flex justify-between items-center px-3 pt-1.5 md:pt-2 pb-1 shrink-0">
                 <h2 id="currentCategoryTitle" class="text-lg md:text-xl font-bold text-slate-200">Basics</h2>
                 <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-[10px] md:text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
             </div>
-      
+     
             <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-2 p-2 md:p-3 content-start min-h-0"></div>
         </div>
     </main>
-
     <!-- SETTINGS MODAL -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-2xl rounded-2xl p-5 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
@@ -181,7 +182,6 @@
                 </div>
                 <p class="text-xs text-slate-400">These 4 settings let you fine-tune your chosen voice or clone.</p>
             </div>
-
             <!-- New Checkbox for AI Context -->
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg flex items-center gap-2">
@@ -190,7 +190,6 @@
                 </label>
                 <p class="text-[10px] md:text-xs text-slate-400">When checked, the current text in the box will help guide AI reply suggestions.</p>
             </div>
-
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
                 <div class="flex gap-3 h-12">
@@ -231,7 +230,6 @@
             </button>
         </div>
     </div>
-
     <!-- Phrase Edit Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
@@ -253,12 +251,10 @@
             </div>
         </div>
     </div>
-
 <script>
 // ====================== CORE SETUP ======================
 const API_URL = '/api/grok';
 const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
-
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -282,7 +278,6 @@ const addPhraseBtn = document.getElementById('addPhraseBtn');
 const openSettingsBtn = document.getElementById('openSettingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 const settingsModal = document.getElementById('settingsModal');
-
 const ttsProviderSelect = document.getElementById('ttsProviderSelect');
 const osVoiceSection = document.getElementById('osVoiceSection');
 const elevenlabsSection = document.getElementById('elevenlabsSection');
@@ -298,7 +293,6 @@ const stabVal = document.getElementById('stabVal');
 const simVal = document.getElementById('simVal');
 const styleVal = document.getElementById('styleVal');
 const boostVal = document.getElementById('boostVal');
-
 const voiceSelect = document.getElementById('voiceSelect');
 const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
@@ -310,9 +304,8 @@ const aiContextSlider = document.getElementById('aiContextSlider');
 const aiContextVal = document.getElementById('aiContextVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
-
-// New checkbox
 const useUnsentContext = document.getElementById('useUnsentContext');
+const transcribeHelper = document.getElementById('transcribeHelper');
 
 // Data
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
@@ -326,13 +319,11 @@ let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Tech & Environment": ["Turn on the TV.", "Turn off the TV.", "Change the channel.", "Volume up.", "Volume down.", "Play some music.", "Turn on the lights.", "Turn off the lights.", "Open the blinds.", "Close the door.", "Open the door.", "My screen needs calibrating.", "Adjust my screen."],
     "Food & Drink Specifics": ["Coffee, please.", "Tea, please.", "More, please.", "I am full.", "It is too hot to eat.", "It is too cold.", "Give me a smaller bite.", "Give me a smaller sip.", "Thicken my drink.", "Feed me slower."]
 };
-
 let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
 let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
 let isEditMode = false;
 let clickAction = 'speak';
 let lastSpoken = '';
-let intentionallyStopped = true;
 let isTTSPlaying = false;
 let editingPhraseIndex = -1;
 let editingCategorySource = '';
@@ -355,10 +346,9 @@ let availableVoices = [];
 
 // ====================== SETTINGS & UI ======================
 openSettingsBtn.onclick = () => {
-    elevenApiKeyInput.value = elevenApiKey;   // Show saved key
+    elevenApiKeyInput.value = elevenApiKey;
     settingsModal.classList.remove('hidden');
 };
-
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 
 function updateActionUI() {
@@ -843,17 +833,12 @@ async function generateGrokSuggestions() {
     let maxTokens = numReplies * 25;
     if (lengthLevel === 2) { lengthInstruction = "medium length (10-20 words)"; maxTokens = numReplies * 40; }
     else if (lengthLevel === 3) { lengthInstruction = "longer, more detailed (20-40 words)"; maxTokens = numReplies * 70; }
-
     grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6 md:col-span-3">AI Thinking (${numReplies} replies)...</div>`;
-
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
-
-    // Include unsent text if checkbox is checked
     const unsentText = textInput.value.trim();
     if (useUnsentContext.checked && unsentText) {
         recentConv += `\nCurrent unsent text from user: ${unsentText}`;
     }
-
     const prompt = `You are a human named "ALS User" talking to your partner in your house.
 You use a text-to-speech device to speak.
 Your partner just said something to you. Generate ${numReplies} natural, casual replies you could click to say back to them.
@@ -866,7 +851,6 @@ STRICT RULES:
 Recent Conversation History:
 ${recentConv}
 Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
-
     try {
         const res = await fetch(API_URL, {
             method: 'POST',
@@ -883,10 +867,8 @@ Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
         const suggestions = data.choices[0].message.content.trim().split('\n')
             .map(s => s.trim().replace(/^([0-9]+[\.\-)]\s*|["-]\s*|\*\s*)/, ''))
             .filter(s => s);
-
         grokSuggestionsEl.innerHTML = '';
         suggestStatus.textContent = suggestions.length ? 'AI Suggested Replies:' : 'AI Suggestions (Failed)';
-
         suggestions.slice(0, numReplies).forEach(phrase => {
             const btn = document.createElement('button');
             btn.className = 'suggestion-btn shrink-0 min-w-[220px] md:min-w-0 md:w-full';
@@ -899,117 +881,43 @@ Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
         grokSuggestionsEl.innerHTML = '';
     }
 }
-
-// ONLY trigger AI when button is pressed
 grokSuggestBtn.onclick = () => {
     generateGrokSuggestions();
 };
 
-// ====================== MIC & VISUALIZER ======================
-let recognition = null;
-let speechDebounceTimer = null;
-let isRestarting = false;
+// ====================== GOOGLE LIVE TRANSCRIBE INTEGRATION ======================
+let isLiveTranscribeMode = false;
 
-function updateMicUI(isListening) {
-    if (isListening) {
+function updateMicUI(isActive) {
+    if (isActive) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
         listenBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
-        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Live Transcribe ON';
+        transcribeHelper.classList.remove('hidden');
+        liveTranscript.classList.add('hidden');
     } else {
         listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
         listenBtn.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
-        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
-    }
-}
-
-function createRecognition() {
-    if (!('webkitSpeechRecognition' in window)) return null;
-    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US';
-    rec.interimResults = true;
-    rec.continuous = true;
-    rec.maxAlternatives = 1;
-    rec.onstart = () => updateMicUI(true);
-    rec.onerror = (event) => {
-        console.warn("Recognition error:", event.error);
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            intentionallyStopped = true;
-            updateMicUI(false);
-        } else if (!intentionallyStopped && !isRestarting) {
-            isRestarting = true;
-            setTimeout(() => { isRestarting = false; restartIfNeeded(); }, 800);
-        }
-    };
-    rec.onend = () => {
-        updateMicUI(false);
-        if (!intentionallyStopped && !isRestarting) {
-            isRestarting = true;
-            setTimeout(() => {
-                isRestarting = false;
-                restartIfNeeded();
-            }, isMobileDevice ? 600 : 300);
-        }
-    };
-    rec.onresult = (event) => {
-        if (isTTSPlaying) return;
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-        }
-        if (currentTranscript.trim()) {
-            liveTranscript.textContent = '🗣️ ' + currentTranscript;
-            liveTranscript.classList.remove('hidden');
-            clearTimeout(speechDebounceTimer);
-            speechDebounceTimer = setTimeout(() => {
-                const finalText = currentTranscript.trim();
-                if (finalText) {
-                    addToConversation('other', finalText);
-                }
-                liveTranscript.textContent = '';
-                liveTranscript.classList.add('hidden');
-            }, 1500);
-        }
-    };
-    return rec;
-}
-
-function restartIfNeeded() {
-    if (intentionallyStopped || !recognition) return;
-    try { recognition.start(); } catch (e) {
-        console.warn("Restart failed");
-        recognition = null;
-        setTimeout(initOrRestartRecognition, 400);
-    }
-}
-
-function initOrRestartRecognition() {
-    if (!('webkitSpeechRecognition' in window)) return;
-    if (!recognition) recognition = createRecognition();
-    if (recognition && !intentionallyStopped) {
-        try { recognition.start(); } catch (e) {
-            setTimeout(initOrRestartRecognition, 600);
-        }
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Live Transcribe';
+        transcribeHelper.classList.add('hidden');
+        liveTranscript.classList.add('hidden');
     }
 }
 
 listenBtn.onclick = () => {
     if (isTTSPlaying) return;
-    if (!intentionallyStopped) {
-        intentionallyStopped = true;
-        if (recognition) {
-            try { recognition.abort(); recognition.stop(); } catch(e) {}
-            recognition = null;
-        }
-        updateMicUI(false);
-    } else {
-        intentionallyStopped = false;
-        updateMicUI(true);
-        initOrRestartRecognition();
-        if (!isMobileDevice) initVisualizer();
+    isLiveTranscribeMode = !isLiveTranscribeMode;
+    updateMicUI(isLiveTranscribeMode);
+
+    if (isLiveTranscribeMode) {
+        // Show helper text
+        liveTranscript.textContent = "→ Open Google Live Transcribe (Accessibility settings) for continuous listening";
+        liveTranscript.classList.remove('hidden');
+        // Optional: You can add a small vibration or alert on mobile if needed
     }
 };
 
-// Audio Visualizer
+// Audio Visualizer (kept but only for non-mobile as before)
 async function initVisualizer() {
     if (isMobileDevice || visualizerActive) return;
     try {
@@ -1024,7 +932,6 @@ async function initVisualizer() {
         drawWaveform();
     } catch (e) { console.warn("Visualizer failed", e); }
 }
-
 function drawWaveform() {
     if (!visualizerActive) return;
     requestAnimationFrame(drawWaveform);
@@ -1051,18 +958,16 @@ populateVoiceList();
 updateTTSProviderUI();
 updateElevenSliders();
 if (elevenApiKey) fetchElevenVoices();
-initTTS = () => { genBtn.disabled = false; };
+const initTTS = () => { genBtn.disabled = false; };
 initTTS();
 
-// Mic behavior
+// On mobile (Android), we no longer auto-start Web Speech — Live Transcribe is the main tool
 if (!isMobileDevice) {
     setTimeout(() => {
-        intentionallyStopped = false;
-        initOrRestartRecognition();
         initVisualizer();
     }, 800);
 } else {
-    updateMicUI(false);
+    updateMicUI(false); // Start with helper off
 }
 </script>
 </body>
