@@ -16,7 +16,6 @@
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 16px; background: #334155; outline: none; border-radius: 8px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: #22c55e; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
 
@@ -29,19 +28,16 @@
         .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .msg-other { background: #334155; align-self: flex-start; color: #f8fafc; border-bottom-left-radius: 0.25rem; }
         .msg-you { background: #166534; align-self: flex-end; color: #f0fdf4; border-bottom-right-radius: 0.25rem; }
-
         .save-phrase-btn { font-size: 0.7rem; background: #0f172a; color: #cbd5e1; padding: 4px 8px; border-radius: 8px; margin-top: 6px; display: inline-block; cursor: pointer; border: 1px solid #475569; transition: background 0.2s; }
         .save-phrase-btn:hover { background: #1e293b; color: #fff; border-color: #94a3b8; }
 
         .modal-overlay { backdrop-filter: blur(5px); }
         .modal-content { background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); }
-
         @keyframes pulse-text { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
         .live-text { animation: pulse-text 1.5s infinite; }
 
         canvas { image-rendering: pixelated; }
 
-        /* Improved Conversation Log */
         #conversationHistory {
             overflow-y: auto !important;
             scrollbar-width: thin;
@@ -64,20 +60,15 @@
             background: #94a3b8;
         }
 
-        /* Mobile stacking for conversation at bottom */
+        /* Mobile: Conversation log at bottom, compact */
         @media (max-width: 767px) {
-            .main-container {
-                flex-direction: column !important;
-            }
-            .left-panel {
-                order: 1;
-            }
-            .right-panel {
-                order: 2;
-            }
             .conv-log-mobile {
-                order: 3;
-                margin-top: 1rem;
+                margin-top: 12px;
+                border-top: 1px solid #334155;
+                padding-top: 8px;
+            }
+            .main-area {
+                flex-direction: column;
             }
         }
     </style>
@@ -91,16 +82,15 @@
         </button>
     </header>
 
-    <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden main-container">
+    <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden main-area">
 
-        <!-- Left Panel: Input + Controls + Suggestions -->
-        <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0 left-panel">
-
+        <!-- Left side: Input, buttons, suggestions, waveform -->
+        <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
                 <div id="predictiveBar" class="h-10 md:h-12 bg-slate-900 rounded-lg border border-slate-700 flex items-center px-2 gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap hidden shadow-sm text-sm md:text-base"></div>
             </div>
-
+     
             <div class="shrink-0 grid grid-cols-4 md:grid-cols-5 gap-1 md:gap-2">
                 <button id="genBtn" disabled class="col-span-4 md:col-span-1 bg-green-600 hover:bg-green-500 text-white font-bold text-xl md:text-xl rounded-xl shadow-md transition-all flex flex-col items-center justify-center py-2 md:py-3 disabled:opacity-50 relative overflow-hidden">
                     <span id="btnText" class="z-10 relative flex items-center gap-1 md:flex-col"><span class="text-2xl md:text-4xl leading-none">🔊</span>Speak</span>
@@ -129,10 +119,15 @@
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
 
+            <!-- Conversation Log - Desktop version (original position) -->
+            <div class="hidden md:flex flex-col flex-grow min-h-0 bg-slate-900/80 border border-slate-700 rounded-xl overflow-hidden">
+                <div class="bg-slate-900 p-2 text-center font-bold text-slate-300 text-xs md:text-base border-b border-slate-700">Conversation Log</div>
+                <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2"></div>
+            </div>
         </div>
 
-        <!-- Right Panel: Phrases -->
-        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0 right-panel">
+        <!-- Right side: Phrase categories and grid -->
+        <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
@@ -141,27 +136,21 @@
                     <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm">✏️ Edit</button>
                 </div>
             </div>
-
+     
             <div class="flex justify-between items-center px-3 pt-1.5 md:pt-2 pb-1 shrink-0">
                 <h2 id="currentCategoryTitle" class="text-lg md:text-xl font-bold text-slate-200">Basics</h2>
                 <button id="editCategoryBtn" class="text-red-400 hover:text-red-300 hover:bg-red-900/30 text-[10px] md:text-xs font-bold bg-slate-900 px-2 py-1 rounded border border-red-900/50 hidden transition-colors">Delete Category</button>
             </div>
-
+     
             <div id="phraseGrid" class="flex-grow overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-2 p-2 md:p-3 content-start min-h-0"></div>
         </div>
 
     </main>
 
-    <!-- Conversation Log - Moved to bottom on mobile, scrollable independently -->
-    <div class="conv-log-mobile bg-slate-900/80 border-t border-slate-700 p-2 md:hidden">
+    <!-- Mobile-only Conversation Log at bottom (compact, scrollable, not full-width box) -->
+    <div class="md:hidden conv-log-mobile bg-slate-900/80 p-2 border-t border-slate-700">
         <div class="text-center font-bold text-slate-300 text-xs uppercase tracking-wider mb-1">Conversation Log</div>
-        <div id="conversationHistoryMobile" class="h-48 overflow-y-auto p-2 flex flex-col gap-1.5"></div>
-    </div>
-
-    <!-- Desktop Conversation Log (hidden on mobile) -->
-    <div class="hidden md:flex flex-col bg-slate-900/80 border-t border-slate-700 p-2 md:p-3 shrink-0" style="max-height: 28vh;">
-        <div class="text-center font-bold text-slate-300 text-xs md:text-base mb-1">Conversation Log</div>
-        <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
+        <div id="conversationHistoryMobile" class="h-52 overflow-y-auto p-2 flex flex-col gap-1.5"></div>
     </div>
 
     <!-- SETTINGS MODAL -->
@@ -172,14 +161,14 @@
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
 
-            <!-- AUDIO BOOST - Prominent -->
-            <div class="flex flex-col gap-3 bg-slate-900/70 p-5 rounded-2xl border border-green-600">
+            <!-- Audio Boost -->
+            <div class="flex flex-col gap-3 bg-slate-900/70 p-4 rounded-2xl border border-green-600">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-100 text-xl flex items-center gap-2">🔊 Audio Volume Boost</label>
-                    <span id="audioBoostVal" class="text-green-400 font-bold text-2xl">2.0x</span>
+                    <span id="audioBoostVal" class="text-green-400 font-bold text-xl">2.5x</span>
                 </div>
-                <input type="range" id="audioBoostSlider" min="0.5" max="4" step="0.1" value="2.0" class="accent-green-500">
-                <p class="text-xs text-slate-400">Drag to make speech much louder. Works with both OS and ElevenLabs voices.</p>
+                <input type="range" id="audioBoostSlider" min="0.5" max="4.0" step="0.1" value="2.5" class="my-1 accent-green-500">
+                <p class="text-xs text-slate-400">Makes the voice much louder (try 2.5x–3.5x). Works for both OS and ElevenLabs.</p>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -287,7 +276,7 @@
         </div>
     </div>
 
-    <!-- Phrase Edit Modal (unchanged from original) -->
+    <!-- Phrase Edit Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
             <h3 class="text-xl md:text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
@@ -313,7 +302,6 @@
 // ====================== CORE SETUP ======================
 const API_URL = '/api/grok';
 const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
-
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -382,7 +370,6 @@ let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Tech & Environment": ["Turn on the TV.", "Turn off the TV.", "Change the channel.", "Volume up.", "Volume down.", "Play some music.", "Turn on the lights.", "Turn off the lights.", "Open the blinds.", "Close the door.", "Open the door.", "My screen needs calibrating.", "Adjust my screen."],
     "Food & Drink Specifics": ["Coffee, please.", "Tea, please.", "More, please.", "I am full.", "It is too hot to eat.", "It is too cold.", "Give me a smaller bite.", "Give me a smaller sip.", "Thicken my drink.", "Feed me slower."]
 };
-
 let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
 let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
 let isEditMode = false;
@@ -396,7 +383,7 @@ let audioContext, analyser, microphone, dataArray;
 let visualizerActive = false;
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// ElevenLabs
+// ElevenLabs variables
 let ttsProvider = localStorage.getItem('ttsProvider') || 'os';
 let elevenApiKey = localStorage.getItem('elevenApiKey') || '';
 let elevenVoices = [];
@@ -411,14 +398,12 @@ let availableVoices = [];
 
 // ====================== AUDIO BOOST ======================
 function updateAudioBoostUI() {
-    const slider = document.getElementById('audioBoostSlider');
-    const valEl = document.getElementById('audioBoostVal');
-    if (slider) slider.value = audioBoostLevel;
-    if (valEl) valEl.textContent = audioBoostLevel.toFixed(1) + "x";
+    document.getElementById('audioBoostSlider').value = audioBoostLevel;
+    document.getElementById('audioBoostVal').textContent = audioBoostLevel.toFixed(1) + "x";
     localStorage.setItem('audioBoostLevel', audioBoostLevel);
 }
 
-// ====================== IMPROVED TTS ======================
+// ====================== TTS ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -427,7 +412,6 @@ async function speakWithElevenLabs(text) {
     try {
         genBtn.disabled = true;
         btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>...';
-
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedElevenVoiceId}/stream`, {
             method: 'POST',
             headers: {
@@ -446,42 +430,26 @@ async function speakWithElevenLabs(text) {
                 }
             })
         });
-
-        if (!response.ok) throw new Error("ElevenLabs request failed");
-
+        if (!response.ok) throw new Error();
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
 
-        audio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            finishTTS();
-        };
-        audio.onerror = () => {
-            URL.revokeObjectURL(audioUrl);
-            finishTTS();
-            speakWithOS(text);
-        };
+        audio.onended = () => { URL.revokeObjectURL(audioUrl); finishTTS(); };
+        audio.onerror = () => { URL.revokeObjectURL(audioUrl); finishTTS(); speakWithOS(text); };
 
-        // Use Web Audio API for real boost > 1.0
-        if (audioBoostLevel > 1 || true) {
-            if (!audioContextGlobal) {
-                audioContextGlobal = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            const source = audioContextGlobal.createMediaElementSource(audio);
-            const gainNode = audioContextGlobal.createGain();
-            gainNode.gain.value = Math.max(1, audioBoostLevel);  // strong boost
-            source.connect(gainNode);
-            gainNode.connect(audioContextGlobal.destination);
-        } else {
-            audio.volume = 1;
-        }
+        // Boost with Web Audio API
+        if (!audioContextGlobal) audioContextGlobal = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContextGlobal.createMediaElementSource(audio);
+        const gainNode = audioContextGlobal.createGain();
+        gainNode.gain.value = audioBoostLevel;
+        source.connect(gainNode);
+        gainNode.connect(audioContextGlobal.destination);
 
         audio.play();
         lastSpoken = text;
         addToConversation('you', text);
     } catch (err) {
-        console.warn("ElevenLabs failed, falling back to OS", err);
         speakWithOS(text);
     }
 }
@@ -491,10 +459,8 @@ function speakWithOS(text) {
     lastSpoken = text;
     addToConversation('you', text);
     window.speechSynthesis.cancel();
-
     genBtn.disabled = true;
     btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>...';
-
     const utterance = new SpeechSynthesisUtterance(text);
     const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
     if (savedVoiceURI && availableVoices.length > 0) {
@@ -503,17 +469,12 @@ function speakWithOS(text) {
     } else {
         utterance.lang = 'en-US';
     }
-
     utterance.volume = Math.min(1.0, audioBoostLevel);
-    utterance.rate = 0.92;   // slightly slower = clearer and subjectively louder
-    utterance.pitch = 1.0;
-
+    utterance.rate = 0.92;  // slightly slower for clarity and perceived loudness
     const estimatedTimeMs = (text.length * 100) + 3000;
     const ttsFallbackTimer = setTimeout(finishTTS, estimatedTimeMs);
-
     utterance.onend = () => { clearTimeout(ttsFallbackTimer); finishTTS(); };
     utterance.onerror = () => { clearTimeout(ttsFallbackTimer); finishTTS(); };
-
     window.speechSynthesis.speak(utterance);
 }
 
@@ -532,7 +493,7 @@ function finishTTS() {
     isTTSPlaying = false;
 }
 
-// ====================== REST OF SCRIPT (identical to original except UI updates) ======================
+// ====================== INPUT & PHRASES ======================
 textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -599,15 +560,13 @@ textInput.addEventListener('input', () => {
     } else predictiveBar.classList.add('hidden');
 });
 
-// Storage & Render
+// ====================== STORAGE & RENDER ======================
 function saveToStorage() {
     localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
     dynamicDictionary = updateDictionary();
 }
 
-function saveConversation() { 
-    localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); 
-}
+function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
 function renderCategories() {
     categoryScroll.innerHTML = '';
@@ -632,7 +591,6 @@ function renderPhrases() {
     editCategoryBtn.classList.toggle('hidden', !isEditMode);
     editToggleBtn.className = isEditMode ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-xs md:text-sm shadow-sm' : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm';
     editToggleBtn.innerHTML = isEditMode ? 'Done' : '✏️ Edit';
-
     if(phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
             const btn = document.createElement('button');
@@ -687,9 +645,8 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
-// Modals & other UI logic (unchanged from your original)
+// Modals
 editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
-
 addCategoryBtn.onclick = () => {
     const newCat = prompt("Enter new category name:");
     if (newCat && newCat.trim() !== "") {
@@ -702,7 +659,6 @@ addCategoryBtn.onclick = () => {
         } else alert("Category already exists.");
     }
 };
-
 editCategoryBtn.onclick = () => {
     if(confirm(`DELETE category "${currentCategory}"?`)) {
         delete phraseCategories[currentCategory];
@@ -712,13 +668,11 @@ editCategoryBtn.onclick = () => {
         renderPhrases();
     }
 };
-
 addPhraseBtn.onclick = () => {
     openModal(textInput.value || "", currentCategory, -1);
     document.getElementById('modalTitle').textContent = "Add New Phrase";
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
-
 function openModal(phraseText, category, index) {
     editingPhraseIndex = index;
     editingCategorySource = category;
@@ -735,7 +689,6 @@ function openModal(phraseText, category, index) {
     });
     document.getElementById('phraseModal').classList.remove('hidden');
 }
-
 document.getElementById('modalCancelBtn').onclick = () => { document.getElementById('phraseModal').classList.add('hidden'); };
 document.getElementById('modalSaveBtn').onclick = () => {
     const newText = document.getElementById('modalPhraseText').value.trim();
@@ -758,7 +711,7 @@ document.getElementById('modalDeleteBtn').onclick = () => {
     }
 };
 
-// Export / Import / Clear (unchanged)
+// Export / Import / Clear
 document.getElementById('exportBtn').onclick = () => {
     const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
     const a = document.createElement('a');
@@ -766,7 +719,6 @@ document.getElementById('exportBtn').onclick = () => {
     a.download = `ALS_Backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
 };
-
 document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
 document.getElementById('importFileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -789,7 +741,6 @@ document.getElementById('importFileInput').addEventListener('change', (e) => {
     };
     reader.readAsText(file);
 });
-
 document.getElementById('clearHistoryBtn').onclick = () => {
     if(confirm("Delete all conversation history?")) {
         conversationHistory = [];
@@ -799,7 +750,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// Action buttons
+// Action UI
 function updateActionUI() {
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -825,36 +776,37 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
-// Voice lists, ElevenLabs sliders, etc. (kept exactly as original)
-if ('speechSynthesis' in window) {
-    availableVoices = speechSynthesis.getVoices();
-    speechSynthesis.onvoiceschanged = () => {
-        availableVoices = speechSynthesis.getVoices();
-        populateVoiceList();
-    };
-    populateVoiceList();
-}
-
+// Voice list
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
+    availableVoices = speechSynthesis.getVoices();
     voiceSelect.innerHTML = '';
     let enVoices = availableVoices.filter(v => v.lang.startsWith('en'));
     if (enVoices.length === 0) enVoices = availableVoices;
     const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+    let foundSaved = false;
     enVoices.forEach((voice) => {
         const option = document.createElement('option');
         option.textContent = `${voice.name} (${voice.lang})`;
         option.value = voice.voiceURI;
-        if (voice.voiceURI === savedVoiceURI) option.selected = true;
+        if (voice.voiceURI === savedVoiceURI) {
+            option.selected = true;
+            foundSaved = true;
+        }
         voiceSelect.appendChild(option);
     });
-    if (!savedVoiceURI && enVoices.length > 0) {
+    if (!foundSaved && enVoices.length > 0) {
+        voiceSelect.selectedIndex = 0;
         localStorage.setItem('selectedVoiceURI', voiceSelect.value);
     }
 }
+if ('speechSynthesis' in window) {
+    populateVoiceList();
+    speechSynthesis.onvoiceschanged = populateVoiceList;
+}
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// ElevenLabs functions (unchanged)
+// ElevenLabs
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
@@ -866,9 +818,10 @@ async function fetchElevenVoices() {
             elevenVoices = data.voices || [];
             renderElevenVoiceSelect();
         }
-    } catch (e) { console.warn("Failed to load ElevenLabs voices", e); }
+    } catch (e) {
+        console.warn("Failed to load ElevenLabs voices", e);
+    }
 }
-
 function renderElevenVoiceSelect() {
     elevenVoiceSelect.innerHTML = '';
     elevenVoices.forEach(v => {
@@ -883,7 +836,6 @@ function renderElevenVoiceSelect() {
         localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
     }
 }
-
 saveApiKeyBtn.onclick = async () => {
     const key = elevenApiKeyInput.value.trim();
     if (key) {
@@ -898,8 +850,6 @@ elevenVoiceSelect.addEventListener('change', () => {
     selectedElevenVoiceId = elevenVoiceSelect.value;
     localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
 });
-
-// ElevenLabs sliders
 function updateElevenSliders() {
     stabSlider.value = elevenSettings.stability;
     simSlider.value = elevenSettings.similarity_boost;
@@ -931,26 +881,22 @@ boostSlider.addEventListener('input', () => {
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// Grok AI (unchanged)
+// Grok AI
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const lengthLevel = parseInt(replyLenSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
     if (lengthLevel === 3 && numReplies > 5) numReplies = 5;
-
     let lengthInstruction = "extremely short (2-8 words)";
     let maxTokens = numReplies * 25;
     if (lengthLevel === 2) { lengthInstruction = "medium length (10-20 words)"; maxTokens = numReplies * 40; }
     else if (lengthLevel === 3) { lengthInstruction = "longer, more detailed (20-40 words)"; maxTokens = numReplies * 70; }
-
     grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6 md:col-span-3">AI Thinking (${numReplies} replies)...</div>`;
-
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
     const unsentText = textInput.value.trim();
     if (useUnsentContext.checked && unsentText) {
         recentConv += `\nCurrent unsent text from user: ${unsentText}`;
     }
-
     const prompt = `You are a human named "ALS User" talking to your partner in your house.
 You use a text-to-speech device to speak.
 Your partner just said something to you. Generate ${numReplies} natural, casual replies you could click to say back to them.
@@ -963,7 +909,6 @@ STRICT RULES:
 Recent Conversation History:
 ${recentConv}
 Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
-
     try {
         const res = await fetch(API_URL, {
             method: 'POST',
@@ -994,13 +939,12 @@ Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
         grokSuggestionsEl.innerHTML = '';
     }
 }
-grokSuggestBtn.onclick = () => generateGrokSuggestions();
+grokSuggestBtn.onclick = () => { generateGrokSuggestions(); };
 
-// Mic & Visualizer (unchanged)
+// Mic (original code kept unchanged)
 let recognition = null;
 let speechDebounceTimer = null;
 let isRestarting = false;
-
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -1012,10 +956,141 @@ function updateMicUI(isListening) {
         listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
     }
 }
+function createRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return null;
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => updateMicUI(true);
+    rec.onerror = (event) => {
+        console.warn("Recognition error:", event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            intentionallyStopped = true;
+            updateMicUI(false);
+        } else if (!intentionallyStopped && !isRestarting) {
+            isRestarting = true;
+            setTimeout(() => { isRestarting = false; restartIfNeeded(); }, 800);
+        }
+    };
+    rec.onend = () => {
+        updateMicUI(false);
+        if (!intentionallyStopped && !isRestarting) {
+            isRestarting = true;
+            setTimeout(() => {
+                isRestarting = false;
+                restartIfNeeded();
+            }, isMobileDevice ? 600 : 300);
+        }
+    };
+    rec.onresult = (event) => {
+        if (isTTSPlaying) return;
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript.trim()) {
+            liveTranscript.textContent = '🗣️ ' + currentTranscript;
+            liveTranscript.classList.remove('hidden');
+            clearTimeout(speechDebounceTimer);
+            speechDebounceTimer = setTimeout(() => {
+                const finalText = currentTranscript.trim();
+                if (finalText) {
+                    addToConversation('other', finalText);
+                }
+                liveTranscript.textContent = '';
+                liveTranscript.classList.add('hidden');
+            }, 1500);
+        }
+    };
+    return rec;
+}
+function restartIfNeeded() {
+    if (intentionallyStopped || !recognition) return;
+    try { recognition.start(); } catch (e) {
+        console.warn("Restart failed");
+        recognition = null;
+        setTimeout(initOrRestartRecognition, 400);
+    }
+}
+function initOrRestartRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return;
+    if (!recognition) recognition = createRecognition();
+    if (recognition && !intentionallyStopped) {
+        try { recognition.start(); } catch (e) {
+            setTimeout(initOrRestartRecognition, 600);
+        }
+    }
+}
+listenBtn.onclick = () => {
+    if (isTTSPlaying) return;
+    if (!intentionallyStopped) {
+        intentionallyStopped = true;
+        if (recognition) {
+            try { recognition.abort(); recognition.stop(); } catch(e) {}
+            recognition = null;
+        }
+        updateMicUI(false);
+    } else {
+        intentionallyStopped = false;
+        updateMicUI(true);
+        initOrRestartRecognition();
+        if (!isMobileDevice) initVisualizer();
+    }
+};
+async function initVisualizer() {
+    if (isMobileDevice || visualizerActive) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 64;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        visualizerActive = true;
+        drawWaveform();
+    } catch (e) { console.warn("Visualizer failed", e); }
+}
+function drawWaveform() {
+    if (!visualizerActive) return;
+    requestAnimationFrame(drawWaveform);
+    analyser.getByteFrequencyData(dataArray);
+    waveformCanvas.width = waveformCanvas.offsetWidth;
+    waveformCanvas.height = waveformCanvas.offsetHeight;
+    canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+    const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
+    let x = 0;
+    for(let i = 0; i < dataArray.length; i++) {
+        const barHeight = dataArray[i] / 4;
+        canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.2})`;
+        canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 2;
+    }
+}
 
-// ... (mic recognition code remains exactly as in your original - omitted here for space but included in full file) ...
+// ====================== INIT ======================
+updateActionUI();
+renderCategories();
+renderPhrases();
+renderConversationHistory();
+populateVoiceList();
+updateTTSProviderUI();
+updateElevenSliders();
+updateAudioBoostUI();
+if (elevenApiKey) fetchElevenVoices();
+if (!isMobileDevice) {
+    setTimeout(() => {
+        intentionallyStopped = false;
+        initOrRestartRecognition();
+        initVisualizer();
+    }, 800);
+} else {
+    updateMicUI(false);
+}
 
-// Settings open/close
+// Settings
 openSettingsBtn.onclick = () => {
     elevenApiKeyInput.value = elevenApiKey;
     updateAudioBoostUI();
@@ -1024,13 +1099,13 @@ openSettingsBtn.onclick = () => {
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 document.getElementById('closeSettingsBtnBottom').onclick = () => settingsModal.classList.add('hidden');
 
-// Audio boost slider
+// Audio Boost Slider
 document.getElementById('audioBoostSlider').addEventListener('input', (e) => {
     audioBoostLevel = parseFloat(e.target.value);
     updateAudioBoostUI();
 });
 
-// Sliders for other settings
+// Other sliders
 aiContextSlider.addEventListener('input', e => aiContextVal.textContent = e.target.value + " msgs");
 micSensSlider.addEventListener('input', e => micSensVal.textContent = e.target.value + "%");
 replyLenSlider.addEventListener('input', e => {
@@ -1046,25 +1121,7 @@ replyLenSlider.addEventListener('input', e => {
 });
 aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
 
-// INIT
-updateActionUI();
-renderCategories();
-renderPhrases();
-renderConversationHistory();
-updateTTSProviderUI();
-updateElevenSliders();
-updateAudioBoostUI();
-if (elevenApiKey) fetchElevenVoices();
-
-// Start mic on desktop
-if (!isMobileDevice) {
-    setTimeout(() => {
-        intentionallyStopped = false;
-        // initOrRestartRecognition();  // comment in if you want auto-start
-    }, 800);
-}
-
-console.log("ALS Communicator loaded with audio boost & improved layout");
+console.log("ALS Communicator loaded with louder audio and mobile-friendly conversation log");
 </script>
 </body>
 </html>
