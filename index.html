@@ -8,6 +8,7 @@
     <style>
         body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
  
+        /* Custom Scrollbars */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -37,24 +38,35 @@
 
         canvas { image-rendering: pixelated; }
 
-        #conversationHistory {
+        #conversationHistory, #conversationHistoryMobile {
             overflow-y: auto !important;
             scrollbar-width: thin;
             scrollbar-color: #64748b #1e293b;
-            max-height: 100%;
         }
-        #conversationHistory::-webkit-scrollbar { width: 10px; }
-        #conversationHistory::-webkit-scrollbar-track { background: #1e293b; border-radius: 6px; }
-        #conversationHistory::-webkit-scrollbar-thumb { background: #64748b; border-radius: 6px; border: 2px solid #1e293b; }
-        #conversationHistory::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        #conversationHistory::-webkit-scrollbar, #conversationHistoryMobile::-webkit-scrollbar {
+            width: 10px;
+        }
+        #conversationHistory::-webkit-scrollbar-track, #conversationHistoryMobile::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 6px;
+        }
+        #conversationHistory::-webkit-scrollbar-thumb, #conversationHistoryMobile::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 6px;
+            border: 2px solid #1e293b;
+        }
+        #conversationHistory::-webkit-scrollbar-thumb:hover, #conversationHistoryMobile::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
+        /* Mobile: Conversation log is a compact bottom section only */
         @media (max-width: 767px) {
+            .main-area { flex-direction: column; }
             .conv-log-mobile {
                 margin-top: 12px;
                 border-top: 1px solid #334155;
-                padding-top: 8px;
+                padding: 8px;
             }
-            .main-area { flex-direction: column; }
         }
     </style>
 </head>
@@ -69,7 +81,7 @@
 
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden main-area">
 
-        <!-- Left Panel -->
+        <!-- Left Panel: Input + Controls + Suggestions + Waveform -->
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
@@ -104,14 +116,14 @@
                 <div id="grokSuggestions" class="flex overflow-x-auto hide-scrollbar md:grid md:grid-cols-3 gap-1 md:gap-2 pb-1"></div>
             </div>
 
-            <!-- Desktop Conversation Log -->
+            <!-- Desktop Conversation Log (original position) -->
             <div class="hidden md:flex flex-col flex-grow min-h-0 bg-slate-900/80 border border-slate-700 rounded-xl overflow-hidden">
                 <div class="bg-slate-900 p-2 text-center font-bold text-slate-300 text-xs md:text-base border-b border-slate-700">Conversation Log</div>
                 <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2"></div>
             </div>
         </div>
 
-        <!-- Right Panel - Phrases -->
+        <!-- Right Panel: Phrases -->
         <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
@@ -132,7 +144,7 @@
 
     </main>
 
-    <!-- Mobile Conversation Log at bottom -->
+    <!-- Mobile Conversation Log - Compact bottom section only -->
     <div class="md:hidden conv-log-mobile bg-slate-900/80 p-2 border-t border-slate-700">
         <div class="text-center font-bold text-slate-300 text-xs uppercase tracking-wider mb-1">Conversation Log</div>
         <div id="conversationHistoryMobile" class="h-52 overflow-y-auto p-2 flex flex-col gap-1.5"></div>
@@ -146,16 +158,16 @@
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
 
+            <!-- Audio Volume Boost -->
             <div class="flex flex-col gap-3 bg-slate-900/70 p-4 rounded-2xl border border-green-600">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-100 text-xl flex items-center gap-2">🔊 Audio Volume Boost</label>
                     <span id="audioBoostVal" class="text-green-400 font-bold text-xl">2.5x</span>
                 </div>
-                <input type="range" id="audioBoostSlider" min="0.5" max="8.0" step="0.1" value="2.5" class="my-1 accent-green-500">
+                <input type="range" id="audioBoostSlider" min="0.5" max="4.0" step="0.1" value="2.5" class="my-1 accent-green-500">
                 <p class="text-xs text-slate-400">Makes speech much louder. Recommended: 2.5x – 3.5x</p>
             </div>
 
-            <!-- All other settings (unchanged) -->
             <div class="flex flex-col gap-1">
                 <label class="font-bold text-slate-300 text-lg">TTS Provider</label>
                 <select id="ttsProviderSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-sm md:text-lg rounded-xl p-2 md:p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors">
@@ -344,8 +356,8 @@ const useUnsentContext = document.getElementById('useUnsentContext');
 let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5;
 let audioContextGlobal = null;
 
-// Data (same as original)
-let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || { /* ... your original phrases ... */ 
+// Data
+let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait.", "Stop.", "Go.", "I changed my mind."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "Can I have some water?", "I need my medication.", "I need a shower.", "Wipe my mouth.", "Wipe my eyes.", "Blow my nose.", "I need my glasses."],
     "Care & Comfort": ["Adjust my position.", "I am in pain.", "I need help.", "It is too hot.", "It is too cold.", "Scratch my itch.", "Scratch my face.", "Scratch my head.", "My muscles are cramping.", "Adjust my head.", "Move my arm.", "Move my leg.", "Prop up my feet.", "I need to stretch."],
@@ -356,7 +368,6 @@ let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || { /* ..
     "Tech & Environment": ["Turn on the TV.", "Turn off the TV.", "Change the channel.", "Volume up.", "Volume down.", "Play some music.", "Turn on the lights.", "Turn off the lights.", "Open the blinds.", "Close the door.", "Open the door.", "My screen needs calibrating.", "Adjust my screen."],
     "Food & Drink Specifics": ["Coffee, please.", "Tea, please.", "More, please.", "I am full.", "It is too hot to eat.", "It is too cold.", "Give me a smaller bite.", "Give me a smaller sip.", "Thicken my drink.", "Feed me slower."]
 };
-
 let currentCategory = Object.keys(phraseCategories)[0] || "Basics";
 let conversationHistory = JSON.parse(localStorage.getItem('alsConversation')) || [];
 let isEditMode = false;
@@ -366,16 +377,22 @@ let intentionallyStopped = true;
 let isTTSPlaying = false;
 let editingPhraseIndex = -1;
 let editingCategorySource = '';
-let availableVoices = [];
+let audioContext, analyser, microphone, dataArray;
+let visualizerActive = false;
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-// ElevenLabs settings (same as original)
+// ElevenLabs
 let ttsProvider = localStorage.getItem('ttsProvider') || 'os';
 let elevenApiKey = localStorage.getItem('elevenApiKey') || '';
 let elevenVoices = [];
 let selectedElevenVoiceId = localStorage.getItem('selectedElevenVoiceId') || '';
 let elevenSettings = JSON.parse(localStorage.getItem('elevenSettings')) || {
-    stability: 0.75, similarity_boost: 0.85, style: 0.0, speaker_boost: true
+    stability: 0.75,
+    similarity_boost: 0.85,
+    style: 0.0,
+    speaker_boost: true
 };
+let availableVoices = [];
 
 // ====================== AUDIO BOOST ======================
 function updateAudioBoostUI() {
@@ -384,7 +401,7 @@ function updateAudioBoostUI() {
     localStorage.setItem('audioBoostLevel', audioBoostLevel);
 }
 
-// ====================== FIXED SPEAK FUNCTIONS ======================
+// ====================== TTS ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -393,17 +410,24 @@ async function speakWithElevenLabs(text) {
     try {
         genBtn.disabled = true;
         btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>...';
-
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedElevenVoiceId}/stream`, {
             method: 'POST',
-            headers: { 'Accept': 'audio/mpeg', 'xi-api-key': elevenApiKey, 'Content-Type': 'application/json' },
+            headers: {
+                'Accept': 'audio/mpeg',
+                'xi-api-key': elevenApiKey,
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 text: text,
                 model_id: "eleven_monolingual_v1",
-                voice_settings: elevenSettings
+                voice_settings: {
+                    stability: elevenSettings.stability,
+                    similarity_boost: elevenSettings.similarity_boost,
+                    style: elevenSettings.style,
+                    use_speaker_boost: elevenSettings.speaker_boost
+                }
             })
         });
-
         if (!response.ok) throw new Error();
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
@@ -412,24 +436,19 @@ async function speakWithElevenLabs(text) {
         audio.onended = () => { URL.revokeObjectURL(audioUrl); finishTTS(); };
         audio.onerror = () => { URL.revokeObjectURL(audioUrl); finishTTS(); speakWithOS(text); };
 
-        // Reliable audio boost
         if (audioBoostLevel > 1) {
-            if (!audioContextGlobal) {
-                audioContextGlobal = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioContextGlobal.state === 'suspended') {
-                await audioContextGlobal.resume();
-            }
+            if (!audioContextGlobal) audioContextGlobal = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContextGlobal.state === 'suspended') await audioContextGlobal.resume();
             const source = audioContextGlobal.createMediaElementSource(audio);
-            const gain = audioContextGlobal.createGain();
-            gain.gain.value = audioBoostLevel;
-            source.connect(gain).connect(audioContextGlobal.destination);
+            const gainNode = audioContextGlobal.createGain();
+            gainNode.gain.value = audioBoostLevel;
+            source.connect(gainNode).connect(audioContextGlobal.destination);
         }
 
-        await audio.play();
+        audio.play();
         lastSpoken = text;
         addToConversation('you', text);
-    } catch (e) {
+    } catch (err) {
         speakWithOS(text);
     }
 }
@@ -439,40 +458,39 @@ function speakWithOS(text) {
     lastSpoken = text;
     addToConversation('you', text);
     window.speechSynthesis.cancel();
-
     genBtn.disabled = true;
     btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>...';
-
     const utterance = new SpeechSynthesisUtterance(text);
     const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
     if (savedVoiceURI && availableVoices.length > 0) {
         const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
         if (exactVoice) utterance.voice = exactVoice;
+    } else {
+        utterance.lang = 'en-US';
     }
-
-    utterance.volume = Math.min(1, audioBoostLevel);
+    utterance.volume = Math.min(1.0, audioBoostLevel);
     utterance.rate = 0.92;
-
     utterance.onend = finishTTS;
     utterance.onerror = finishTTS;
-
     window.speechSynthesis.speak(utterance);
 }
 
 function speak(text) {
     if (!text) return;
-    if (ttsProvider === 'elevenlabs') speakWithElevenLabs(text);
-    else speakWithOS(text);
+    if (ttsProvider === 'elevenlabs') {
+        speakWithElevenLabs(text);
+    } else {
+        speakWithOS(text);
+    }
 }
 
 function finishTTS() {
     genBtn.disabled = false;
     btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
+    isTTSPlaying = false;
 }
 
-// ====================== REST OF THE CODE (kept 100% same as your original except mobile log) ======================
-// ... (all the rest of your original JavaScript is here unchanged - input handlers, render functions, modals, mic, etc.)
-
+// ====================== INPUT & PHRASES ======================
 textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -504,6 +522,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
+// Predictive text
 let dynamicDictionary = updateDictionary();
 function updateDictionary() {
     let allWords = new Set(CORE_DICTIONARY);
@@ -538,10 +557,12 @@ textInput.addEventListener('input', () => {
     } else predictiveBar.classList.add('hidden');
 });
 
+// ====================== STORAGE & RENDER ======================
 function saveToStorage() {
     localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
     dynamicDictionary = updateDictionary();
 }
+
 function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
 function renderCategories() {
@@ -621,6 +642,7 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
+// Modals
 editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
 addCategoryBtn.onclick = () => {
     const newCat = prompt("Enter new category name:");
@@ -686,6 +708,7 @@ document.getElementById('modalDeleteBtn').onclick = () => {
     }
 };
 
+// Export / Import / Clear
 document.getElementById('exportBtn').onclick = () => {
     const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
     const a = document.createElement('a');
@@ -724,6 +747,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
+// Action UI
 function updateActionUI() {
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -737,6 +761,7 @@ btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
 btnActionType.onclick = () => { clickAction = 'type'; updateActionUI(); };
 updateActionUI();
 
+// TTS Provider
 ttsProviderSelect.value = ttsProvider;
 function updateTTSProviderUI() {
     osVoiceSection.classList.toggle('hidden', ttsProvider !== 'os');
@@ -748,44 +773,51 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
-if ('speechSynthesis' in window) {
-    availableVoices = speechSynthesis.getVoices();
-    speechSynthesis.onvoiceschanged = () => {
-        availableVoices = speechSynthesis.getVoices();
-        populateVoiceList();
-    };
-    populateVoiceList();
-}
-
+// Voice list
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
+    availableVoices = speechSynthesis.getVoices();
     voiceSelect.innerHTML = '';
     let enVoices = availableVoices.filter(v => v.lang.startsWith('en'));
     if (enVoices.length === 0) enVoices = availableVoices;
     const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+    let foundSaved = false;
     enVoices.forEach((voice) => {
         const option = document.createElement('option');
         option.textContent = `${voice.name} (${voice.lang})`;
         option.value = voice.voiceURI;
-        if (voice.voiceURI === savedVoiceURI) option.selected = true;
+        if (voice.voiceURI === savedVoiceURI) {
+            option.selected = true;
+            foundSaved = true;
+        }
         voiceSelect.appendChild(option);
     });
-    if (!localStorage.getItem('selectedVoiceURI') && enVoices.length > 0) {
+    if (!foundSaved && enVoices.length > 0) {
+        voiceSelect.selectedIndex = 0;
         localStorage.setItem('selectedVoiceURI', voiceSelect.value);
     }
 }
+if ('speechSynthesis' in window) {
+    populateVoiceList();
+    speechSynthesis.onvoiceschanged = populateVoiceList;
+}
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
+// ElevenLabs
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': elevenApiKey } });
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+            headers: { 'xi-api-key': elevenApiKey }
+        });
         if (res.ok) {
             const data = await res.json();
             elevenVoices = data.voices || [];
             renderElevenVoiceSelect();
         }
-    } catch (e) { console.warn("Failed to load ElevenLabs voices", e); }
+    } catch (e) {
+        console.warn("Failed to load ElevenLabs voices", e);
+    }
 }
 function renderElevenVoiceSelect() {
     elevenVoiceSelect.innerHTML = '';
@@ -825,11 +857,28 @@ function updateElevenSliders() {
     styleVal.textContent = elevenSettings.style.toFixed(2);
     boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
 }
-stabSlider.addEventListener('input', () => { elevenSettings.stability = parseFloat(stabSlider.value); stabVal.textContent = elevenSettings.stability.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
-simSlider.addEventListener('input', () => { elevenSettings.similarity_boost = parseFloat(simSlider.value); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
-styleSlider.addEventListener('input', () => { elevenSettings.style = parseFloat(styleSlider.value); styleVal.textContent = elevenSettings.style.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
-boostSlider.addEventListener('input', () => { elevenSettings.speaker_boost = parseFloat(boostSlider.value) > 0.5; boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off'; localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
+stabSlider.addEventListener('input', () => {
+    elevenSettings.stability = parseFloat(stabSlider.value);
+    stabVal.textContent = elevenSettings.stability.toFixed(2);
+    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
+});
+simSlider.addEventListener('input', () => {
+    elevenSettings.similarity_boost = parseFloat(simSlider.value);
+    simVal.textContent = elevenSettings.similarity_boost.toFixed(2);
+    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
+});
+styleSlider.addEventListener('input', () => {
+    elevenSettings.style = parseFloat(styleSlider.value);
+    styleVal.textContent = elevenSettings.style.toFixed(2);
+    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
+});
+boostSlider.addEventListener('input', () => {
+    elevenSettings.speaker_boost = parseFloat(boostSlider.value) > 0.5;
+    boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
+    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
+});
 
+// Grok AI
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const lengthLevel = parseInt(replyLenSlider.value);
@@ -842,13 +891,37 @@ async function generateGrokSuggestions() {
     grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6 md:col-span-3">AI Thinking (${numReplies} replies)...</div>`;
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
     const unsentText = textInput.value.trim();
-    if (useUnsentContext.checked && unsentText) recentConv += `\nCurrent unsent text from user: ${unsentText}`;
-    const prompt = `You are a human named "ALS User" talking to your partner in your house.\nYou use a text-to-speech device to speak.\nYour partner just said something to you. Generate ${numReplies} natural, casual replies you could click to say back to them.\nSTRICT RULES:\n1. Reply length: ${lengthInstruction}.\n2. Speak ONLY in the first person ("I", "me", "my").\n3. YOU ARE A HUMAN BEING, NOT AN AI.\n4. NEVER offer to "look something up", "double-check", or act like an assistant.\n5. No formal robotic tone. Be incredibly casual.\nRecent Conversation History:\n${recentConv}\nOutput ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
+    if (useUnsentContext.checked && unsentText) {
+        recentConv += `\nCurrent unsent text from user: ${unsentText}`;
+    }
+    const prompt = `You are a human named "ALS User" talking to your partner in your house.
+You use a text-to-speech device to speak.
+Your partner just said something to you. Generate ${numReplies} natural, casual replies you could click to say back to them.
+STRICT RULES:
+1. Reply length: ${lengthInstruction}.
+2. Speak ONLY in the first person ("I", "me", "my").
+3. YOU ARE A HUMAN BEING, NOT AN AI.
+4. NEVER offer to "look something up", "double-check", or act like an assistant.
+5. No formal robotic tone. Be incredibly casual.
+Recent Conversation History:
+${recentConv}
+Output ONLY the ${numReplies} phrases, one per line. No quotes, no numbers.`;
     try {
-        const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'grok-3-mini', messages: [{ role: 'user', content: prompt }], max_tokens: maxTokens, temperature: 0.5 }) });
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'grok-3-mini',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: maxTokens,
+                temperature: 0.5
+            })
+        });
         if (!res.ok) throw new Error();
         const data = await res.json();
-        const suggestions = data.choices[0].message.content.trim().split('\n').map(s => s.trim().replace(/^([0-9]+[\.\-)]\s*|["-]\s*|\*\s*)/, '')).filter(s => s);
+        const suggestions = data.choices[0].message.content.trim().split('\n')
+            .map(s => s.trim().replace(/^([0-9]+[\.\-)]\s*|["-]\s*|\*\s*)/, ''))
+            .filter(s => s);
         grokSuggestionsEl.innerHTML = '';
         suggestStatus.textContent = suggestions.length ? 'AI Suggested Replies:' : 'AI Suggestions (Failed)';
         suggestions.slice(0, numReplies).forEach(phrase => {
@@ -863,12 +936,13 @@ async function generateGrokSuggestions() {
         grokSuggestionsEl.innerHTML = '';
     }
 }
-grokSuggestBtn.onclick = () => generateGrokSuggestions();
+grokSuggestBtn.onclick = () => { generateGrokSuggestions(); };
 
-// Mic (unchanged)
+// ====================== MIC (Improved) ======================
 let recognition = null;
 let speechDebounceTimer = null;
 let isRestarting = false;
+
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -880,23 +954,128 @@ function updateMicUI(isListening) {
         listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
     }
 }
-// ... (the full mic recognition code is the same as your original - I kept it short here for readability but it's fully included in the file)
+
+function createRecognition() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Speech Recognition is not supported in this browser. Please use Chrome or Edge.");
+        return null;
+    }
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = 'en-US';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => updateMicUI(true);
+
+    rec.onerror = (event) => {
+        console.error("Mic error:", event.error);
+        if (event.error === 'not-allowed') {
+            alert("Microphone access was denied. Please allow microphone permission when prompted.");
+        } else if (event.error === 'aborted') {
+            console.warn("Recognition aborted - this often happens on local files. Try running on a local server (Live Server) or HTTPS.");
+        }
+        updateMicUI(false);
+        if (!intentionallyStopped && !isRestarting) {
+            isRestarting = true;
+            setTimeout(() => { isRestarting = false; restartIfNeeded(); }, 1000);
+        }
+    };
+
+    rec.onend = () => {
+        updateMicUI(false);
+        if (!intentionallyStopped && !isRestarting) {
+            isRestarting = true;
+            setTimeout(() => {
+                isRestarting = false;
+                restartIfNeeded();
+            }, 600);
+        }
+    };
+
+    rec.onresult = (event) => {
+        if (isTTSPlaying) return;
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript.trim()) {
+            liveTranscript.textContent = '🗣️ ' + currentTranscript;
+            liveTranscript.classList.remove('hidden');
+            clearTimeout(speechDebounceTimer);
+            speechDebounceTimer = setTimeout(() => {
+                const finalText = currentTranscript.trim();
+                if (finalText) addToConversation('other', finalText);
+                liveTranscript.textContent = '';
+                liveTranscript.classList.add('hidden');
+            }, 1200);
+        }
+    };
+    return rec;
+}
+
+function restartIfNeeded() {
+    if (intentionallyStopped || !recognition) return;
+    try { recognition.start(); } catch (e) { console.warn("Restart failed"); }
+}
+
+function initOrRestartRecognition() {
+    if (!('webkitSpeechRecognition' in window)) return;
+    if (!recognition) recognition = createRecognition();
+    if (recognition && !intentionallyStopped) {
+        try { recognition.start(); } catch (e) {}
+    }
+}
 
 listenBtn.onclick = () => {
     if (isTTSPlaying) return;
     if (!intentionallyStopped) {
         intentionallyStopped = true;
-        if (recognition) { try { recognition.abort(); recognition.stop(); } catch(e) {} recognition = null; }
+        if (recognition) {
+            try { recognition.abort(); recognition.stop(); } catch(e) {}
+            recognition = null;
+        }
         updateMicUI(false);
     } else {
         intentionallyStopped = false;
         updateMicUI(true);
-        if (!recognition) recognition = createRecognition();
-        if (recognition) recognition.start();
+        initOrRestartRecognition();
     }
 };
 
-// Init
+// Visualizer (unchanged)
+async function initVisualizer() {
+    if (isMobileDevice || visualizerActive) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 64;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        visualizerActive = true;
+        drawWaveform();
+    } catch (e) { console.warn("Visualizer failed", e); }
+}
+function drawWaveform() {
+    if (!visualizerActive) return;
+    requestAnimationFrame(drawWaveform);
+    analyser.getByteFrequencyData(dataArray);
+    waveformCanvas.width = waveformCanvas.offsetWidth;
+    waveformCanvas.height = waveformCanvas.offsetHeight;
+    canvasCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+    const barWidth = (waveformCanvas.width / dataArray.length) * 1.5;
+    let x = 0;
+    for(let i = 0; i < dataArray.length; i++) {
+        const barHeight = dataArray[i] / 4;
+        canvasCtx.fillStyle = `rgb(99, 102, 241, ${barHeight / 50 + 0.2})`;
+        canvasCtx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 2;
+    }
+}
+
+// ====================== INIT ======================
 updateActionUI();
 renderCategories();
 renderPhrases();
@@ -907,11 +1086,17 @@ updateElevenSliders();
 updateAudioBoostUI();
 if (elevenApiKey) fetchElevenVoices();
 
-document.getElementById('audioBoostSlider').addEventListener('input', (e) => {
-    audioBoostLevel = parseFloat(e.target.value);
-    updateAudioBoostUI();
-});
+if (!isMobileDevice) {
+    setTimeout(() => {
+        intentionallyStopped = false;
+        initOrRestartRecognition();
+        initVisualizer();
+    }, 800);
+} else {
+    updateMicUI(false);
+}
 
+// Settings
 openSettingsBtn.onclick = () => {
     elevenApiKeyInput.value = elevenApiKey;
     updateAudioBoostUI();
@@ -920,7 +1105,24 @@ openSettingsBtn.onclick = () => {
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 document.getElementById('closeSettingsBtnBottom').onclick = () => settingsModal.classList.add('hidden');
 
-console.log("ALS Communicator loaded - Speak button should now work instantly");
+document.getElementById('audioBoostSlider').addEventListener('input', (e) => {
+    audioBoostLevel = parseFloat(e.target.value);
+    updateAudioBoostUI();
+});
+
+aiContextSlider.addEventListener('input', e => aiContextVal.textContent = e.target.value + " msgs");
+micSensSlider.addEventListener('input', e => micSensVal.textContent = e.target.value + "%");
+replyLenSlider.addEventListener('input', e => {
+    const labels = ["Short", "Medium", "Long"];
+    replyLenVal.textContent = labels[e.target.value - 1];
+    if (e.target.value == 3) {
+        aiCountSlider.max = 5;
+        if (parseInt(aiCountSlider.value) > 5) aiCountSlider.value = 5;
+    } else aiCountSlider.max = 9;
+});
+aiCountSlider.addEventListener('input', e => aiCountVal.textContent = e.target.value);
+
+console.log("ALS Communicator loaded with fixed mic and compact mobile convo log");
 </script>
 </body>
 </html>
