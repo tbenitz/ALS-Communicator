@@ -373,19 +373,46 @@ let aiProvider = localStorage.getItem('aiProvider') || 'grok';
 let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5;
 let audioContextGlobal = null;
 
-// AssemblyAI
+// AssemblyAI Setup
 let assemblyWS = null;
 let assemblyAudioContext = null;
 let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
+// 15-Minute Auto-Off Inactivity Logic Variables
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
+let inactivityTimeoutTracker = null;
+
+// --- Inactivity Auto-Shutoff Reset Routine ---
+function resetInactivityTimer() {
+    if (inactivityTimeoutTracker) {
+        clearTimeout(inactivityTimeoutTracker);
+    }
+    
+    // Set timer to drop connection if no transcription triggers happen
+    inactivityTimeoutTracker = setTimeout(() => {
+        console.log("⏳ [Inactivity Alert] 15 minutes of silence detected. Shifting microphone off automatically.");
+        
+        // Emulate a click on the mic button if it is currently listening
+        if (useAssemblyAI) {
+            if (isAssemblyListening) stopAssemblyAI();
+        } else {
+            if (!intentionallyStopped) {
+                intentionallyStopped = true;
+                if (recognition) recognition.stop();
+                updateMicUI(false);
+            }
+        }
+    }, INACTIVITY_LIMIT_MS);
+}
+
 // Modal UI Trigger Actions
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
 
-// ====================== FIXED PREDICTIVE BAR LOCKED TO V4-FLASH ======================
+// ====================== PREDICTIVE BAR LOCKED TO V4-FLASH ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -427,6 +454,7 @@ textInput.addEventListener('input', async () => {
             textInput.value = text + ' ' + word + ' ';
             predictiveBar.classList.add('hidden');
             textInput.focus();
+            resetInactivityTimer(); // Reset on custom predictive typing insertions
         };
         predictiveBar.appendChild(btn);
     });
@@ -519,6 +547,7 @@ textInput.addEventListener('keydown', (e) => {
 });
 
 function handlePhraseTap(phrase) {
+    resetInactivityTimer(); // Reset timer when a canned phrase is tapped
     if (clickAction === 'speak') {
         textInput.value = phrase;
         genBtn.click();
@@ -603,7 +632,6 @@ function appendMessageUI(speaker, text, container) {
     scrollToBottom();
 }
 
-// Section Labeling Protocol Built-in
 function addToConversation(speaker, text) {
     conversationHistory.push({ speaker, text });
     saveConversation();
@@ -867,7 +895,7 @@ boostSlider.addEventListener('input', () => {
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// ====================== AI REPLY SUGGESTIONS (GROK & V4-FLASH ONLY) ======================
+// ====================== AI REPLY SUGGESTIONS ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
@@ -932,10 +960,15 @@ async function startAssemblyAI() {
     if (!token) return;
     const wsUrl = `wss://streaming.assemblyai.com/v3/ws?token=${token}&speech_model=universal-streaming-english&sample_rate=16000&speaker_labels=true&format_turns=true&max_turn_silence=1500`;
     assemblyWS = new WebSocket(wsUrl);
-    assemblyWS.onopen = () => { isAssemblyListening = true; updateMicUI(true); };
+    assemblyWS.onopen = () => { 
+        isAssemblyListening = true; 
+        updateMicUI(true); 
+        resetInactivityTimer(); // Initialize timer when connection goes live
+    };
     assemblyWS.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === 'Turn' && msg.text?.trim()) {
+            resetInactivityTimer(); // Reset safety timeout whenever incoming conversational content hits the app
             addToConversation('other', msg.text.trim());
             liveTranscript.textContent = `🗣️ ${msg.text}`;
             liveTranscript.classList.remove('hidden');
@@ -963,15 +996,15 @@ async function startAssemblyAI() {
     }
 }
 
-// Section Labeling Architecture Implementation Block
 function stopAssemblyAI() {
     if (assemblyWS) assemblyWS.close();
     if (assemblyStream) assemblyStream.getTracks().forEach(track => track.stop());
     isAssemblyListening = false;
     updateMicUI(false);
+    if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
-// ====================== HARDWARE CAPTURE & AUDIO INPUTS ======================
+// ====================== MICROPHONE CONTROL MANAGEMENT ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -992,11 +1025,13 @@ listenBtn.onclick = () => {
             intentionallyStopped = true;
             if (recognition) recognition.stop();
             updateMicUI(false);
+            if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
         } else {
             intentionallyStopped = false;
             updateMicUI(true);
             if (!recognition) recognition = createRecognition();
             if (recognition) recognition.start();
+            resetInactivityTimer(); // Start tracking native fallback engine activity
         }
     }
 };
@@ -1013,6 +1048,7 @@ function createRecognition() {
             currentTranscript += event.results[i][0].transcript;
         }
         if (currentTranscript.trim()) {
+            resetInactivityTimer(); // Reset safety timeout on native text capture updates
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
             setTimeout(() => {
@@ -1054,7 +1090,7 @@ if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
 
-console.log("✅ Streamlined ALS Communicator Loaded: V4-Flash Locked for Typing + V4-Flash/Grok Choice on Replies");
+console.log("✅ Auto-Kill Logic Configured: System will monitor audio turns and close streams following 15 minutes of quiet.");
 </script>
 </body>
 </html>
