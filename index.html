@@ -939,6 +939,18 @@ async function generateGrokSuggestions() {
 }
 
 // ====================== REALTIME ASSEMBLYAI AUDIO ENGINE ======================
+async function getAssemblyToken() {
+    try {
+        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        return data.token;
+    } catch (e) {
+        console.error("❌ Failed to fetch token from backend serverless route:", e);
+        return null;
+    }
+}
+    
 async function startAssemblyAI() {
     const token = await getAssemblyToken();
     if (!token) return;
