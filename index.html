@@ -126,8 +126,11 @@
         <div id="conversationHistoryMobile" class="h-48 overflow-y-auto p-2 flex flex-col gap-1.5"></div>
     </div>
 
-    <div class="hidden md:flex flex-col bg-slate-900/80 border-t border-slate-700 p-2 md:p-3 shrink-0" style="max-height: 28vh;">
-        <div class="text-center font-bold text-slate-300 text-xs md:text-base mb-1">Conversation Log</div>
+    <div id="desktopConvContainer" class="hidden md:flex flex-col bg-slate-900/80 border-t border-slate-700 shrink-0 transition-all duration-300" style="max-height: 20vh;">
+        <div class="flex justify-between items-center bg-gray-950 px-4 py-1.5 border-b border-slate-800 shrink-0">
+            <span class="text-xs uppercase tracking-wider font-bold text-slate-400">Conversation Log</span>
+            <button id="toggleConvBtn" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700">▼ Hide</button>
+        </div>
         <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
     </div>
 
@@ -221,7 +224,7 @@
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <label class="font-bold text-slate-300 text-lg flex items-center gap-2"><input type="checkbox" id="useAssemblyAI" class="w-5 h-5 accent-green-500">Enable Diarized AssemblyAI Mic Engine Mode</label>
+                <label class="font-bold text-slate-300 text-lg flex items-center gap-2"><input type="checkbox" id="useAssemblyAI" class="w-5 h-5 accent-green-500" checked>Enable Diarized AssemblyAI Mic Engine Mode</label>
             </div>
 
             <div class="flex gap-2 border-t border-slate-700 pt-4">
@@ -294,6 +297,8 @@ const elevenApiKeyInput = document.getElementById('elevenApiKey');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const refreshElevenVoicesBtn = document.getElementById('refreshElevenVoicesBtn');
+const desktopConvContainer = document.getElementById('desktopConvContainer');
+const toggleConvBtn = document.getElementById('toggleConvBtn');
 
 const stabSlider = document.getElementById('stabSlider');
 const simSlider = document.getElementById('simSlider');
@@ -323,7 +328,6 @@ const useUnsentContext = document.getElementById('useUnsentContext');
 const useAssemblyAIChk = document.getElementById('useAssemblyAI');
 const aiProviderSelect = document.getElementById('aiProviderSelect');
 
-// Phrases Storage Data Structure
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait.", "Stop.", "Go.", "I changed my mind."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "Can I have some water?", "I need my medication.", "I need a shower.", "Wipe my mouth.", "Wipe my eyes.", "Blow my nose.", "I need my glasses."],
@@ -353,22 +357,23 @@ let elevenVoices = [];
 let aiProvider = localStorage.getItem('aiProvider') || 'grok';
 let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5;
 let audioContextGlobal = null;
+let isLogMinimized = false;
 
-// Audio Streaming Engine Parameters
+// Audio Hardware State Monitors
 let assemblyWS = null;
 let assemblyAudioContext = null;
 let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
-// 15-Minute Automated Timeout Safety Variables
+// 15-Minute Safety Idle Timeout Variable Controls
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
 let inactivityTimeoutTracker = null;
 
 function resetInactivityTimer() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ [Safety Control] 15 minutes of idle silence detected. Disabling microphone loop.");
+        console.log("⏳ [Safety Control] 15 minutes of quiet passed. Shutting down microphone pipeline stream elements.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -381,11 +386,26 @@ function resetInactivityTimer() {
     }, INACTIVITY_LIMIT_MS);
 }
 
+// Minimizer Interaction Controller
+toggleConvBtn.onclick = () => {
+    isLogMinimized = !isLogMinimized;
+    if (isLogMinimized) {
+        desktopConvContainer.style.maxHeight = "36px";
+        toggleConvBtn.textContent = "▲ Show";
+        convHistoryEl.style.display = "none";
+    } else {
+        desktopConvContainer.style.maxHeight = "20vh";
+        toggleConvBtn.textContent = "▼ Hide";
+        convHistoryEl.style.display = "flex";
+        scrollToBottom();
+    }
+};
+
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
 
-// ====================== PREDICTIVE ENGINE (DEEPSEEK V4-FLASH ONLY) ======================
+// ====================== EXTENDED PREDICTIVE FIX ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -405,11 +425,14 @@ async function getDeepSeekPredictive(lastWords) {
 
 textInput.addEventListener('input', async () => {
     const text = textInput.value.trim();
-    if (text.length < 5) {
+    if (!text) {
         predictiveBar.classList.add('hidden');
         return;
     }
-    const lastWords = text.split(/\s+/).slice(-4).join(' ');
+    // Fixed: slice text dynamically instead of requiring a strict 4-word buffer limit
+    const wordsArr = text.split(/\s+/);
+    const lastWords = wordsArr.slice(Math.max(0, wordsArr.length - 4)).join(' ');
+    
     predictiveBar.innerHTML = '<span class="text-slate-400">Predicting with V4-Flash...</span>';
     predictiveBar.classList.remove('hidden');
 
@@ -431,7 +454,7 @@ textInput.addEventListener('input', async () => {
     });
 });
 
-// ====================== SPEECH CHANNELS MANAGEMENT ======================
+// ====================== TTS ENGINES PIPELINE ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -495,14 +518,13 @@ function speak(text) {
     else speakWithOS(text);
 }
 
-// Section Label Protocol Handler Block
 function finishTTS() {
     genBtn.disabled = false;
     btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
     isTTSPlaying = false;
 }
 
-// ====================== ACTIONS HANDLERS ======================
+// ====================== PHRASE GRID AND CANVAS HANDLERS ======================
 textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -535,7 +557,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
-// ====================== LOCAL DATA RE-RENDERS ======================
+// ====================== COGNITIVE STATE SYNCS ======================
 function saveToStorage() { localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); }
 function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
@@ -583,7 +605,7 @@ function renderConversationHistory() {
         appendMessageUI(msg.speaker, msg.text, convHistoryEl);
         appendMessageUI(msg.speaker, msg.text, convHistoryMobileEl);
     });
-    scrollToBottom();
+    if (!isLogMinimized) scrollToBottom();
 }
 
 function appendMessageUI(speaker, text, container) {
@@ -593,7 +615,6 @@ function appendMessageUI(speaker, text, container) {
     if (speaker === 'you') htmlContent += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save Phrase</button>`;
     div.innerHTML = htmlContent;
     container.appendChild(div);
-    scrollToBottom();
 }
 
 function addToConversation(speaker, text) {
@@ -817,18 +838,26 @@ boostSlider.addEventListener('input', () => {
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// ====================== CONTEXT GENERATOR ======================
+// ====================== CONTEXT GENERATOR (VARIABLE MAPPING FIXED) ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
+    
+    // Fixed length tracking override maps variable definitions securely
+    const lengthLabels = ["extremely short (1-4 words max)", "medium length (one complete quick casual phrase)", "long full context detailed natural statements"];
+    const targetLengthRule = lengthLabels[parseInt(replyLenSlider.value) - 1];
 
     const activeLabel = aiProvider === 'v4-flash' ? 'DEEPSEEK V4-FLASH' : 'GROK';
     grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6">Thinking with ${activeLabel}...</div>`;
 
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
-    if (useUnsentContext.checked && textInput.value.trim()) recentConv += `\nCurrent unsent: ${textInput.value.trim()}`;
+    
+    // Fixed check behavior rules explicitly mapped to prompt generation
+    if (useUnsentContext.checked && textInput.value.trim()) {
+        recentConv += `\n[Context Notice: The user is currently drafting this response in their text buffer: "${textInput.value.trim()}"]`;
+    }
 
-    const promptText = `You are a human with ALS using a speech device. Generate ${numReplies} natural casual replies. First person only. Very casual.\n${recentConv}\nOutput ONLY the ${numReplies} phrases, one per line.`;
+    const promptText = `You are a human with ALS using a speech-generating communicator application. Based on this conversation log:\n${recentConv}\n\nGenerate exactly ${numReplies} natural, casual first-person conversational options. Length constraints: Target each option to be ${targetLengthRule}. Do not include numbers, prefixes, quotes, or dashes. Return exactly ${numReplies} phrases, one per line.`;
 
     try {
         const messages = [{ role: 'user', content: promptText }];
@@ -837,19 +866,19 @@ async function generateGrokSuggestions() {
             response = await fetch(DEEPSEEK_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages, max_tokens: 150, temperature: 0.75, model: "deepseek-v4-flash" })
+                body: JSON.stringify({ messages, max_tokens: 200, temperature: 0.75, model: "deepseek-v4-flash" })
             });
         } else {
             response = await fetch(GROK_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'grok-3-mini', messages, max_tokens: 150, temperature: 0.6 })
+                body: JSON.stringify({ model: 'grok-3-mini', messages, max_tokens: 200, temperature: 0.6 })
             });
         }
         if (!response.ok) throw new Error();
         const data = await response.json();
         const content = data.choices[0].message.content;
-        const suggestions = content.trim().split('\n').map(s => s.trim().replace(/^[\d\.\-\*"\s]+/, '')).filter(s => s.length > 2);
+        const suggestions = content.trim().split('\n').map(s => s.trim().replace(/^[\d\.\-\*\"\s]+/, '').replace(/\"/g, '')).filter(s => s.length > 1);
         grokSuggestionsEl.innerHTML = '';
         suggestStatus.textContent = `AI Suggestions (${aiProvider === 'v4-flash' ? 'V4-Flash' : 'Grok'})`;
         suggestions.slice(0, numReplies).forEach(phrase => {
@@ -869,7 +898,7 @@ async function getAssemblyToken() {
         const data = await res.json();
         return data.token;
     } catch (e) {
-        console.error("❌ Token fetch failed. Confirm ASSEMBLYAI_API_KEY is configured in Vercel settings:", e);
+        console.error("❌ Token capture failed:", e);
         return null;
     }
 }
@@ -877,17 +906,18 @@ async function getAssemblyToken() {
 async function startAssemblyAI() {
     const token = await getAssemblyToken();
     if (!token) {
-        alert("Microphone activation failed: Serverless token signature could not be generated.");
+        alert("Microphone activation failed: Serverless signature token could not be fetched.");
         useAssemblyAI = false;
         useAssemblyAIChk.checked = false;
         updateMicUI(false);
         return;
     }
 
-    // Direct temporal token consumption mapping
-    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=true&max_speakers=6`;
+    // Toggle logic tracks checked diarization flags natively
+    const diarizeEnabled = useAssemblyAIChk.checked;
+    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=${diarizeEnabled}&max_speakers=6`;
 
-    console.log("🚀 Initializing secure diarized live stream...");
+    console.log("🚀 Initializing secure stream layout...");
     assemblyWS = new WebSocket(url);
     
     assemblyWS.onopen = () => { 
@@ -901,18 +931,18 @@ async function startAssemblyAI() {
             const data = JSON.parse(event.data);
             if (data.type === "Turn") {
                 const text = data.transcript || "";
-                const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Speaker";
+                const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Partner";
                 
-                resetInactivityTimer(); // Reset safety timeout gate on transcription hits
+                resetInactivityTimer();
 
                 if (data.end_of_turn && text.trim()) {
-                    addToConversation('other', `(${speakerLabel}) ${text.trim()}`);
+                    addToConversation('other', diarizeEnabled ? `(${speakerLabel}) ${text.trim()}` : text.trim());
                     liveTranscript.textContent = `🗣️ ${text}`;
                     liveTranscript.classList.remove('hidden');
                     setTimeout(() => liveTranscript.classList.add('hidden'), 1800);
                 }
             }
-        } catch(e) { console.error("Data processing mismatch:", e); }
+        } catch(e) { console.error("Data parsing mismatch:", e); }
     };
     
     assemblyWS.onerror = (e) => console.error("WebSocket handoff drop:", e);
@@ -951,7 +981,7 @@ function stopAssemblyAI() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
-// ====================== NATIVE CAPTURE FALLBACK SYSTEMS ======================
+// ====================== CAPTURE PERIPHERALS FALLBACKS ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -1006,7 +1036,7 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== STATE SYNCHRONIZATION ======================
+// ====================== PIPELINE SYNCS ======================
 function updateAIUI() { aiProviderSelect.value = aiProvider; }
 aiProviderSelect.addEventListener('change', () => { aiProvider = aiProviderSelect.value; localStorage.setItem('aiProvider', aiProvider); updateAIUI(); });
 useAssemblyAIChk.addEventListener('change', () => { useAssemblyAI = useAssemblyAIChk.checked; localStorage.setItem('useAssemblyAI', useAssemblyAI); });
@@ -1015,7 +1045,7 @@ updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConve
 if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
-console.log("✅ Production Ready: Master API settings stripped. Vercel handshake active.");
+console.log("✅ Main Engine Active: Layout fixes compiled successfully.");
 </script>
 </body>
 </html>
