@@ -66,7 +66,6 @@
 
     <main class="flex-grow flex flex-col md:flex-row gap-2 md:gap-4 p-2 md:p-4 min-h-0 overflow-hidden main-area">
 
-        <!-- Left Panel -->
         <div class="w-full md:w-1/2 flex flex-col gap-2 shrink-0 md:shrink md:h-full min-h-0">
             <div class="relative shrink-0 flex flex-col gap-1">
                 <textarea id="textInput" class="w-full bg-slate-800 text-white border-2 border-slate-600 rounded-xl p-2 md:p-4 text-xl md:text-3xl focus:border-green-500 outline-none resize-none h-16 md:h-36 shadow-inner transition-colors" placeholder="Type here..."></textarea>
@@ -102,7 +101,6 @@
             </div>
         </div>
 
-        <!-- Right Panel: Phrase Grid -->
         <div class="w-full md:w-1/2 flex flex-col bg-slate-800 rounded-xl border border-slate-700 min-h-[350px] md:h-full shadow-sm mt-1 md:mt-0 min-h-0">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-1.5 md:p-2 bg-slate-900 border-b border-slate-700 gap-2 shrink-0">
                 <div class="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0" id="categoryScroll"></div>
@@ -123,19 +121,16 @@
 
     </main>
 
-    <!-- Mobile-only Compact Conversation Log -->
     <div class="md:hidden conv-log-mobile bg-slate-900/80 p-2 border-t border-slate-700">
         <div class="text-center font-bold text-slate-300 text-xs uppercase tracking-wider mb-1">Conversation Log</div>
         <div id="conversationHistoryMobile" class="h-48 overflow-y-auto p-2 flex flex-col gap-1.5"></div>
     </div>
 
-    <!-- Desktop Conversation Log -->
     <div class="hidden md:flex flex-col bg-slate-900/80 border-t border-slate-700 p-2 md:p-3 shrink-0" style="max-height: 28vh;">
         <div class="text-center font-bold text-slate-300 text-xs md:text-base mb-1">Conversation Log</div>
         <div id="conversationHistory" class="flex-grow overflow-y-auto p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 min-h-0"></div>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-2xl rounded-2xl p-5 md:p-8 flex flex-col gap-6 max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-600 pb-2">
@@ -143,22 +138,29 @@
                 <button id="closeSettingsBtn" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">&times;</button>
             </div>
 
-            <!-- AI Provider -->
             <div class="flex flex-col gap-3 border-t border-slate-700 pt-4">
-                <label class="font-bold text-slate-300 text-lg">AI Provider & Model (for Reply Suggestions)</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <select id="aiProviderSelect" class="bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-bold">
-                        <option value="grok">Grok (xAI)</option>
-                        <option value="deepseek">DeepSeek</option>
-                    </select>
-                    <select id="deepseekModelSelect" class="bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-bold">
-                        <option value="deepseek-v4-flash">V4-Flash (Fast)</option>
-                        <option value="deepseek-chat">DeepSeek-Chat</option>
-                    </select>
+                <label class="font-bold text-slate-300 text-lg">AI Provider for Reply Suggestions</label>
+                <select id="aiProviderSelect" class="bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-bold w-full">
+                    <option value="grok">Grok (xAI - grok-3-mini)</option>
+                    <option value="v4-flash">DeepSeek (V4-Flash)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-700 pt-4">
+                <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Reply Generation Count: <span id="aiCountVal" class="text-purple-400">3</span></label>
+                    <input type="range" id="aiCountSlider" min="2" max="6" step="1" value="3" class="accent-purple-500">
+                </div>
+                <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Reply Target Length: <span id="replyLenVal" class="text-purple-400">Short</span></label>
+                    <input type="range" id="replyLenSlider" min="1" max="3" step="1" value="1" class="accent-purple-500">
+                </div>
+                <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Context Log History: <span id="aiContextVal" class="text-purple-400">5</span></label>
+                    <input type="range" id="aiContextSlider" min="2" max="15" step="1" value="5" class="accent-purple-500">
                 </div>
             </div>
 
-            <!-- Original settings -->
             <div class="flex flex-col gap-3 bg-slate-900/70 p-4 rounded-2xl border border-green-600">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-100 text-xl flex items-center gap-2">🔊 Audio Volume Boost</label>
@@ -168,7 +170,12 @@
                 <p class="text-xs text-slate-400">Makes speech much louder. Recommended: 3.5x – 7.5x</p>
             </div>
 
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
+                <label class="text-xs text-slate-400 font-bold uppercase mb-1">Mic Sensitivity Threshold: <span id="micSensVal" class="text-indigo-400">50%</span></label>
+                <input type="range" id="micSensSlider" min="10" max="100" step="5" value="50" class="accent-indigo-500">
+            </div>
+
+            <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
                 <label class="font-bold text-slate-300 text-lg">TTS Provider</label>
                 <select id="ttsProviderSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-sm md:text-lg rounded-xl p-2 md:p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors">
                     <option value="os">OS Voice (Works offline)</option>
@@ -181,11 +188,36 @@
                 <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-sm md:text-lg rounded-xl p-2 md:p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors"></select>
             </div>
 
-            <div id="elevenlabsSection" class="flex flex-col gap-4 border-t border-slate-700 pt-4">
+            <div id="elevenlabsSection" class="flex flex-col gap-4 border-t border-slate-700 pt-4 hidden">
                 <div class="flex flex-col gap-1">
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
                     <input type="password" id="elevenApiKey" placeholder="sk_..." class="w-full bg-slate-800 border border-slate-600 text-white font-mono text-sm md:text-base rounded-xl p-3 outline-none focus:border-green-500">
-                    <button id="saveApiKeyBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl transition-all text-sm self-start">Save & Refresh Voices</button>
+                    <button id="saveApiKeyBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl mt-2 transition-all text-sm self-start">Save Key</button>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between items-center">
+                        <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice Selection</label>
+                        <button id="refreshElevenVoicesBtn" class="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600">🔄 Refresh List</button>
+                    </div>
+                    <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold rounded-xl p-2 mt-1"></select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-700">
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold">Stability: <span id="stabVal">0.75</span></label>
+                        <input type="range" id="stabSlider" min="0" max="1" step="0.05" value="0.75">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold">Clarity / Similarity: <span id="simVal">0.85</span></label>
+                        <input type="range" id="simSlider" min="0" max="1" step="0.05" value="0.85">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold">Style Exaggeration: <span id="styleVal">0.00</span></label>
+                        <input type="range" id="styleSlider" min="0" max="1" step="0.05" value="0">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold">Speaker Boost: <span id="boostVal">On</span></label>
+                        <input type="range" id="boostSlider" min="0" max="1" step="1" value="1">
+                    </div>
                 </div>
             </div>
 
@@ -198,7 +230,7 @@
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
-                <div class="flex gap-3 h-12">
+                <div class="flex gap-3 h-12 mt-1">
                     <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
                     <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
                 </div>
@@ -211,11 +243,17 @@
                 </label>
             </div>
 
-            <button id="closeSettingsBtnBottom" class="mt-4 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">Close Settings</button>
+            <div class="flex gap-2 border-t border-slate-700 pt-4">
+                <button id="exportBtn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-sm">📤 Export Phrases</button>
+                <button id="importBtn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-sm">📥 Import Backup</button>
+                <input type="file" id="importFileInput" class="hidden" accept=".json">
+                <button id="clearHistoryBtn" class="flex-1 bg-red-900/40 hover:bg-red-900/60 text-red-300 font-bold py-2 rounded-xl text-sm border border-red-900">🗑️ Clear History</button>
+            </div>
+
+            <button id="closeSettingsBtnBottom" class="mt-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">Close Settings</button>
         </div>
     </div>
 
-    <!-- Phrase Edit Modal -->
     <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden modal-overlay p-4">
         <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
             <h3 class="text-xl md:text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
@@ -243,8 +281,6 @@ const GROK_API_URL = '/api/grok';
 const DEEPSEEK_API_URL = '/api/deepseek';
 const ASSEMBLYAI_TOKEN_URL = '/api/token';
 
-const CORE_DICTIONARY = new Set(["the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about", "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know", "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two", "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give", "day", "most", "us", "are", "yes", "please", "thank", "help", "need", "hungry", "thirsty", "bathroom", "pain", "tired"]);
-
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
 const genBtn = document.getElementById('genBtn');
@@ -268,6 +304,7 @@ const editCategoryBtn = document.getElementById('editCategoryBtn');
 const addPhraseBtn = document.getElementById('addPhraseBtn');
 const openSettingsBtn = document.getElementById('openSettingsBtn');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+const closeSettingsBtnBottom = document.getElementById('closeSettingsBtnBottom');
 const settingsModal = document.getElementById('settingsModal');
 const ttsProviderSelect = document.getElementById('ttsProviderSelect');
 const osVoiceSection = document.getElementById('osVoiceSection');
@@ -276,17 +313,22 @@ const elevenApiKeyInput = document.getElementById('elevenApiKey');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const refreshElevenVoicesBtn = document.getElementById('refreshElevenVoicesBtn');
+
 const stabSlider = document.getElementById('stabSlider');
 const simSlider = document.getElementById('simSlider');
 const styleSlider = document.getElementById('styleSlider');
 const boostSlider = document.getElementById('boostSlider');
+const audioBoostSlider = document.getElementById('audioBoostSlider');
+
 const stabVal = document.getElementById('stabVal');
 const simVal = document.getElementById('simVal');
 const styleVal = document.getElementById('styleVal');
 const boostVal = document.getElementById('boostVal');
+const audioBoostVal = document.getElementById('audioBoostVal');
 const voiceSelect = document.getElementById('voiceSelect');
 const btnActionSpeak = document.getElementById('btnActionSpeak');
 const btnActionType = document.getElementById('btnActionType');
+
 const replyLenSlider = document.getElementById('replyLenSlider');
 const replyLenVal = document.getElementById('replyLenVal');
 const aiCountSlider = document.getElementById('aiCountSlider');
@@ -295,12 +337,12 @@ const aiContextSlider = document.getElementById('aiContextSlider');
 const aiContextVal = document.getElementById('aiContextVal');
 const micSensSlider = document.getElementById('micSensSlider');
 const micSensVal = document.getElementById('micSensVal');
+
 const useUnsentContext = document.getElementById('useUnsentContext');
 const useAssemblyAIChk = document.getElementById('useAssemblyAI');
 const aiProviderSelect = document.getElementById('aiProviderSelect');
-const deepseekModelSelect = document.getElementById('deepseekModelSelect');
 
-// Data
+// Data Setup
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait.", "Stop.", "Go.", "I changed my mind."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "Can I have some water?", "I need my medication.", "I need a shower.", "Wipe my mouth.", "Wipe my eyes.", "Blow my nose.", "I need my glasses."],
@@ -326,9 +368,8 @@ let elevenApiKey = localStorage.getItem('elevenApiKey') || '';
 let selectedElevenVoiceId = localStorage.getItem('selectedElevenVoiceId') || '';
 let elevenSettings = JSON.parse(localStorage.getItem('elevenSettings')) || { stability: 0.75, similarity_boost: 0.85, style: 0.0, speaker_boost: true };
 let availableVoices = [];
+let elevenVoices = [];
 let aiProvider = localStorage.getItem('aiProvider') || 'grok';
-let deepseekModel = localStorage.getItem('deepseekModel') || 'deepseek-v4-flash';
-let useAssemblyAI = localStorage.getItem('useAssemblyAI') === 'true';
 let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5;
 let audioContextGlobal = null;
 
@@ -339,7 +380,12 @@ let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
-// ====================== DEEPSEEK V4-FLASH PREDICTIVE TEXT ======================
+// Modal UI Trigger Actions
+openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
+closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
+closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
+
+// ====================== FIXED PREDICTIVE BAR LOCKED TO V4-FLASH ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -371,6 +417,8 @@ textInput.addEventListener('input', async () => {
 
     const predictions = await getDeepSeekPredictive(lastWords);
     predictiveBar.innerHTML = '';
+    if (predictions.length === 0) { predictiveBar.classList.add('hidden'); return; }
+    
     predictions.forEach(word => {
         const btn = document.createElement('button');
         btn.className = 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg text-sm shrink-0';
@@ -384,7 +432,7 @@ textInput.addEventListener('input', async () => {
     });
 });
 
-// ====================== TTS (original) ======================
+// ====================== TTS CONFIG SYSTEM ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -495,9 +543,7 @@ replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
 // ====================== STORAGE & RENDER ======================
-function saveToStorage() {
-    localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories));
-}
+function saveToStorage() { localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); }
 function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
 function renderCategories() {
@@ -557,6 +603,7 @@ function appendMessageUI(speaker, text, container) {
     scrollToBottom();
 }
 
+// Section Labeling Protocol Built-in
 function addToConversation(speaker, text) {
     conversationHistory.push({ speaker, text });
     saveConversation();
@@ -577,7 +624,7 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
-// Modals
+// Custom Modals Action Listeners
 editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
 addCategoryBtn.onclick = () => {
     const newCat = prompt("Enter new category name:");
@@ -643,7 +690,26 @@ document.getElementById('modalDeleteBtn').onclick = () => {
     }
 };
 
-// Export / Import / Clear
+// Config Settings System Listeners
+audioBoostSlider.addEventListener('input', () => {
+    audioBoostLevel = parseFloat(audioBoostSlider.value);
+    audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
+    localStorage.setItem('audioBoostLevel', audioBoostLevel);
+});
+function updateAudioBoostUI() {
+    audioBoostSlider.value = audioBoostLevel;
+    audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
+}
+
+aiCountSlider.addEventListener('input', () => { aiCountVal.textContent = aiCountSlider.value; });
+replyLenSlider.addEventListener('input', () => {
+    const labels = ["Short", "Medium", "Long"];
+    replyLenVal.textContent = labels[parseInt(replyLenSlider.value) - 1];
+});
+aiContextSlider.addEventListener('input', () => { aiContextVal.textContent = aiContextSlider.value; });
+micSensSlider.addEventListener('input', () => { micSensVal.textContent = micSensSlider.value + '%'; });
+
+// External File Storage Tools
 document.getElementById('exportBtn').onclick = () => {
     const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
     const a = document.createElement('a');
@@ -682,7 +748,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// Action UI
+// Interactive Actions Configurations Builder
 function updateActionUI() {
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -694,9 +760,8 @@ function updateActionUI() {
 }
 btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
 btnActionType.onclick = () => { clickAction = 'type'; updateActionUI(); };
-updateActionUI();
 
-// TTS Provider
+// TTS System Management
 ttsProviderSelect.value = ttsProvider;
 function updateTTSProviderUI() {
     osVoiceSection.classList.toggle('hidden', ttsProvider !== 'os');
@@ -708,7 +773,7 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
-// Voice list
+// OS Native Voice Listing Builders
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
     availableVoices = speechSynthesis.getVoices();
@@ -730,7 +795,7 @@ if ('speechSynthesis' in window) {
 }
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// ElevenLabs
+// ElevenLabs Integration Methods
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
@@ -770,6 +835,7 @@ elevenVoiceSelect.addEventListener('change', () => {
     selectedElevenVoiceId = elevenVoiceSelect.value;
     localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
 });
+
 function updateElevenSliders() {
     stabSlider.value = elevenSettings.stability;
     simSlider.value = elevenSettings.similarity_boost;
@@ -801,27 +867,27 @@ boostSlider.addEventListener('input', () => {
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// ====================== AI REPLY SUGGESTIONS ======================
+// ====================== AI REPLY SUGGESTIONS (GROK & V4-FLASH ONLY) ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
-    const lengthLevel = parseInt(replyLenSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
 
-    grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6">Thinking with ${aiProvider.toUpperCase()}...</div>`;
+    const activeLabel = aiProvider === 'v4-flash' ? 'DEEPSEEK V4-FLASH' : 'GROK';
+    grokSuggestionsEl.innerHTML = `<div class="shrink-0 min-w-[200px] text-center text-slate-400 py-6">Thinking with ${activeLabel}...</div>`;
 
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
     if (useUnsentContext.checked && textInput.value.trim()) recentConv += `\nCurrent unsent: ${textInput.value.trim()}`;
 
-    const prompt = `You are a human with ALS using a speech device. Generate ${numReplies} natural casual replies. First person only. Very casual.\n${recentConv}\nOutput ONLY the ${numReplies} phrases, one per line.`;
+    const promptText = `You are a human with ALS using a speech device. Generate ${numReplies} natural casual replies. First person only. Very casual.\n${recentConv}\nOutput ONLY the ${numReplies} phrases, one per line.`;
 
     try {
-        const messages = [{ role: 'user', content: prompt }];
+        const messages = [{ role: 'user', content: promptText }];
         let response;
-        if (aiProvider === 'deepseek') {
+        if (aiProvider === 'v4-flash') {
             response = await fetch(DEEPSEEK_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages, max_tokens: 150, temperature: 0.75, model: deepseekModel })
+                body: JSON.stringify({ messages, max_tokens: 150, temperature: 0.75, model: "deepseek-v4-flash" })
             });
         } else {
             response = await fetch(GROK_API_URL, {
@@ -835,7 +901,7 @@ async function generateGrokSuggestions() {
         const content = data.choices[0].message.content;
         const suggestions = content.trim().split('\n').map(s => s.trim().replace(/^[\d\.\-\*"\s]+/, '')).filter(s => s.length > 2);
         grokSuggestionsEl.innerHTML = '';
-        suggestStatus.textContent = `AI Suggestions (${aiProvider})`;
+        suggestStatus.textContent = `AI Suggestions (${aiProvider === 'v4-flash' ? 'V4-Flash' : 'Grok'})`;
         suggestions.slice(0, numReplies).forEach(phrase => {
             const btn = document.createElement('button');
             btn.className = 'suggestion-btn';
@@ -849,7 +915,7 @@ async function generateGrokSuggestions() {
     }
 }
 
-// ====================== ASSEMBLYAI WITH DIARIZATION ======================
+// ====================== ASSEMBLYAI WITH SPEAKER DIARIZATION ======================
 async function getAssemblyToken() {
     try {
         const res = await fetch(ASSEMBLYAI_TOKEN_URL);
@@ -897,6 +963,7 @@ async function startAssemblyAI() {
     }
 }
 
+// Section Labeling Architecture Implementation Block
 function stopAssemblyAI() {
     if (assemblyWS) assemblyWS.close();
     if (assemblyStream) assemblyStream.getTracks().forEach(track => track.stop());
@@ -904,7 +971,7 @@ function stopAssemblyAI() {
     updateMicUI(false);
 }
 
-// ====================== MIC ======================
+// ====================== HARDWARE CAPTURE & AUDIO INPUTS ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -958,22 +1025,15 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== INIT ======================
+// ====================== CORE STATE SYNCHRONIZATION ======================
 function updateAIUI() {
     aiProviderSelect.value = aiProvider;
-    deepseekModelSelect.value = deepseekModel;
-    deepseekModelSelect.style.display = aiProvider === 'deepseek' ? 'block' : 'none';
 }
 
 aiProviderSelect.addEventListener('change', () => {
     aiProvider = aiProviderSelect.value;
     localStorage.setItem('aiProvider', aiProvider);
     updateAIUI();
-});
-
-deepseekModelSelect.addEventListener('change', () => {
-    deepseekModel = deepseekModelSelect.value;
-    localStorage.setItem('deepseekModel', deepseekModel);
 });
 
 useAssemblyAIChk.addEventListener('change', () => {
@@ -994,7 +1054,7 @@ if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
 
-console.log("✅ Full ALS Communicator with DeepSeek-V4-Flash Predictive Text + AssemblyAI Diarization loaded");
+console.log("✅ Streamlined ALS Communicator Loaded: V4-Flash Locked for Typing + V4-Flash/Grok Choice on Replies");
 </script>
 </body>
 </html>
