@@ -146,11 +146,6 @@
                 </select>
             </div>
 
-            <div class="flex flex-col gap-3 border-t border-slate-700 pt-4">
-                <label class="font-bold text-slate-300 text-lg">AssemblyAI Production Key</label>
-                <input id="assemblyKeyInput" type="password" placeholder="Paste your AssemblyAI Master Key..." class="bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-bold w-full">
-            </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-700 pt-4">
                 <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
                     <label class="text-xs text-slate-400 font-bold uppercase mb-1">Reply Count: <span id="aiCountVal" class="text-purple-400">3</span></label>
@@ -220,8 +215,8 @@
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
                 <label class="font-bold text-slate-300 text-lg">Canned Phrase Click Action</label>
                 <div class="flex gap-3 h-12 mt-1">
-                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl shadow-md">Speak Instantly</button>
-                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl shadow-md">Append Text</button>
+                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md">Speak Instantly</button>
+                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md">Append Text</button>
                 </div>
             </div>
 
@@ -265,6 +260,7 @@
 // ====================== ARCHITECTURE INITIALIZATION ======================
 const GROK_API_URL = '/api/grok';
 const DEEPSEEK_API_URL = '/api/deepseek';
+const ASSEMBLYAI_TOKEN_URL = '/api/token';
 
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
@@ -298,7 +294,6 @@ const elevenApiKeyInput = document.getElementById('elevenApiKey');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const refreshElevenVoicesBtn = document.getElementById('refreshElevenVoicesBtn');
-const assemblyKeyInput = document.getElementById('assemblyKeyInput');
 
 const stabSlider = document.getElementById('stabSlider');
 const simSlider = document.getElementById('simSlider');
@@ -366,14 +361,14 @@ let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
-// 15-Minute Automated Timeout Safeguard Variable Modules
+// 15-Minute Automated Timeout Safety Variables
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
 let inactivityTimeoutTracker = null;
 
 function resetInactivityTimer() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ [Safety Control] 15 minutes of idle silence detected. Disabling mic loop hardware.");
+        console.log("⏳ [Safety Control] 15 minutes of idle silence detected. Disabling microphone loop.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -386,21 +381,11 @@ function resetInactivityTimer() {
     }, INACTIVITY_LIMIT_MS);
 }
 
-// Local Key Initialization
-if (localStorage.getItem('assemblyai_key')) {
-    assemblyKeyInput.value = localStorage.getItem('assemblyai_key');
-}
-assemblyKeyInput.addEventListener('input', () => {
-    if (assemblyKeyInput.value.trim().length > 20) {
-        localStorage.setItem('assemblyai_key', assemblyKeyInput.value.trim());
-    }
-});
-
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
 
-// ====================== PREDICTIVE ANALYSIS (DEEPSEEK V4-FLASH ONLY) ======================
+// ====================== PREDICTIVE ENGINE (DEEPSEEK V4-FLASH ONLY) ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -510,6 +495,7 @@ function speak(text) {
     else speakWithOS(text);
 }
 
+// Section Label Protocol Handler Block
 function finishTTS() {
     genBtn.disabled = false;
     btnText.innerHTML = '<span class="text-2xl md:text-4xl leading-none">🔊</span>Speak';
@@ -600,7 +586,6 @@ function renderConversationHistory() {
     scrollToBottom();
 }
 
-// Custom Protocol System Section Label Tracking Added
 function appendMessageUI(speaker, text, container) {
     const div = document.createElement('div');
     div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
@@ -638,9 +623,7 @@ addCategoryBtn.onclick = () => {
         if (!phraseCategories[newCat.trim()]) {
             phraseCategories[newCat.trim()] = [];
             currentCategory = newCat.trim();
-            saveToStorage();
-            renderCategories();
-            renderPhrases();
+            saveToStorage(); renderCategories(); renderPhrases();
         } else alert("Category already exists.");
     }
 };
@@ -648,9 +631,7 @@ editCategoryBtn.onclick = () => {
     if(confirm(`DELETE category "${currentCategory}"?`)) {
         delete phraseCategories[currentCategory];
         currentCategory = Object.keys(phraseCategories)[0] || "";
-        saveToStorage();
-        renderCategories();
-        renderPhrases();
+        saveToStorage(); renderCategories(); renderPhrases();
     }
 };
 addPhraseBtn.onclick = () => {
@@ -684,8 +665,7 @@ document.getElementById('modalSaveBtn').onclick = () => {
     saveToStorage();
     document.getElementById('phraseModal').classList.add('hidden');
     currentCategory = targetCategory;
-    renderCategories();
-    renderPhrases();
+    renderCategories(); renderPhrases();
 };
 document.getElementById('modalDeleteBtn').onclick = () => {
     if (editingPhraseIndex > -1 && confirm("Delete phrase?")) {
@@ -881,15 +861,33 @@ async function generateGrokSuggestions() {
     } catch (err) { suggestStatus.textContent = 'AI Suggestions failed'; grokSuggestionsEl.innerHTML = ''; }
 }
 
-// ====================== THE PLUG-AND-PLAY PLAYGROUND ENGINE BLOCK ======================
+// ====================== REALTIME SECURE ASSEMBLYAI ENGINE ======================
+async function getAssemblyToken() {
+    try {
+        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
+        if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
+        const data = await res.json();
+        return data.token;
+    } catch (e) {
+        console.error("❌ Token fetch failed. Confirm ASSEMBLYAI_API_KEY is configured in Vercel settings:", e);
+        return null;
+    }
+}
+
 async function startAssemblyAI() {
-    const key = assemblyKeyInput.value.trim();
-    if (!key) return alert("Please fill out your AssemblyAI key string within the Settings Panel layout first.");
+    const token = await getAssemblyToken();
+    if (!token) {
+        alert("Microphone activation failed: Serverless token signature could not be generated.");
+        useAssemblyAI = false;
+        useAssemblyAIChk.checked = false;
+        updateMicUI(false);
+        return;
+    }
 
-    // Direct playground URL configuration syntax mapping
-    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(key)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=true&max_speakers=6`;
+    // Direct temporal token consumption mapping
+    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=true&max_speakers=6`;
 
-    console.log("🚀 Initializing play-and-plug stream layout loop...");
+    console.log("🚀 Initializing secure diarized live stream...");
     assemblyWS = new WebSocket(url);
     
     assemblyWS.onopen = () => { 
@@ -905,7 +903,7 @@ async function startAssemblyAI() {
                 const text = data.transcript || "";
                 const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Speaker";
                 
-                resetInactivityTimer(); // Reset the 15-minute idle limit on text generation hits
+                resetInactivityTimer(); // Reset safety timeout gate on transcription hits
 
                 if (data.end_of_turn && text.trim()) {
                     addToConversation('other', `(${speakerLabel}) ${text.trim()}`);
@@ -914,10 +912,10 @@ async function startAssemblyAI() {
                     setTimeout(() => liveTranscript.classList.add('hidden'), 1800);
                 }
             }
-        } catch(e) { console.error("Data parsing breakdown:", e); }
+        } catch(e) { console.error("Data processing mismatch:", e); }
     };
     
-    assemblyWS.onerror = (e) => console.error("WebSocket thread failed handshake:", e);
+    assemblyWS.onerror = (e) => console.error("WebSocket handoff drop:", e);
     assemblyWS.onclose = () => { isAssemblyListening = false; updateMicUI(false); };
 
     try {
@@ -937,7 +935,7 @@ async function startAssemblyAI() {
         };
         source.connect(assemblyProcessor);
         assemblyProcessor.connect(assemblyAudioContext.destination);
-    } catch (err) { console.error("Hardware initialization error:", err); stopAssemblyAI(); }
+    } catch (err) { console.error("Hardware pipeline error:", err); stopAssemblyAI(); }
 }
 
 function stopAssemblyAI() {
@@ -953,7 +951,7 @@ function stopAssemblyAI() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
-// ====================== HARDWARE CAPTURE CAPABILITIES ======================
+// ====================== NATIVE CAPTURE FALLBACK SYSTEMS ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -1008,7 +1006,7 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== CORE STATE SYNC ======================
+// ====================== STATE SYNCHRONIZATION ======================
 function updateAIUI() { aiProviderSelect.value = aiProvider; }
 aiProviderSelect.addEventListener('change', () => { aiProvider = aiProviderSelect.value; localStorage.setItem('aiProvider', aiProvider); updateAIUI(); });
 useAssemblyAIChk.addEventListener('change', () => { useAssemblyAI = useAssemblyAIChk.checked; localStorage.setItem('useAssemblyAI', useAssemblyAI); });
@@ -1017,7 +1015,7 @@ updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConve
 if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
-console.log("✅ Main Engine Active: Direct client-key pipeline implemented.");
+console.log("✅ Production Ready: Master API settings stripped. Vercel handshake active.");
 </script>
 </body>
 </html>
