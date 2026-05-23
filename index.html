@@ -22,7 +22,8 @@
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
 
-        .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.1rem; white-space: normal; word-break: break-word; hyphens: auto; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); min-height: 64px; text-align: center; }
+        /* Flexible suggestion button layouts for extreme lengths */
+        .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.05rem; white-space: normal; word-break: break-word; overflow-wrap: break-word; hyphens: auto; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); min-height: 64px; text-align: center; }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.01); }
 
         .msg { padding: 0.5rem 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; max-width: 90%; position: relative; word-wrap: break-word; font-size: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -372,7 +373,7 @@ let inactivityTimeoutTracker = null;
 function resetInactivityTimer() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ Mic auto-timeout triggered due to 15 minutes of silence.");
+        console.log("⏳ Safety timeout reached. Powering down mic arrays.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -392,12 +393,26 @@ function scrollToBottom() {
     }, 10);
 }
 
-// CRITICAL FIX: Repaired the assignment syntax error within the infinite retry loop container
+toggleConvBtn.onclick = () => {
+    isLogMinimized = !isLogMinimized;
+    if (isLogMinimized) {
+        desktopConvContainer.style.maxHeight = "36px";
+        toggleConvBtn.textContent = "▲ Show";
+        convHistoryEl.style.display = "none";
+    } else {
+        desktopConvContainer.style.maxHeight = "20vh";
+        toggleConvBtn.textContent = "▼ Hide";
+        convHistoryEl.style.display = "flex";
+        scrollToBottom();
+    }
+};
+
+// Continuous validation request retry handler built to solve cold start network timeouts
 async function fetchWithInfiniteRetry(url, options, textStatusEl) {
     let attempt = 1;
     while (true) {
         try {
-            if (textStatusEl) textStatusEl.textContent = `Processing context (Attempt ${attempt})...`;
+            if (textStatusEl) textStatusEl.textContent = `Thinking with AI (Attempt ${attempt})...`;
             const response = await fetch(url, options);
             if (response.ok) return response;
         } catch (err) {
@@ -463,7 +478,7 @@ textInput.addEventListener('input', async () => {
     });
 });
 
-// ====================== TTS ENGINES PIPELINE ======================
+// ====================== TTS PIPELINE ENGINES ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -521,6 +536,29 @@ function speakWithOS(text) {
     window.speechSynthesis.speak(utterance);
 }
 
+// RESTORED: ElephantLabs remote voice profiles fetch engine
+async function fetchElevenVoices() {
+    if (!elevenApiKey) return;
+    try {
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': elevenApiKey } });
+        if (res.ok) {
+            const data = await res.json();
+            elevenVoices = data.voices || [];
+            renderElevenVoiceSelect();
+        }
+    } catch (e) { console.warn("Failed to load ElevenLabs voices", e); }
+}
+
+function renderElevenVoiceSelect() {
+    elevenVoiceSelect.innerHTML = '';
+    elevenVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voice_id; opt.textContent = `${v.name} ${v.category ? `(${v.category})` : ''}`;
+        if (v.voice_id === selectedElevenVoiceId) opt.selected = true;
+        elevenVoiceSelect.appendChild(opt);
+    });
+}
+
 function speak(text) {
     if (!text) return;
     if (ttsProvider === 'elevenlabs') speakWithElevenLabs(text);
@@ -533,7 +571,7 @@ function finishTTS() {
     isTTSPlaying = false;
 }
 
-// ====================== PHRASE SELECTION GRID ======================
+// ====================== PHRASE SELECTION GRID ENGINE ======================
 function handlePhraseTap(phrase) {
     resetInactivityTimer();
     if (clickAction === 'speak') {
@@ -629,7 +667,7 @@ function openModal(phraseText, category, index) {
     document.getElementById('phraseModal').classList.remove('hidden');
 }
 
-// ====================== CONTEXT GENERATOR FIXED ======================
+// ====================== CONTEXT GENERATOR FIXED Retries Added ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
@@ -642,6 +680,7 @@ async function generateGrokSuggestions() {
 
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
     
+    // Weighted context input tracking enabled cleanly
     if (useUnsentContext.checked && textInput.value.trim()) {
         recentConv += `\n[Highest Priority Context: The ALS user has started typing this context into their screen box: "${textInput.value.trim()}". Base suggestion vectors directly off this thought process.]`;
     }
@@ -675,7 +714,7 @@ async function generateGrokSuggestions() {
         });
     } catch (err) { 
         suggestStatus.textContent = 'AI Suggestions failed'; 
-        grokSuggestionsEl.innerHTML = '<div class="col-span-full text-center text-red-400 py-6">Function drop. Try again.</div>'; 
+        grokSuggestionsEl.innerHTML = '<div class="col-span-full text-center text-red-400 py-6">Suggestions took too long. Click again to force wake.</div>'; 
     }
 }
 
@@ -724,13 +763,13 @@ async function startAssemblyAI() {
         try {
             const data = JSON.parse(event.data);
             
-            // CRITICAL TEXT EXTRACTION FIX: Maps both 'FinalTranscript' packet labels and 'end_of_turn' gates natively
+            // STRICT CHUNK FILTER: Maps both 'FinalTranscript' packet labels and 'end_of_turn' gates natively
             const isFinalPacket = data.message_type === "FinalTranscript" || data.end_of_turn === true;
             const text = data.transcript || "";
             const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Partner";
             
             if (text.trim() && !isFinalPacket) {
-                // Show rolling layout text on the interim preview line block
+                // Keep the rolling interim updates pinned strictly to the live preview field
                 liveTranscript.textContent = `🗣️ ${text.trim()}`;
                 liveTranscript.classList.remove('hidden');
             }
@@ -741,7 +780,7 @@ async function startAssemblyAI() {
                 liveTranscript.textContent = `🗣️ ${text.trim()}`;
                 setTimeout(() => liveTranscript.classList.add('hidden'), 1500);
             }
-        } catch(e) { console.error("Insulated data stream mis-alignment:", e); }
+        } catch(e) { console.error("Insulated data stream error handled safely:", e); }
     };
     
     assemblyWS.onerror = (e) => console.error("WebSocket handoff drop:", e);
@@ -801,6 +840,7 @@ listenBtn.onclick = () => {
             intentionallyStopped = true;
             if (recognition) recognition.stop();
             updateMicUI(false);
+            if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
         } else {
             intentionallyStopped = false;
             updateMicUI(true);
@@ -834,7 +874,7 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== MAPPING DOM TRIGGERS UP FRONT ======================
+// ====================== LAYOUT EVENT HANDLERS ======================
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
@@ -971,6 +1011,27 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
+function populateVoiceList() {
+    if (typeof speechSynthesis === 'undefined') return;
+    availableVoices = speechSynthesis.getVoices();
+    voiceSelect.innerHTML = '';
+    let enVoices = availableVoices.filter(v => v.lang.startsWith('en'));
+    if (enVoices.length === 0) enVoices = availableVoices;
+    const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+    enVoices.forEach((voice) => {
+        const option = document.createElement('option');
+        option.textContent = `${voice.name} (${voice.lang})`;
+        option.value = voice.voiceURI;
+        if (voice.voiceURI === savedVoiceURI) option.selected = true;
+        voiceSelect.appendChild(option);
+    });
+}
+if ('speechSynthesis' in window) {
+    populateVoiceList();
+    speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
+
 function updateElevenSliders() {
     stabSlider.value = elevenSettings.stability; simSlider.value = elevenSettings.similarity_boost; styleSlider.value = elevenSettings.style;
     boostSlider.value = elevenSettings.speaker_boost ? 1 : 0;
@@ -1004,6 +1065,11 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
+function updateAudioBoostUI() {
+    audioBoostSlider.value = audioBoostLevel;
+    audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
+}
+
 // ====================== PIPELINE STATE SYNCS FIXED ======================
 function updateAIUI() { 
     aiProviderSelect.value = aiProvider; 
@@ -1021,12 +1087,12 @@ useAssemblyAIChk.addEventListener('change', () => {
     localStorage.setItem('useAssemblyAI', useAssemblyAI); 
 });
 
-// Sync State Layout Engines On Load
+// Run Application Lifecycle Mount Functions Safely
 updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConversationHistory(); populateVoiceList(); updateTTSProviderUI(); updateElevenSliders(); updateAudioBoostUI();
 if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
-console.log("✅ Application Engine Definitively Stabilized.");
+console.log("✅ Core System Engines Fully Functional.");
 </script>
 </body>
 </html>
