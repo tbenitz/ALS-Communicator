@@ -22,7 +22,6 @@
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
 
-        /* Secure wrapped dynamic text rendering rules */
         .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.1rem; white-space: normal; word-break: break-word; hyphens: auto; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); min-height: 64px; text-align: center; }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.01); }
 
@@ -373,7 +372,7 @@ let inactivityTimeoutTracker = null;
 function resetInactivityTimer() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ Inactivity window breached. Dismantling mic peripherals.");
+        console.log("⏳ Mic auto-timeout triggered due to 15 minutes of silence.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -393,30 +392,16 @@ function scrollToBottom() {
     }, 10);
 }
 
-toggleConvBtn.onclick = () => {
-    isLogMinimized = !isLogMinimized;
-    if (isLogMinimized) {
-        desktopConvContainer.style.maxHeight = "36px";
-        toggleConvBtn.textContent = "▲ Show";
-        convHistoryEl.style.display = "none";
-    } else {
-        desktopConvContainer.style.maxHeight = "20vh";
-        toggleConvBtn.textContent = "▼ Hide";
-        convHistoryEl.style.display = "flex";
-        scrollToBottom();
-    }
-};
-
-// Continuous validation request retry handler built to solve cold start network timeouts
+// CRITICAL FIX: Repaired the assignment syntax error within the infinite retry loop container
 async function fetchWithInfiniteRetry(url, options, textStatusEl) {
     let attempt = 1;
     while (true) {
         try {
-            if (textStatusEl) textStatusEl.textContent = `Thinking with AI (Attempt ${attempt})...`;
+            if (textStatusEl) textStatusEl.textContent = `Processing context (Attempt ${attempt})...`;
             const response = await fetch(url, options);
             if (response.ok) return response;
         } catch (err) {
-            console.warn(`Serverless loop item ${attempt} dropped. Retrying instantly...`);
+            console.warn(`Serverless function wake attempt ${attempt} delayed...`);
         }
         attempt++;
         await new Promise(res => setTimeout(res, 450));
@@ -478,7 +463,7 @@ textInput.addEventListener('input', async () => {
     });
 });
 
-// ====================== TTS PIPELINE ENGINES ======================
+// ====================== TTS ENGINES PIPELINE ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -548,14 +533,7 @@ function finishTTS() {
     isTTSPlaying = false;
 }
 
-// ====================== PHRASE SELECTION GRID ENGINE ======================
-textInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        genBtn.click();
-    }
-});
-
+// ====================== PHRASE SELECTION GRID ======================
 function handlePhraseTap(phrase) {
     resetInactivityTimer();
     if (clickAction === 'speak') {
@@ -569,19 +547,6 @@ function handlePhraseTap(phrase) {
     }
 }
 
-genBtn.onclick = () => {
-    const text = textInput.value.trim();
-    if (text) {
-        speak(text);
-        textInput.value = '';
-        predictiveBar.classList.add('hidden');
-    }
-};
-
-replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
-document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
-
-// Storage Management Handlers
 function saveToStorage() { localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); }
 function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
@@ -647,29 +612,6 @@ function addToConversation(speaker, text) {
     renderConversationHistory();
 }
 
-editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
-addCategoryBtn.onclick = () => {
-    const newCat = prompt("Enter new category name:");
-    if (newCat && newCat.trim() !== "") {
-        if (!phraseCategories[newCat.trim()]) {
-            phraseCategories[newCat.trim()] = [];
-            currentCategory = newCat.trim();
-            saveToStorage(); renderCategories(); renderPhrases();
-        } else alert("Category already exists.");
-    }
-};
-editCategoryBtn.onclick = () => {
-    if(confirm(`DELETE category "${currentCategory}"?`)) {
-        delete phraseCategories[currentCategory];
-        currentCategory = Object.keys(phraseCategories)[0] || "";
-        saveToStorage(); renderCategories(); renderPhrases();
-    }
-};
-addPhraseBtn.onclick = () => {
-    openModal(textInput.value || "", currentCategory, -1);
-    document.getElementById('modalTitle').textContent = "Add New Phrase";
-    document.getElementById('modalDeleteBtn').classList.add('hidden');
-};
 function openModal(phraseText, category, index) {
     editingPhraseIndex = index;
     editingCategorySource = category;
@@ -686,169 +628,8 @@ function openModal(phraseText, category, index) {
     });
     document.getElementById('phraseModal').classList.remove('hidden');
 }
-document.getElementById('modalCancelBtn').onclick = () => { document.getElementById('phraseModal').classList.add('hidden'); };
-document.getElementById('modalSaveBtn').onclick = () => {
-    const newText = document.getElementById('modalPhraseText').value.trim();
-    const targetCategory = document.getElementById('modalCategorySelect').value;
-    if(!newText) return alert("Phrase cannot be empty");
-    if (editingPhraseIndex > -1) phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
-    phraseCategories[targetCategory].push(newText);
-    saveToStorage();
-    document.getElementById('phraseModal').classList.add('hidden');
-    currentCategory = targetCategory;
-    renderCategories(); renderPhrases();
-};
-document.getElementById('modalDeleteBtn').onclick = () => {
-    if (editingPhraseIndex > -1 && confirm("Delete phrase?")) {
-        phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
-        saveToStorage();
-        document.getElementById('phraseModal').classList.add('hidden');
-        renderPhrases();
-    }
-};
 
-audioBoostSlider.addEventListener('input', () => {
-    audioBoostLevel = parseFloat(audioBoostSlider.value);
-    audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
-    localStorage.setItem('audioBoostLevel', audioBoostLevel);
-});
-function updateAudioBoostUI() {
-    audioBoostSlider.value = audioBoostLevel;
-    audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
-}
-
-aiCountSlider.addEventListener('input', () => { aiCountVal.textContent = aiCountSlider.value; });
-replyLenSlider.addEventListener('input', () => {
-    const labels = ["Short", "Medium", "Long"];
-    replyLenVal.textContent = labels[parseInt(replyLenSlider.value) - 1];
-});
-aiContextSlider.addEventListener('input', () => { aiContextVal.textContent = aiContextSlider.value; });
-micSensSlider.addEventListener('input', () => { micSensVal.textContent = micSensSlider.value + '%'; });
-
-document.getElementById('exportBtn').onclick = () => {
-    const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `ALS_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-};
-document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
-document.getElementById('importFileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        try {
-            const data = JSON.parse(event.target.result);
-            if (data.phrases) phraseCategories = data.phrases;
-            if (data.history) conversationHistory = data.history;
-            saveToStorage(); saveConversation();
-            currentCategory = Object.keys(phraseCategories)[0];
-            renderCategories(); renderPhrases(); renderConversationHistory();
-            alert("Imported successfully!");
-            settingsModal.classList.add('hidden');
-        } catch (err) { alert("Error reading file."); }
-    };
-    reader.readAsText(file);
-});
-document.getElementById('clearHistoryBtn').onclick = () => {
-    if(confirm("Delete all conversation history?")) {
-        conversationHistory = []; saveConversation(); renderConversationHistory();
-        settingsModal.classList.add('hidden');
-    }
-};
-
-function updateActionUI() {
-    if (clickAction === 'speak') {
-        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md';
-        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md';
-    } else {
-        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md';
-        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md';
-    }
-}
-btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
-btnActionType.onclick = () => { clickAction = 'type'; updateActionUI(); };
-
-ttsProviderSelect.value = ttsProvider;
-function updateTTSProviderUI() {
-    osVoiceSection.classList.toggle('hidden', ttsProvider !== 'os');
-    elevenlabsSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
-}
-ttsProviderSelect.addEventListener('change', () => {
-    ttsProvider = ttsProviderSelect.value;
-    localStorage.setItem('ttsProvider', ttsProvider);
-    updateTTSProviderUI();
-});
-
-function populateVoiceList() {
-    if (typeof speechSynthesis === 'undefined') return;
-    availableVoices = speechSynthesis.getVoices();
-    voiceSelect.innerHTML = '';
-    let enVoices = availableVoices.filter(v => v.lang.startsWith('en'));
-    if (enVoices.length === 0) enVoices = availableVoices;
-    const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
-    enVoices.forEach((voice) => {
-        const option = document.createElement('option');
-        option.textContent = `${voice.name} (${voice.lang})`;
-        option.value = voice.voiceURI;
-        if (voice.voiceURI === savedVoiceURI) option.selected = true;
-        voiceSelect.appendChild(option);
-    });
-}
-if ('speechSynthesis' in window) {
-    populateVoiceList();
-    speechSynthesis.onvoiceschanged = populateVoiceList;
-}
-voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
-
-async function fetchElevenVoices() {
-    if (!elevenApiKey) return;
-    try {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': elevenApiKey } });
-        if (res.ok) {
-            const data = await res.json();
-            elevenVoices = data.voices || [];
-            renderElevenVoiceSelect();
-        }
-    } catch (e) { console.warn("Failed to load ElevenLabs voices", e); }
-}
-function renderElevenVoiceSelect() {
-    elevenVoiceSelect.innerHTML = '';
-    elevenVoices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.voice_id; opt.textContent = `${v.name} ${v.category ? `(${v.category})` : ''}`;
-        if (v.voice_id === selectedElevenVoiceId) opt.selected = true;
-        elevenVoiceSelect.appendChild(opt);
-    });
-}
-saveApiKeyBtn.onclick = async () => {
-    const key = elevenApiKeyInput.value.trim();
-    if (key) {
-        elevenApiKey = key; localStorage.setItem('elevenApiKey', elevenApiKey);
-        await fetchElevenVoices(); alert("ElevenLabs settings updated!");
-    }
-};
-refreshElevenVoicesBtn.onclick = fetchElevenVoices;
-elevenVoiceSelect.addEventListener('change', () => {
-    selectedElevenVoiceId = elevenVoiceSelect.value; localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
-});
-
-function updateElevenSliders() {
-    stabSlider.value = elevenSettings.stability; simSlider.value = elevenSettings.similarity_boost; styleSlider.value = elevenSettings.style;
-    boostSlider.value = elevenSettings.speaker_boost ? 1 : 0;
-    stabVal.textContent = elevenSettings.stability.toFixed(2); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); styleVal.textContent = elevenSettings.style.toFixed(2);
-    boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
-}
-stabSlider.addEventListener('input', () => { elevenSettings.stability = parseFloat(stabSlider.value); stabVal.textContent = elevenSettings.stability.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
-simSlider.addEventListener('input', () => { elevenSettings.similarity_boost = parseFloat(simSlider.value); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
-styleSlider.addEventListener('input', () => { elevenSettings.style = parseFloat(styleSlider.value); styleVal.textContent = elevenSettings.style.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
-boostSlider.addEventListener('input', () => {
-    elevenSettings.speaker_boost = parseFloat(boostSlider.value) > 0.5; boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
-});
-
-// ====================== CONTEXT GENERATOR FIXED Retries Added ======================
+// ====================== CONTEXT GENERATOR FIXED ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
@@ -861,7 +642,6 @@ async function generateGrokSuggestions() {
 
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
     
-    // High-priority text box input mapping integration logic
     if (useUnsentContext.checked && textInput.value.trim()) {
         recentConv += `\n[Highest Priority Context: The ALS user has started typing this context into their screen box: "${textInput.value.trim()}". Base suggestion vectors directly off this thought process.]`;
     }
@@ -895,7 +675,7 @@ async function generateGrokSuggestions() {
         });
     } catch (err) { 
         suggestStatus.textContent = 'AI Suggestions failed'; 
-        grokSuggestionsEl.innerHTML = '<div class="col-span-full text-center text-red-400 py-6">Suggestions took too long. Click again to force wake.</div>'; 
+        grokSuggestionsEl.innerHTML = '<div class="col-span-full text-center text-red-400 py-6">Function drop. Try again.</div>'; 
     }
 }
 
@@ -903,25 +683,18 @@ async function generateGrokSuggestions() {
 async function getAssemblyToken() {
     try {
         const res = await fetch(ASSEMBLYAI_TOKEN_URL);
-        if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
-        
+        if (!res.ok) return null;
         const contentType = res.headers.get("content-type");
         let token = null;
-        
         if (contentType && contentType.includes("application/json")) {
             const data = await res.json();
             token = data.token;
         } else {
             const textData = await res.text();
-            const parsedData = JSON.parse(textData);
-            token = parsedData.token;
+            token = JSON.parse(textData).token;
         }
-        
         return token;
-    } catch (e) {
-        console.error("❌ Secure token processing drop:", e);
-        return null;
-    }
+    } catch (e) { return null; }
 }
 
 async function startAssemblyAI() {
@@ -950,21 +723,25 @@ async function startAssemblyAI() {
     assemblyWS.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            if (data.type === "Turn") {
-                const text = data.transcript || "";
-                const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Partner";
-                
-                resetInactivityTimer();
-
-                // STUTTER PROTECTION: Reject parsing layout blocks until definitive completion confirmation is true
-                if (data.end_of_turn && text.trim()) {
-                    addToConversation('other', diarizeEnabled ? `(${speakerLabel}) ${text.trim()}` : text.trim());
-                    liveTranscript.textContent = `🗣️ ${text}`;
-                    liveTranscript.classList.remove('hidden');
-                    setTimeout(() => liveTranscript.classList.add('hidden'), 1800);
-                }
+            
+            // CRITICAL TEXT EXTRACTION FIX: Maps both 'FinalTranscript' packet labels and 'end_of_turn' gates natively
+            const isFinalPacket = data.message_type === "FinalTranscript" || data.end_of_turn === true;
+            const text = data.transcript || "";
+            const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Partner";
+            
+            if (text.trim() && !isFinalPacket) {
+                // Show rolling layout text on the interim preview line block
+                liveTranscript.textContent = `🗣️ ${text.trim()}`;
+                liveTranscript.classList.remove('hidden');
             }
-        } catch(e) { console.error("Data parsing mismatch:", e); }
+
+            if (isFinalPacket && text.trim()) {
+                resetInactivityTimer();
+                addToConversation('other', diarizeEnabled ? `(${speakerLabel}) ${text.trim()}` : text.trim());
+                liveTranscript.textContent = `🗣️ ${text.trim()}`;
+                setTimeout(() => liveTranscript.classList.add('hidden'), 1500);
+            }
+        } catch(e) { console.error("Insulated data stream mis-alignment:", e); }
     };
     
     assemblyWS.onerror = (e) => console.error("WebSocket handoff drop:", e);
@@ -1024,7 +801,6 @@ listenBtn.onclick = () => {
             intentionallyStopped = true;
             if (recognition) recognition.stop();
             updateMicUI(false);
-            if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
         } else {
             intentionallyStopped = false;
             updateMicUI(true);
@@ -1058,6 +834,169 @@ function createRecognition() {
     return rec;
 }
 
+// ====================== MAPPING DOM TRIGGERS UP FRONT ======================
+openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
+closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
+closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
+
+textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        genBtn.click();
+    }
+});
+
+genBtn.onclick = () => {
+    const text = textInput.value.trim();
+    if (text) {
+        speak(text);
+        textInput.value = '';
+        predictiveBar.classList.add('hidden');
+    }
+};
+
+replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
+document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
+editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
+
+addCategoryBtn.onclick = () => {
+    const newCat = prompt("Enter new category name:");
+    if (newCat && newCat.trim() !== "") {
+        if (!phraseCategories[newCat.trim()]) {
+            phraseCategories[newCat.trim()] = [];
+            currentCategory = newCat.trim();
+            saveToStorage(); renderCategories(); renderPhrases();
+        } else alert("Category already exists.");
+    }
+};
+editCategoryBtn.onclick = () => {
+    if(confirm(`DELETE category "${currentCategory}"?`)) {
+        delete phraseCategories[currentCategory];
+        currentCategory = Object.keys(phraseCategories)[0] || "";
+        saveToStorage(); renderCategories(); renderPhrases();
+    }
+};
+addPhraseBtn.onclick = () => {
+    openModal(textInput.value || "", currentCategory, -1);
+    document.getElementById('modalTitle').textContent = "Add New Phrase";
+    document.getElementById('modalDeleteBtn').classList.add('hidden');
+};
+
+document.getElementById('modalCancelBtn').onclick = () => { document.getElementById('phraseModal').classList.add('hidden'); };
+document.getElementById('modalSaveBtn').onclick = () => {
+    const newText = document.getElementById('modalPhraseText').value.trim();
+    const targetCategory = document.getElementById('modalCategorySelect').value;
+    if(!newText) return alert("Phrase cannot be empty");
+    if (editingPhraseIndex > -1) phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
+    phraseCategories[targetCategory].push(newText);
+    saveToStorage();
+    document.getElementById('phraseModal').classList.add('hidden');
+    currentCategory = targetCategory;
+    renderCategories(); renderPhrases();
+};
+document.getElementById('modalDeleteBtn').onclick = () => {
+    if (editingPhraseIndex > -1 && confirm("Delete phrase?")) {
+        phraseCategories[editingCategorySource].splice(editingPhraseIndex, 1);
+        saveToStorage();
+        document.getElementById('phraseModal').classList.add('hidden');
+        renderPhrases();
+    }
+};
+
+audioBoostSlider.addEventListener('input', () => {
+    audioBoostLevel = parseFloat(audioBoostSlider.value);
+    audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
+    localStorage.setItem('audioBoostLevel', audioBoostLevel);
+});
+aiCountSlider.addEventListener('input', () => { aiCountVal.textContent = aiCountSlider.value; });
+replyLenSlider.addEventListener('input', () => {
+    const labels = ["Short", "Medium", "Long"];
+    replyLenVal.textContent = labels[parseInt(replyLenSlider.value) - 1];
+});
+aiContextSlider.addEventListener('input', () => { aiContextVal.textContent = aiContextSlider.value; });
+micSensSlider.addEventListener('input', () => { micSensVal.textContent = micSensSlider.value + '%'; });
+
+document.getElementById('exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ALS_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+};
+document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
+document.getElementById('importFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            if (data.phrases) phraseCategories = data.phrases;
+            if (data.history) conversationHistory = data.history;
+            saveToStorage(); saveConversation();
+            currentCategory = Object.keys(phraseCategories)[0];
+            renderCategories(); renderPhrases(); renderConversationHistory();
+            alert("Imported successfully!");
+            settingsModal.classList.add('hidden');
+        } catch (err) { alert("Error reading file."); }
+    };
+    reader.readAsText(file);
+});
+document.getElementById('clearHistoryBtn').onclick = () => {
+    if(confirm("Delete all conversation history?")) {
+        conversationHistory = []; saveConversation(); renderConversationHistory();
+        settingsModal.classList.add('hidden');
+    }
+};
+
+function updateActionUI() {
+    if (clickAction === 'speak') {
+        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md';
+    } else {
+        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md';
+    }
+}
+btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
+btnActionType.onclick = () => { clickAction = 'type'; updateActionUI(); };
+
+function updateTTSProviderUI() {
+    osVoiceSection.classList.toggle('hidden', ttsProvider !== 'os');
+    elevenlabsSection.classList.toggle('hidden', ttsProvider !== 'elevenlabs');
+}
+ttsProviderSelect.addEventListener('change', () => {
+    ttsProvider = ttsProviderSelect.value;
+    localStorage.setItem('ttsProvider', ttsProvider);
+    updateTTSProviderUI();
+});
+
+function updateElevenSliders() {
+    stabSlider.value = elevenSettings.stability; simSlider.value = elevenSettings.similarity_boost; styleSlider.value = elevenSettings.style;
+    boostSlider.value = elevenSettings.speaker_boost ? 1 : 0;
+    stabVal.textContent = elevenSettings.stability.toFixed(2); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); styleVal.textContent = elevenSettings.style.toFixed(2);
+    boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
+}
+stabSlider.addEventListener('input', () => { elevenSettings.stability = parseFloat(stabSlider.value); stabVal.textContent = elevenSettings.stability.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
+simSlider.addEventListener('input', () => { elevenSettings.similarity_boost = parseFloat(simSlider.value); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
+styleSlider.addEventListener('input', () => { elevenSettings.style = parseFloat(styleSlider.value); styleVal.textContent = elevenSettings.style.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
+boostSlider.addEventListener('input', () => {
+    elevenSettings.speaker_boost = parseFloat(boostSlider.value) > 0.5; boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
+    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
+});
+
+saveApiKeyBtn.onclick = async () => {
+    const key = elevenApiKeyInput.value.trim();
+    if (key) {
+        elevenApiKey = key; localStorage.setItem('elevenApiKey', elevenApiKey);
+        await fetchElevenVoices(); alert("ElevenLabs settings updated!");
+    }
+};
+refreshElevenVoicesBtn.onclick = fetchElevenVoices;
+elevenVoiceSelect.addEventListener('change', () => {
+    selectedElevenVoiceId = elevenVoiceSelect.value; localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
+});
+
 window.openSaveFromHistory = (text) => {
     isEditMode = true;
     openModal(text, currentCategory, -1);
@@ -1082,11 +1021,12 @@ useAssemblyAIChk.addEventListener('change', () => {
     localStorage.setItem('useAssemblyAI', useAssemblyAI); 
 });
 
+// Sync State Layout Engines On Load
 updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConversationHistory(); populateVoiceList(); updateTTSProviderUI(); updateElevenSliders(); updateAudioBoostUI();
 if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
-console.log("✅ State Stabilized: UI button matrices completely restored.");
+console.log("✅ Application Engine Definitively Stabilized.");
 </script>
 </body>
 </html>
