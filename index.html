@@ -342,7 +342,7 @@ const useUnsentContext = document.getElementById('useUnsentContext');
 const useAssemblyAIChk = document.getElementById('useAssemblyAI');
 const aiProviderSelect = document.getElementById('aiProviderSelect');
 
-// Data Setup
+// Dictionary Categories Setup
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait.", "Stop.", "Go.", "I changed my mind."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "Can I have some water?", "I need my medication.", "I need a shower.", "Wipe my mouth.", "Wipe my eyes.", "Blow my nose.", "I need my glasses."],
@@ -373,28 +373,24 @@ let aiProvider = localStorage.getItem('aiProvider') || 'grok';
 let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5;
 let audioContextGlobal = null;
 
-// AssemblyAI Setup
+// AssemblyAI State Engine
 let assemblyWS = null;
 let assemblyAudioContext = null;
 let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
-// 15-Minute Auto-Off Inactivity Logic Variables
+// 15-Minute Auto-Off Variable Configuration
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
 let inactivityTimeoutTracker = null;
 
-// --- Inactivity Auto-Shutoff Reset Routine ---
 function resetInactivityTimer() {
     if (inactivityTimeoutTracker) {
         clearTimeout(inactivityTimeoutTracker);
     }
     
-    // Set timer to drop connection if no transcription triggers happen
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ [Inactivity Alert] 15 minutes of silence detected. Shifting microphone off automatically.");
-        
-        // Emulate a click on the mic button if it is currently listening
+        console.log("⏳ [Auto-Off Control] 15 minutes of user inactivity detected. Turning off microphone hardware.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -407,12 +403,11 @@ function resetInactivityTimer() {
     }, INACTIVITY_LIMIT_MS);
 }
 
-// Modal UI Trigger Actions
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
 
-// ====================== PREDICTIVE BAR LOCKED TO V4-FLASH ======================
+// ====================== PREDICTIVE ENGINE (DEEPSEEK V4-FLASH) ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -454,13 +449,13 @@ textInput.addEventListener('input', async () => {
             textInput.value = text + ' ' + word + ' ';
             predictiveBar.classList.add('hidden');
             textInput.focus();
-            resetInactivityTimer(); // Reset on custom predictive typing insertions
+            resetInactivityTimer();
         };
         predictiveBar.appendChild(btn);
     });
 });
 
-// ====================== TTS CONFIG SYSTEM ======================
+// ====================== TTS CONTEXT SCHEDULER ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -538,7 +533,7 @@ function finishTTS() {
     isTTSPlaying = false;
 }
 
-// ====================== INPUT & PHRASES ======================
+// ====================== PHRASE SELECTION EVENT MAPPINGS ======================
 textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -547,7 +542,7 @@ textInput.addEventListener('keydown', (e) => {
 });
 
 function handlePhraseTap(phrase) {
-    resetInactivityTimer(); // Reset timer when a canned phrase is tapped
+    resetInactivityTimer();
     if (clickAction === 'speak') {
         textInput.value = phrase;
         genBtn.click();
@@ -571,7 +566,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
-// ====================== STORAGE & RENDER ======================
+// ====================== LOCAL STORAGE COMPONENT RENDERING ======================
 function saveToStorage() { localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); }
 function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
@@ -652,7 +647,7 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
-// Custom Modals Action Listeners
+// Custom Modals Core Handlers
 editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
 addCategoryBtn.onclick = () => {
     const newCat = prompt("Enter new category name:");
@@ -718,7 +713,7 @@ document.getElementById('modalDeleteBtn').onclick = () => {
     }
 };
 
-// Config Settings System Listeners
+// Sync Slider Callbacks
 audioBoostSlider.addEventListener('input', () => {
     audioBoostLevel = parseFloat(audioBoostSlider.value);
     audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
@@ -737,7 +732,7 @@ replyLenSlider.addEventListener('input', () => {
 aiContextSlider.addEventListener('input', () => { aiContextVal.textContent = aiContextSlider.value; });
 micSensSlider.addEventListener('input', () => { micSensVal.textContent = micSensSlider.value + '%'; });
 
-// External File Storage Tools
+// External JSON Backups Engine Tools
 document.getElementById('exportBtn').onclick = () => {
     const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
     const a = document.createElement('a');
@@ -776,7 +771,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// Interactive Actions Configurations Builder
+// Set Active Actions State
 function updateActionUI() {
     if (clickAction === 'speak') {
         btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
@@ -789,7 +784,7 @@ function updateActionUI() {
 btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
 btnActionType.onclick = () => { clickAction = 'type'; updateActionUI(); };
 
-// TTS System Management
+// Set TTS Option Targets
 ttsProviderSelect.value = ttsProvider;
 function updateTTSProviderUI() {
     osVoiceSection.classList.toggle('hidden', ttsProvider !== 'os');
@@ -801,7 +796,7 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
-// OS Native Voice Listing Builders
+// Load System Voices
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
     availableVoices = speechSynthesis.getVoices();
@@ -823,7 +818,7 @@ if ('speechSynthesis' in window) {
 }
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// ElevenLabs Integration Methods
+// ElevenLabs Stream Interfacing
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
@@ -895,7 +890,7 @@ boostSlider.addEventListener('input', () => {
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// ====================== AI REPLY SUGGESTIONS ======================
+// ====================== AI CONTEXTUAL GENERATION ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
@@ -943,18 +938,7 @@ async function generateGrokSuggestions() {
     }
 }
 
-// ====================== ASSEMBLYAI WITH SPEAKER DIARIZATION ======================
-async function getAssemblyToken() {
-    try {
-        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
-        const data = await res.json();
-        return data.token;
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
-}
-
+// ====================== REALTIME ASSEMBLYAI AUDIO ENGINE ======================
 async function startAssemblyAI() {
     const token = await getAssemblyToken();
     if (!token) return;
@@ -963,12 +947,12 @@ async function startAssemblyAI() {
     assemblyWS.onopen = () => { 
         isAssemblyListening = true; 
         updateMicUI(true); 
-        resetInactivityTimer(); // Initialize timer when connection goes live
+        resetInactivityTimer(); 
     };
     assemblyWS.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === 'Turn' && msg.text?.trim()) {
-            resetInactivityTimer(); // Reset safety timeout whenever incoming conversational content hits the app
+            resetInactivityTimer(); 
             addToConversation('other', msg.text.trim());
             liveTranscript.textContent = `🗣️ ${msg.text}`;
             liveTranscript.classList.remove('hidden');
@@ -1004,7 +988,7 @@ function stopAssemblyAI() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
-// ====================== MICROPHONE CONTROL MANAGEMENT ======================
+// ====================== HARDWARE CAPTURE & AUDIO INPUTS ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -1031,7 +1015,7 @@ listenBtn.onclick = () => {
             updateMicUI(true);
             if (!recognition) recognition = createRecognition();
             if (recognition) recognition.start();
-            resetInactivityTimer(); // Start tracking native fallback engine activity
+            resetInactivityTimer();
         }
     }
 };
@@ -1048,7 +1032,7 @@ function createRecognition() {
             currentTranscript += event.results[i][0].transcript;
         }
         if (currentTranscript.trim()) {
-            resetInactivityTimer(); // Reset safety timeout on native text capture updates
+            resetInactivityTimer(); 
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
             setTimeout(() => {
@@ -1061,7 +1045,7 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== CORE STATE SYNCHRONIZATION ======================
+// ====================== RUNTIME CONFIG SYNCHRONIZATION ======================
 function updateAIUI() {
     aiProviderSelect.value = aiProvider;
 }
@@ -1090,7 +1074,7 @@ if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
 
-console.log("✅ Auto-Kill Logic Configured: System will monitor audio turns and close streams following 15 minutes of quiet.");
+console.log("✅ Main Client Compiled: Inactivity listeners armed.");
 </script>
 </body>
 </html>
