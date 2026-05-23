@@ -146,17 +146,22 @@
                 </select>
             </div>
 
+            <div class="flex flex-col gap-3 border-t border-slate-700 pt-4">
+                <label class="font-bold text-slate-300 text-lg">AssemblyAI Production Key</label>
+                <input id="assemblyKeyInput" type="password" placeholder="Paste your AssemblyAI Master Key..." class="bg-slate-800 border border-slate-600 rounded-xl p-3 text-white font-bold w-full">
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-700 pt-4">
                 <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
-                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Reply Generation Count: <span id="aiCountVal" class="text-purple-400">3</span></label>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Reply Count: <span id="aiCountVal" class="text-purple-400">3</span></label>
                     <input type="range" id="aiCountSlider" min="2" max="6" step="1" value="3" class="accent-purple-500">
                 </div>
                 <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
-                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Reply Target Length: <span id="replyLenVal" class="text-purple-400">Short</span></label>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Target Length: <span id="replyLenVal" class="text-purple-400">Short</span></label>
                     <input type="range" id="replyLenSlider" min="1" max="3" step="1" value="1" class="accent-purple-500">
                 </div>
                 <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
-                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Context Log History: <span id="aiContextVal" class="text-purple-400">5</span></label>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Context Window: <span id="aiContextVal" class="text-purple-400">5</span></label>
                     <input type="range" id="aiContextSlider" min="2" max="15" step="1" value="5" class="accent-purple-500">
                 </div>
             </div>
@@ -167,90 +172,71 @@
                     <span id="audioBoostVal" class="text-green-400 font-bold text-xl">2.5x</span>
                 </div>
                 <input type="range" id="audioBoostSlider" min="0.5" max="12.0" step="0.1" value="2.5" class="my-1 accent-green-500">
-                <p class="text-xs text-slate-400">Makes speech much louder. Recommended: 3.5x – 7.5x</p>
             </div>
 
             <div class="flex flex-col bg-slate-900/50 p-3 rounded-xl border border-slate-700">
-                <label class="text-xs text-slate-400 font-bold uppercase mb-1">Mic Sensitivity Threshold: <span id="micSensVal" class="text-indigo-400">50%</span></label>
+                <label class="text-xs text-slate-400 font-bold uppercase mb-1">Mic Gate Threshold: <span id="micSensVal" class="text-indigo-400">50%</span></label>
                 <input type="range" id="micSensSlider" min="10" max="100" step="5" value="50" class="accent-indigo-500">
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-4">
-                <label class="font-bold text-slate-300 text-lg">TTS Provider</label>
-                <select id="ttsProviderSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-sm md:text-lg rounded-xl p-2 md:p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors">
+                <label class="font-bold text-slate-300 text-lg">TTS Engine</label>
+                <select id="ttsProviderSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold p-3 rounded-xl">
                     <option value="os">OS Voice (Works offline)</option>
                     <option value="elevenlabs">ElevenLabs (Higher quality, needs internet)</option>
                 </select>
             </div>
 
             <div id="osVoiceSection" class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-lg">System Voice</label>
-                <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold text-sm md:text-lg rounded-xl p-2 md:p-3 outline-none focus:border-blue-500 shadow-sm cursor-pointer hover:bg-slate-700 transition-colors"></select>
+                <label class="font-bold text-slate-300 text-lg">System Output Voice</label>
+                <select id="voiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold p-3 rounded-xl"></select>
             </div>
 
             <div id="elevenlabsSection" class="flex flex-col gap-4 border-t border-slate-700 pt-4 hidden">
                 <div class="flex flex-col gap-1">
                     <label class="font-bold text-slate-300 text-lg">ElevenLabs API Key</label>
-                    <input type="password" id="elevenApiKey" placeholder="sk_..." class="w-full bg-slate-800 border border-slate-600 text-white font-mono text-sm md:text-base rounded-xl p-3 outline-none focus:border-green-500">
-                    <button id="saveApiKeyBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl mt-2 transition-all text-sm self-start">Save Key</button>
+                    <input type="password" id="elevenApiKey" placeholder="sk_..." class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl">
+                    <button id="saveApiKeyBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl mt-2 text-sm self-start">Save Key</button>
                 </div>
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between items-center">
-                        <label class="font-bold text-slate-300 text-lg">ElevenLabs Voice Selection</label>
-                        <button id="refreshElevenVoicesBtn" class="text-xs bg-slate-700 px-2 py-1 rounded hover:bg-slate-600">🔄 Refresh List</button>
+                        <label class="font-bold text-slate-300 text-lg">Voice Model Profile</label>
+                        <button id="refreshElevenVoicesBtn" class="text-xs bg-slate-700 px-2 py-1 rounded">🔄 Refresh</button>
                     </div>
                     <select id="elevenVoiceSelect" class="w-full bg-slate-800 border border-slate-600 text-white font-bold rounded-xl p-2 mt-1"></select>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-700">
-                    <div>
-                        <label class="text-xs text-slate-400 font-bold">Stability: <span id="stabVal">0.75</span></label>
-                        <input type="range" id="stabSlider" min="0" max="1" step="0.05" value="0.75">
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400 font-bold">Clarity / Similarity: <span id="simVal">0.85</span></label>
-                        <input type="range" id="simSlider" min="0" max="1" step="0.05" value="0.85">
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400 font-bold">Style Exaggeration: <span id="styleVal">0.00</span></label>
-                        <input type="range" id="styleSlider" min="0" max="1" step="0.05" value="0">
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400 font-bold">Speaker Boost: <span id="boostVal">On</span></label>
-                        <input type="range" id="boostSlider" min="0" max="1" step="1" value="1">
-                    </div>
+                    <div><label class="text-xs text-slate-400 font-bold">Stability: <span id="stabVal">0.75</span></label><input type="range" id="stabSlider" min="0" max="1" step="0.05" value="0.75"></div>
+                    <div><label class="text-xs text-slate-400 font-bold">Clarity: <span id="simVal">0.85</span></label><input type="range" id="simSlider" min="0" max="1" step="0.05" value="0.85"></div>
+                    <div><label class="text-xs text-slate-400 font-bold">Style: <span id="styleVal">0.00</span></label><input type="range" id="styleSlider" min="0" max="1" step="0.05" value="0"></div>
+                    <div><label class="text-xs text-slate-400 font-bold">Boost: <span id="boostVal">On</span></label><input type="range" id="boostSlider" min="0" max="1" step="1" value="1"></div>
                 </div>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <label class="font-bold text-slate-300 text-lg flex items-center gap-2">
-                    <input type="checkbox" id="useUnsentContext" class="w-5 h-5 accent-green-500" checked>
-                    Use unsent text in input box as extra AI context
-                </label>
+                <label class="font-bold text-slate-300 text-lg flex items-center gap-2"><input type="checkbox" id="useUnsentContext" class="w-5 h-5 accent-green-500" checked>Use textbox content as extra context</label>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <label class="font-bold text-slate-300 text-lg">Tap Action (Sentence Builder)</label>
+                <label class="font-bold text-slate-300 text-lg">Canned Phrase Click Action</label>
                 <div class="flex gap-3 h-12 mt-1">
-                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Speak Instantly</button>
-                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md">Add to Text Box</button>
+                    <button id="btnActionSpeak" class="flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl shadow-md">Speak Instantly</button>
+                    <button id="btnActionType" class="flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl shadow-md">Append Text</button>
                 </div>
             </div>
 
             <div class="flex flex-col gap-1 border-t border-slate-700 pt-3">
-                <label class="font-bold text-slate-300 text-lg flex items-center gap-2">
-                    <input type="checkbox" id="useAssemblyAI" class="w-5 h-5 accent-green-500">
-                    Use AssemblyAI Mic (high accuracy + Speaker Diarization)
-                </label>
+                <label class="font-bold text-slate-300 text-lg flex items-center gap-2"><input type="checkbox" id="useAssemblyAI" class="w-5 h-5 accent-green-500">Enable Diarized AssemblyAI Mic Engine Mode</label>
             </div>
 
             <div class="flex gap-2 border-t border-slate-700 pt-4">
-                <button id="exportBtn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-sm">📤 Export Phrases</button>
-                <button id="importBtn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-sm">📥 Import Backup</button>
+                <button id="exportBtn" class="flex-1 bg-slate-700 text-white font-bold py-2 rounded-xl text-sm">📤 Backup Phrases</button>
+                <button id="importBtn" class="flex-1 bg-slate-700 text-white font-bold py-2 rounded-xl text-sm">📥 Restore Backup</button>
                 <input type="file" id="importFileInput" class="hidden" accept=".json">
-                <button id="clearHistoryBtn" class="flex-1 bg-red-900/40 hover:bg-red-900/60 text-red-300 font-bold py-2 rounded-xl text-sm border border-red-900">🗑️ Clear History</button>
+                <button id="clearHistoryBtn" class="flex-1 bg-red-900/40 text-red-300 font-bold py-2 rounded-xl text-sm border border-red-900">🗑️ Reset Logs</button>
             </div>
 
-            <button id="closeSettingsBtnBottom" class="mt-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl">Close Settings</button>
+            <button id="closeSettingsBtnBottom" class="mt-2 bg-slate-700 text-white font-bold py-3 rounded-xl">Close Settings</button>
         </div>
     </div>
 
@@ -258,28 +244,27 @@
         <div class="modal-content w-full max-w-lg rounded-2xl p-5 md:p-6 flex flex-col gap-4">
             <h3 class="text-xl md:text-2xl font-bold border-b border-slate-600 pb-2 text-slate-100" id="modalTitle">Edit Phrase</h3>
             <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-xs md:text-sm uppercase tracking-wider">Phrase Text:</label>
-                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg md:text-xl text-white outline-none focus:border-blue-500 resize-none h-24 md:h-28 shadow-inner"></textarea>
+                <label class="font-bold text-slate-300 text-xs md:text-sm uppercase tracking-wider">Phrase String:</label>
+                <textarea id="modalPhraseText" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-lg md:text-xl text-white outline-none h-24 resize-none shadow-inner"></textarea>
             </div>
             <div class="flex flex-col gap-1">
-                <label class="font-bold text-slate-300 text-xs md:text-sm uppercase tracking-wider">Category:</label>
-                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-2 md:p-3 text-base md:text-lg text-white outline-none focus:border-blue-500 shadow-inner"></select>
+                <label class="font-bold text-slate-300 text-xs md:text-sm uppercase tracking-wider">Group Target:</label>
+                <select id="modalCategorySelect" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-white outline-none"></select>
             </div>
-            <div class="flex justify-between mt-2 md:mt-4 gap-2">
-                <button id="modalDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-xl transition-all shadow-md text-sm md:text-base">🗑️ Delete</button>
+            <div class="flex justify-between mt-4 gap-2">
+                <button id="modalDeleteBtn" class="bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-md">🗑️ Delete</button>
                 <div class="flex gap-2 w-full justify-end">
-                    <button id="modalCancelBtn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-xl transition-all shadow-md text-sm md:text-base">Cancel</button>
-                    <button id="modalSaveBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 md:py-3 px-6 md:px-10 rounded-xl transition-all shadow-md text-sm md:text-base">Save</button>
+                    <button id="modalCancelBtn" class="bg-slate-600 text-white font-bold py-3 px-6 rounded-xl shadow-md">Cancel</button>
+                    <button id="modalSaveBtn" class="bg-green-600 text-white font-bold py-3 px-10 rounded-xl shadow-md">Save</button>
                 </div>
             </div>
         </div>
     </div>
 
 <script>
-// ====================== CORE SETUP ======================
+// ====================== ARCHITECTURE INITIALIZATION ======================
 const GROK_API_URL = '/api/grok';
 const DEEPSEEK_API_URL = '/api/deepseek';
-const ASSEMBLYAI_TOKEN_URL = '/api/token';
 
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
@@ -313,6 +298,7 @@ const elevenApiKeyInput = document.getElementById('elevenApiKey');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const refreshElevenVoicesBtn = document.getElementById('refreshElevenVoicesBtn');
+const assemblyKeyInput = document.getElementById('assemblyKeyInput');
 
 const stabSlider = document.getElementById('stabSlider');
 const simSlider = document.getElementById('simSlider');
@@ -342,7 +328,7 @@ const useUnsentContext = document.getElementById('useUnsentContext');
 const useAssemblyAIChk = document.getElementById('useAssemblyAI');
 const aiProviderSelect = document.getElementById('aiProviderSelect');
 
-// Dictionary Categories Setup
+// Phrases Storage Data Structure
 let phraseCategories = JSON.parse(localStorage.getItem('alsPhrases')) || {
     "Basics": ["Yes.", "No.", "Please.", "Thank you.", "I don't know.", "Maybe.", "Can you repeat that?", "Give me a minute.", "Okay.", "Wait.", "Stop.", "Go.", "I changed my mind."],
     "Needs": ["I am hungry.", "I am thirsty.", "Bathroom, please.", "I am tired.", "Can I have some water?", "I need my medication.", "I need a shower.", "Wipe my mouth.", "Wipe my eyes.", "Blow my nose.", "I need my glasses."],
@@ -373,24 +359,21 @@ let aiProvider = localStorage.getItem('aiProvider') || 'grok';
 let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5;
 let audioContextGlobal = null;
 
-// AssemblyAI State Engine
+// Audio Streaming Engine Parameters
 let assemblyWS = null;
 let assemblyAudioContext = null;
 let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
-// 15-Minute Auto-Off Variable Configuration
+// 15-Minute Automated Timeout Safeguard Variable Modules
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
 let inactivityTimeoutTracker = null;
 
 function resetInactivityTimer() {
-    if (inactivityTimeoutTracker) {
-        clearTimeout(inactivityTimeoutTracker);
-    }
-    
+    if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ [Auto-Off Control] 15 minutes of user inactivity detected. Turning off microphone hardware.");
+        console.log("⏳ [Safety Control] 15 minutes of idle silence detected. Disabling mic loop hardware.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -403,11 +386,21 @@ function resetInactivityTimer() {
     }, INACTIVITY_LIMIT_MS);
 }
 
+// Local Key Initialization
+if (localStorage.getItem('assemblyai_key')) {
+    assemblyKeyInput.value = localStorage.getItem('assemblyai_key');
+}
+assemblyKeyInput.addEventListener('input', () => {
+    if (assemblyKeyInput.value.trim().length > 20) {
+        localStorage.setItem('assemblyai_key', assemblyKeyInput.value.trim());
+    }
+});
+
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
 
-// ====================== PREDICTIVE ENGINE (DEEPSEEK V4-FLASH) ======================
+// ====================== PREDICTIVE ANALYSIS (DEEPSEEK V4-FLASH ONLY) ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -422,9 +415,7 @@ async function getDeepSeekPredictive(lastWords) {
         });
         const data = await res.json();
         return data.choices[0].message.content.trim().split(/\s+/).slice(0,4);
-    } catch (e) {
-        return [];
-    }
+    } catch (e) { return []; }
 }
 
 textInput.addEventListener('input', async () => {
@@ -455,7 +446,7 @@ textInput.addEventListener('input', async () => {
     });
 });
 
-// ====================== TTS CONTEXT SCHEDULER ======================
+// ====================== SPEECH CHANNELS MANAGEMENT ======================
 async function speakWithElevenLabs(text) {
     if (!elevenApiKey || !selectedElevenVoiceId) {
         speakWithOS(text);
@@ -471,11 +462,7 @@ async function speakWithElevenLabs(text) {
                 'xi-api-key': elevenApiKey,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                text: text,
-                model_id: "eleven_monolingual_v1",
-                voice_settings: elevenSettings
-            })
+            body: JSON.stringify({ text: text, model_id: "eleven_monolingual_v1", voice_settings: elevenSettings })
         });
         if (!response.ok) throw new Error();
         const audioBlob = await response.blob();
@@ -494,9 +481,7 @@ async function speakWithElevenLabs(text) {
         audio.play();
         lastSpoken = text;
         addToConversation('you', text);
-    } catch (err) {
-        speakWithOS(text);
-    }
+    } catch (err) { speakWithOS(text); }
 }
 
 function speakWithOS(text) {
@@ -511,9 +496,7 @@ function speakWithOS(text) {
     if (savedVoiceURI && availableVoices.length > 0) {
         const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
         if (exactVoice) utterance.voice = exactVoice;
-    } else {
-        utterance.lang = 'en-US';
-    }
+    } else { utterance.lang = 'en-US'; }
     utterance.volume = Math.min(1.0, audioBoostLevel);
     utterance.rate = 0.92;
     utterance.onend = finishTTS;
@@ -533,7 +516,7 @@ function finishTTS() {
     isTTSPlaying = false;
 }
 
-// ====================== PHRASE SELECTION EVENT MAPPINGS ======================
+// ====================== ACTIONS HANDLERS ======================
 textInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -566,7 +549,7 @@ genBtn.onclick = () => {
 replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
 document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
 
-// ====================== LOCAL STORAGE COMPONENT RENDERING ======================
+// ====================== LOCAL DATA RE-RENDERS ======================
 function saveToStorage() { localStorage.setItem('alsPhrases', JSON.stringify(phraseCategories)); }
 function saveConversation() { localStorage.setItem('alsConversation', JSON.stringify(conversationHistory)); }
 
@@ -591,13 +574,13 @@ function renderPhrases() {
     phraseGridEl.innerHTML = '';
     addPhraseBtn.classList.toggle('hidden', !isEditMode);
     editCategoryBtn.classList.toggle('hidden', !isEditMode);
-    editToggleBtn.className = isEditMode ? 'bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold border border-blue-500 transition-all text-xs md:text-sm shadow-sm' : 'bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold border border-slate-500 transition-all text-xs md:text-sm shadow-sm';
+    editToggleBtn.className = isEditMode ? 'bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold border border-blue-500 shadow-sm' : 'bg-slate-700 text-slate-300 px-4 py-1.5 rounded-lg font-bold border border-slate-500 shadow-sm';
     editToggleBtn.innerHTML = isEditMode ? 'Done' : '✏️ Edit';
     if(phraseCategories[currentCategory]) {
         phraseCategories[currentCategory].forEach((phrase, idx) => {
             const btn = document.createElement('button');
             btn.textContent = phrase;
-            btn.className = `p-2 md:p-4 text-[13px] sm:text-base md:text-xl font-bold rounded-xl transition-all shadow-md min-h-[56px] md:min-h-[80px] flex items-center justify-center text-center leading-tight ${isEditMode ? 'bg-slate-800 text-blue-300 edit-mode-btn cursor-pointer' : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'}`;
+            btn.className = `p-2 md:p-4 text-[13px] sm:text-base md:text-xl font-bold rounded-xl shadow-md min-h-[56px] md:min-h-[80px] flex items-center justify-center text-center ${isEditMode ? 'bg-slate-800 text-blue-300 edit-mode-btn cursor-pointer' : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'}`;
             btn.onclick = () => {
                 if (isEditMode) openModal(phrase, currentCategory, idx);
                 else handlePhraseTap(phrase);
@@ -617,6 +600,7 @@ function renderConversationHistory() {
     scrollToBottom();
 }
 
+// Custom Protocol System Section Label Tracking Added
 function appendMessageUI(speaker, text, container) {
     const div = document.createElement('div');
     div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
@@ -647,7 +631,6 @@ window.openSaveFromHistory = (text) => {
     document.getElementById('modalDeleteBtn').classList.add('hidden');
 };
 
-// Custom Modals Core Handlers
 editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
 addCategoryBtn.onclick = () => {
     const newCat = prompt("Enter new category name:");
@@ -713,7 +696,6 @@ document.getElementById('modalDeleteBtn').onclick = () => {
     }
 };
 
-// Sync Slider Callbacks
 audioBoostSlider.addEventListener('input', () => {
     audioBoostLevel = parseFloat(audioBoostSlider.value);
     audioBoostVal.textContent = audioBoostLevel.toFixed(1) + 'x';
@@ -732,7 +714,6 @@ replyLenSlider.addEventListener('input', () => {
 aiContextSlider.addEventListener('input', () => { aiContextVal.textContent = aiContextSlider.value; });
 micSensSlider.addEventListener('input', () => { micSensVal.textContent = micSensSlider.value + '%'; });
 
-// External JSON Backups Engine Tools
 document.getElementById('exportBtn').onclick = () => {
     const blob = new Blob([JSON.stringify({ phrases: phraseCategories, history: conversationHistory }, null, 2)], { type: "application/json" });
     const a = document.createElement('a');
@@ -750,12 +731,9 @@ document.getElementById('importFileInput').addEventListener('change', (e) => {
             const data = JSON.parse(event.target.result);
             if (data.phrases) phraseCategories = data.phrases;
             if (data.history) conversationHistory = data.history;
-            saveToStorage();
-            saveConversation();
+            saveToStorage(); saveConversation();
             currentCategory = Object.keys(phraseCategories)[0];
-            renderCategories();
-            renderPhrases();
-            renderConversationHistory();
+            renderCategories(); renderPhrases(); renderConversationHistory();
             alert("Imported successfully!");
             settingsModal.classList.add('hidden');
         } catch (err) { alert("Error reading file."); }
@@ -764,27 +742,23 @@ document.getElementById('importFileInput').addEventListener('change', (e) => {
 });
 document.getElementById('clearHistoryBtn').onclick = () => {
     if(confirm("Delete all conversation history?")) {
-        conversationHistory = [];
-        saveConversation();
-        renderConversationHistory();
+        conversationHistory = []; saveConversation(); renderConversationHistory();
         settingsModal.classList.add('hidden');
     }
 };
 
-// Set Active Actions State
 function updateActionUI() {
     if (clickAction === 'speak') {
-        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
-        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md';
     } else {
-        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
-        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold text-sm md:text-md rounded-xl transition-all shadow-md';
+        btnActionType.className = 'flex-1 bg-blue-600 border-2 border-blue-400 text-white font-bold rounded-xl transition-all shadow-md';
+        btnActionSpeak.className = 'flex-1 bg-slate-800 border-2 border-slate-600 text-slate-400 font-bold rounded-xl transition-all shadow-md';
     }
 }
 btnActionSpeak.onclick = () => { clickAction = 'speak'; updateActionUI(); };
 btnActionType.onclick = () => { clickAction = 'type'; updateActionUI(); };
 
-// Set TTS Option Targets
 ttsProviderSelect.value = ttsProvider;
 function updateTTSProviderUI() {
     osVoiceSection.classList.toggle('hidden', ttsProvider !== 'os');
@@ -796,7 +770,6 @@ ttsProviderSelect.addEventListener('change', () => {
     updateTTSProviderUI();
 });
 
-// Load System Voices
 function populateVoiceList() {
     if (typeof speechSynthesis === 'undefined') return;
     availableVoices = speechSynthesis.getVoices();
@@ -818,28 +791,22 @@ if ('speechSynthesis' in window) {
 }
 voiceSelect.addEventListener('change', () => localStorage.setItem('selectedVoiceURI', voiceSelect.value));
 
-// ElevenLabs Stream Interfacing
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
-        const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': elevenApiKey }
-        });
+        const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': elevenApiKey } });
         if (res.ok) {
             const data = await res.json();
             elevenVoices = data.voices || [];
             renderElevenVoiceSelect();
         }
-    } catch (e) {
-        console.warn("Failed to load ElevenLabs voices", e);
-    }
+    } catch (e) { console.warn("Failed to load ElevenLabs voices", e); }
 }
 function renderElevenVoiceSelect() {
     elevenVoiceSelect.innerHTML = '';
     elevenVoices.forEach(v => {
         const opt = document.createElement('option');
-        opt.value = v.voice_id;
-        opt.textContent = `${v.name} ${v.category ? `(${v.category})` : ''}`;
+        opt.value = v.voice_id; opt.textContent = `${v.name} ${v.category ? `(${v.category})` : ''}`;
         if (v.voice_id === selectedElevenVoiceId) opt.selected = true;
         elevenVoiceSelect.appendChild(opt);
     });
@@ -847,50 +814,30 @@ function renderElevenVoiceSelect() {
 saveApiKeyBtn.onclick = async () => {
     const key = elevenApiKeyInput.value.trim();
     if (key) {
-        elevenApiKey = key;
-        localStorage.setItem('elevenApiKey', elevenApiKey);
-        await fetchElevenVoices();
-        alert("ElevenLabs API key saved and voices loaded!");
+        elevenApiKey = key; localStorage.setItem('elevenApiKey', elevenApiKey);
+        await fetchElevenVoices(); alert("ElevenLabs settings updated!");
     }
 };
 refreshElevenVoicesBtn.onclick = fetchElevenVoices;
 elevenVoiceSelect.addEventListener('change', () => {
-    selectedElevenVoiceId = elevenVoiceSelect.value;
-    localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
+    selectedElevenVoiceId = elevenVoiceSelect.value; localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
 });
 
 function updateElevenSliders() {
-    stabSlider.value = elevenSettings.stability;
-    simSlider.value = elevenSettings.similarity_boost;
-    styleSlider.value = elevenSettings.style;
+    stabSlider.value = elevenSettings.stability; simSlider.value = elevenSettings.similarity_boost; styleSlider.value = elevenSettings.style;
     boostSlider.value = elevenSettings.speaker_boost ? 1 : 0;
-    stabVal.textContent = elevenSettings.stability.toFixed(2);
-    simVal.textContent = elevenSettings.similarity_boost.toFixed(2);
-    styleVal.textContent = elevenSettings.style.toFixed(2);
+    stabVal.textContent = elevenSettings.stability.toFixed(2); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); styleVal.textContent = elevenSettings.style.toFixed(2);
     boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
 }
-stabSlider.addEventListener('input', () => {
-    elevenSettings.stability = parseFloat(stabSlider.value);
-    stabVal.textContent = elevenSettings.stability.toFixed(2);
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
-});
-simSlider.addEventListener('input', () => {
-    elevenSettings.similarity_boost = parseFloat(simSlider.value);
-    simVal.textContent = elevenSettings.similarity_boost.toFixed(2);
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
-});
-styleSlider.addEventListener('input', () => {
-    elevenSettings.style = parseFloat(styleSlider.value);
-    styleVal.textContent = elevenSettings.style.toFixed(2);
-    localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
-});
+stabSlider.addEventListener('input', () => { elevenSettings.stability = parseFloat(stabSlider.value); stabVal.textContent = elevenSettings.stability.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
+simSlider.addEventListener('input', () => { elevenSettings.similarity_boost = parseFloat(simSlider.value); simVal.textContent = elevenSettings.similarity_boost.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
+styleSlider.addEventListener('input', () => { elevenSettings.style = parseFloat(styleSlider.value); styleVal.textContent = elevenSettings.style.toFixed(2); localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings)); });
 boostSlider.addEventListener('input', () => {
-    elevenSettings.speaker_boost = parseFloat(boostSlider.value) > 0.5;
-    boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
+    elevenSettings.speaker_boost = parseFloat(boostSlider.value) > 0.5; boostVal.textContent = elevenSettings.speaker_boost ? 'On' : 'Off';
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// ====================== AI CONTEXTUAL GENERATION ======================
+// ====================== CONTEXT GENERATOR ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
@@ -927,80 +874,86 @@ async function generateGrokSuggestions() {
         suggestStatus.textContent = `AI Suggestions (${aiProvider === 'v4-flash' ? 'V4-Flash' : 'Grok'})`;
         suggestions.slice(0, numReplies).forEach(phrase => {
             const btn = document.createElement('button');
-            btn.className = 'suggestion-btn';
-            btn.textContent = phrase;
+            btn.className = 'suggestion-btn'; btn.textContent = phrase;
             btn.onclick = () => handlePhraseTap(phrase);
             grokSuggestionsEl.appendChild(btn);
         });
-    } catch (err) {
-        suggestStatus.textContent = 'AI Suggestions failed';
-        grokSuggestionsEl.innerHTML = '';
-    }
+    } catch (err) { suggestStatus.textContent = 'AI Suggestions failed'; grokSuggestionsEl.innerHTML = ''; }
 }
 
-// ====================== REALTIME ASSEMBLYAI AUDIO ENGINE ======================
-async function getAssemblyToken() {
-    try {
-        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        return data.token;
-    } catch (e) {
-        console.error("❌ Failed to fetch token from backend serverless route:", e);
-        return null;
-    }
-}
-    
+// ====================== THE PLUG-AND-PLAY PLAYGROUND ENGINE BLOCK ======================
 async function startAssemblyAI() {
-    const token = await getAssemblyToken();
-    if (!token) return;
-    const wsUrl = `wss://streaming.assemblyai.com/v3/ws?token=${token}&speech_model=universal-streaming-english&sample_rate=16000&speaker_labels=true&format_turns=true&max_turn_silence=1500`;
-    assemblyWS = new WebSocket(wsUrl);
+    const key = assemblyKeyInput.value.trim();
+    if (!key) return alert("Please fill out your AssemblyAI key string within the Settings Panel layout first.");
+
+    // Direct playground URL configuration syntax mapping
+    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(key)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=true&max_speakers=6`;
+
+    console.log("🚀 Initializing play-and-plug stream layout loop...");
+    assemblyWS = new WebSocket(url);
+    
     assemblyWS.onopen = () => { 
         isAssemblyListening = true; 
         updateMicUI(true); 
         resetInactivityTimer(); 
     };
+    
     assemblyWS.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'Turn' && msg.text?.trim()) {
-            resetInactivityTimer(); 
-            addToConversation('other', msg.text.trim());
-            liveTranscript.textContent = `🗣️ ${msg.text}`;
-            liveTranscript.classList.remove('hidden');
-            setTimeout(() => liveTranscript.classList.add('hidden'), 1800);
-        }
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === "Turn") {
+                const text = data.transcript || "";
+                const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Speaker";
+                
+                resetInactivityTimer(); // Reset the 15-minute idle limit on text generation hits
+
+                if (data.end_of_turn && text.trim()) {
+                    addToConversation('other', `(${speakerLabel}) ${text.trim()}`);
+                    liveTranscript.textContent = `🗣️ ${text}`;
+                    liveTranscript.classList.remove('hidden');
+                    setTimeout(() => liveTranscript.classList.add('hidden'), 1800);
+                }
+            }
+        } catch(e) { console.error("Data parsing breakdown:", e); }
     };
+    
+    assemblyWS.onerror = (e) => console.error("WebSocket thread failed handshake:", e);
     assemblyWS.onclose = () => { isAssemblyListening = false; updateMicUI(false); };
 
     try {
-        assemblyStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }});
+        assemblyStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         assemblyAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
         const source = assemblyAudioContext.createMediaStreamSource(assemblyStream);
         assemblyProcessor = assemblyAudioContext.createScriptProcessor(4096, 1, 1);
+        
         assemblyProcessor.onaudioprocess = (e) => {
-            if (assemblyWS?.readyState !== WebSocket.OPEN) return;
+            if (!assemblyWS || assemblyWS.readyState !== WebSocket.OPEN) return;
             const input = e.inputBuffer.getChannelData(0);
             const pcm = new Int16Array(input.length);
-            for (let i = 0; i < input.length; i++) pcm[i] = Math.max(-32768, Math.min(32767, input[i] * 32768));
+            for (let i = 0; i < input.length; i++) {
+                pcm[i] = Math.max(-32768, Math.min(32767, input[i] * 32768));
+            }
             assemblyWS.send(pcm.buffer);
         };
         source.connect(assemblyProcessor);
         assemblyProcessor.connect(assemblyAudioContext.destination);
-    } catch (err) {
-        console.error(err);
-    }
+    } catch (err) { console.error("Hardware initialization error:", err); stopAssemblyAI(); }
 }
 
 function stopAssemblyAI() {
-    if (assemblyWS) assemblyWS.close();
+    if (assemblyProcessor) assemblyProcessor.disconnect();
+    if (assemblyAudioContext) assemblyAudioContext.close();
     if (assemblyStream) assemblyStream.getTracks().forEach(track => track.stop());
+    if (assemblyWS) {
+        try { assemblyWS.send(JSON.stringify({ type: "Terminate" })); } catch(e){}
+        assemblyWS.close();
+    }
     isAssemblyListening = false;
     updateMicUI(false);
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
-// ====================== HARDWARE CAPTURE & AUDIO INPUTS ======================
+// ====================== HARDWARE CAPTURE CAPABILITIES ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -1034,9 +987,7 @@ listenBtn.onclick = () => {
 
 function createRecognition() {
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US';
-    rec.interimResults = true;
-    rec.continuous = true;
+    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true;
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
@@ -1044,7 +995,7 @@ function createRecognition() {
             currentTranscript += event.results[i][0].transcript;
         }
         if (currentTranscript.trim()) {
-            resetInactivityTimer(); 
+            resetInactivityTimer();
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
             setTimeout(() => {
@@ -1057,36 +1008,16 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== RUNTIME CONFIG SYNCHRONIZATION ======================
-function updateAIUI() {
-    aiProviderSelect.value = aiProvider;
-}
+// ====================== CORE STATE SYNC ======================
+function updateAIUI() { aiProviderSelect.value = aiProvider; }
+aiProviderSelect.addEventListener('change', () => { aiProvider = aiProviderSelect.value; localStorage.setItem('aiProvider', aiProvider); updateAIUI(); });
+useAssemblyAIChk.addEventListener('change', () => { useAssemblyAI = useAssemblyAIChk.checked; localStorage.setItem('useAssemblyAI', useAssemblyAI); });
 
-aiProviderSelect.addEventListener('change', () => {
-    aiProvider = aiProviderSelect.value;
-    localStorage.setItem('aiProvider', aiProvider);
-    updateAIUI();
-});
-
-useAssemblyAIChk.addEventListener('change', () => {
-    useAssemblyAI = useAssemblyAIChk.checked;
-    localStorage.setItem('useAssemblyAI', useAssemblyAI);
-});
-
-updateAIUI();
-updateActionUI();
-renderCategories();
-renderPhrases();
-renderConversationHistory();
-populateVoiceList();
-updateTTSProviderUI();
-updateElevenSliders();
-updateAudioBoostUI();
+updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConversationHistory(); populateVoiceList(); updateTTSProviderUI(); updateElevenSliders(); updateAudioBoostUI();
 if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
-
-console.log("✅ Main Client Compiled: Inactivity listeners armed.");
+console.log("✅ Main Engine Active: Direct client-key pipeline implemented.");
 </script>
 </body>
 </html>
