@@ -360,21 +360,20 @@ let audioContextGlobal = null;
 let isLogMinimized = false;
 let useAssemblyAI = localStorage.getItem('useAssemblyAI') === 'true';
 
-// AssemblyAI Stream Tracking State Engines
+// AssemblyAI Setup Elements
 let assemblyWS = null;
 let assemblyAudioContext = null;
 let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
 
-// 15-Minute Safety Idle Timeout Configurations
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
 let inactivityTimeoutTracker = null;
 
 function resetInactivityTimer() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
     inactivityTimeoutTracker = setTimeout(() => {
-        console.log("⏳ [Safety Tracker] 15 minutes of silence detected. Turning mic stream off.");
+        console.log("⏳ [Safety Tracker] 15 minutes of user inactivity caught. Turning mic stream off.");
         if (useAssemblyAI) {
             if (isAssemblyListening) stopAssemblyAI();
         } else {
@@ -387,7 +386,15 @@ function resetInactivityTimer() {
     }, INACTIVITY_LIMIT_MS);
 }
 
-// Log Minimize Action Toggle Listener
+// RESTORED: Explicit scrollToBottom function logic
+function scrollToBottom() {
+    setTimeout(() => {
+        if (convHistoryEl) convHistoryEl.scrollTop = convHistoryEl.scrollHeight;
+        if (convHistoryMobileEl) convHistoryMobileEl.scrollTop = convHistoryMobileEl.scrollHeight;
+    }, 10);
+}
+
+// Fixed Layer Minimize Action Hook
 toggleConvBtn.onclick = () => {
     isLogMinimized = !isLogMinimized;
     if (isLogMinimized) {
@@ -406,24 +413,17 @@ openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
 
-// Helper function to handle robust API fetches with multiple backoff retries
-async function fetchWithRetry(url, options, retries = 3, delay = 350) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const response = await fetch(url, options);
-            if (response.ok) return response;
-        } catch (err) {
-            if (i === retries - 1) throw err;
-        }
-        await new Promise(res => setTimeout(res, delay));
-    }
-    throw new Error(`API call failed after ${retries} attempts.`);
+// Core request driver handling serverless endpoints
+async function handleAPIFetch(url, options) {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
+    return response;
 }
 
 // ====================== CLEAN PREDICTIVE LOGIC ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
-        const res = await fetchWithRetry(DEEPSEEK_API_URL, {
+        const res = await handleAPIFetch(DEEPSEEK_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -457,7 +457,7 @@ textInput.addEventListener('input', async () => {
 
     const predictions = await getDeepSeekPredictive(lastWords);
     predictiveBar.innerHTML = '';
-    if (predictions.length === 0) { predictiveBar.classList.add('hidden'); return; }
+    if (!predictions || predictions.length === 0) { predictiveBar.classList.add('hidden'); return; }
     
     predictions.forEach(word => {
         if (!word || word.trim() === "") return;
@@ -598,7 +598,6 @@ function renderCategories() {
     currentCategoryTitle.textContent = currentCategory;
 }
 
-// Fixed Section Label Protocol Formatting Applied
 function renderPhrases() {
     phraseGridEl.innerHTML = '';
     addPhraseBtn.classList.toggle('hidden', !isEditMode);
@@ -845,7 +844,7 @@ boostSlider.addEventListener('input', () => {
     localStorage.setItem('elevenSettings', JSON.stringify(elevenSettings));
 });
 
-// ====================== CONTEXT GENERATOR FIXED Retries Added ======================
+// ====================== CONTEXT GENERATOR FIXED ======================
 async function generateGrokSuggestions() {
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
@@ -866,24 +865,18 @@ async function generateGrokSuggestions() {
 
     try {
         const messages = [{ role: 'user', content: promptText }];
-        let response;
+        const targetURL = aiProvider === 'v4-flash' ? DEEPSEEK_API_URL : GROK_API_URL;
+        const payload = aiProvider === 'v4-flash' ? 
+            { messages, max_tokens: 200, temperature: 0.75, model: "deepseek-v4-flash" } :
+            { model: 'grok-3-mini', messages, max_tokens: 200, temperature: 0.6 };
+
+        // Fully insulated request handler prevents runtime drop lockouts
+        const response = await handleAPIFetch(targetURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         
-        // Employs our explicit custom fetch fallback engine to fight cold start drops
-        if (aiProvider === 'v4-flash') {
-            response = await fetchWithRetry(DEEPSEEK_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages, max_tokens: 200, temperature: 0.75, model: "deepseek-v4-flash" })
-            }, 3, 400);
-        } else {
-            response = await fetchWithRetry(GROK_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'grok-3-mini', messages, max_tokens: 200, temperature: 0.6 })
-            }, 3, 400);
-        }
-        
-        if (!response.ok) throw new Error();
         const data = await response.json();
         const content = data.choices[0].message.content;
         const suggestions = content.trim().split('\n').map(s => s.trim().replace(/^[\d\.\-\*\"\s]+/, '').replace(/\"/g, '')).filter(s => s.length > 1);
@@ -897,7 +890,8 @@ async function generateGrokSuggestions() {
             grokSuggestionsEl.appendChild(btn);
         });
     } catch (err) { 
-        suggestStatus.textContent = 'AI Suggestions failed (Connection timed out)'; 
+        console.error("AI fetch failure insulated:", err);
+        suggestStatus.textContent = 'AI Suggestions failed'; 
         grokSuggestionsEl.innerHTML = '<div class="shrink-0 min-w-[200px] text-center text-red-400 py-6">Could not generate suggestions. Please try again.</div>'; 
     }
 }
@@ -905,24 +899,11 @@ async function generateGrokSuggestions() {
 // ====================== REALTIME SECURE ASSEMBLYAI AUDIO ENGINE ======================
 async function getAssemblyToken() {
     try {
-        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
-        if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
-        
-        const contentType = res.headers.get("content-type");
-        let token = null;
-        
-        if (contentType && contentType.includes("application/json")) {
-            const data = await res.json();
-            token = data.token;
-        } else {
-            const textData = await res.text();
-            const parsedData = JSON.parse(textData);
-            token = parsedData.token;
-        }
-        
-        return token;
+        const res = await handleAPIFetch(ASSEMBLYAI_TOKEN_URL);
+        const data = await res.json();
+        return data.token;
     } catch (e) {
-        console.error("❌ Secure token processing drop:", e);
+        console.error("❌ Secure token resolution dropped:", e);
         return null;
     }
 }
@@ -930,7 +911,7 @@ async function getAssemblyToken() {
 async function startAssemblyAI() {
     const token = await getAssemblyToken();
     if (!token) {
-        alert("Microphone activation failed: Serverless signature token could not be fetched.");
+        alert("Microphone activation failed: Serverless configuration credentials missing.");
         useAssemblyAI = false;
         useAssemblyAIChk.checked = false;
         localStorage.setItem('useAssemblyAI', false);
@@ -941,7 +922,7 @@ async function startAssemblyAI() {
     const diarizeEnabled = useAssemblyAIChk.checked;
     const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=${diarizeEnabled}&max_speakers=6`;
 
-    console.log("🚀 Initializing secure diarized live stream...");
+    console.log("🚀 Initializing secure stream layout...");
     assemblyWS = new WebSocket(url);
     
     assemblyWS.onopen = () => { 
@@ -959,6 +940,7 @@ async function startAssemblyAI() {
                 
                 resetInactivityTimer();
 
+                // FIXED: ONLY log text on true 'end_of_turn' frames to prevent repeated duplicate lines
                 if (data.end_of_turn && text.trim()) {
                     addToConversation('other', diarizeEnabled ? `(${speakerLabel}) ${text.trim()}` : text.trim());
                     liveTranscript.textContent = `🗣️ ${text}`;
@@ -966,7 +948,7 @@ async function startAssemblyAI() {
                     setTimeout(() => liveTranscript.classList.add('hidden'), 1800);
                 }
             }
-        } catch(e) { console.error("Data parsing mismatch:", e); }
+        } catch(e) { console.error("Data parsing error insulated:", e); }
     };
     
     assemblyWS.onerror = (e) => console.error("WebSocket handoff drop:", e);
@@ -989,7 +971,7 @@ async function startAssemblyAI() {
         };
         source.connect(assemblyProcessor);
         assemblyProcessor.connect(assemblyAudioContext.destination);
-    } catch (err) { console.error("Hardware pipeline error:", err); stopAssemblyAI(); }
+    } catch (err) { console.error("Hardware runtime error insulated:", err); stopAssemblyAI(); }
 }
 
 function stopAssemblyAI() {
@@ -1005,7 +987,7 @@ function stopAssemblyAI() {
     if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
-// ====================== CAPTURE PERIPHERALS FALLBACKS ======================
+// ====================== NATIVE PERIPHERALS FALLBACKS ======================
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
@@ -1060,7 +1042,7 @@ function createRecognition() {
     return rec;
 }
 
-// ====================== PIPELINE STATE SYNCS FIXED ======================
+// ====================== PIPELINE STATE SYNCS ======================
 function updateAIUI() { 
     aiProviderSelect.value = aiProvider; 
     useAssemblyAIChk.checked = useAssemblyAI;
@@ -1081,7 +1063,7 @@ updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConve
 if (elevenApiKey) fetchElevenVoices();
 
 grokSuggestBtn.onclick = generateGrokSuggestions;
-console.log("✅ Main Engine Active: Retries armed, sync code fixed.");
+console.log("✅ Main Engine Stabilized: Missing declarations re-compiled.");
 </script>
 </body>
 </html>
