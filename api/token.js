@@ -9,12 +9,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const tokenResp = await fetch('https://streaming.assemblyai.com/v3/token?expires_in_seconds=1800', {
-      method: 'GET',
-      headers: { 'Authorization': apiKey },
+    const tokenResp = await fetch('https://api.assemblyai.com/v2/realtime/token', {
+        method: 'POST', 
+        headers: { 
+          'Authorization': apiKey,
+          'Content-Type': 'application/json' // Crucial header for payload validation
+        },
+        body: JSON.stringify({ expires_in: 1800 })
     });
 
-    if (!tokenResp.ok) throw new Error('Token generation failed');
+    if (!tokenResp.ok) {
+      const errorText = await tokenResp.text();
+      throw new Error(`Token generation failed: ${errorText}`);
+    }
 
     const data = await tokenResp.json();
     res.status(200).json({ token: data.token });
