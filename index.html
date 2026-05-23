@@ -366,6 +366,7 @@ let assemblyAudioContext = null;
 let assemblyStream = null;
 let assemblyProcessor = null;
 let isAssemblyListening = false;
+let aiRequestInProgress = false; // FIX: Prevent duplicate AI requests
 
 const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; 
 let inactivityTimeoutTracker = null;
@@ -407,19 +408,21 @@ toggleConvBtn.onclick = () => {
     }
 };
 
-// Continuous validation request retry handler built to solve cold start network timeouts
-async function fetchWithInfiniteRetry(url, options, textStatusEl) {
-    let attempt = 1;
-    while (true) {
+// FIX: Simplified retry function without attempt counter display
+async function fetchWithRetry(url, options, maxRetries = 5) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-            if (textStatusEl) textStatusEl.textContent = `Thinking with AI (Attempt ${attempt})...`;
             const response = await fetch(url, options);
             if (response.ok) return response;
+            if (response.status === 429 || response.status >= 500) {
+                await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+                continue;
+            }
+            throw new Error(`HTTP ${response.status}`);
         } catch (err) {
-            console.warn(`Serverless function wake attempt ${attempt} delayed...`);
+            if (attempt === maxRetries - 1) throw err;
+            await new Promise(res => setTimeout(res, 500));
         }
-        attempt++;
-        await new Promise(res => setTimeout(res, 450));
     }
 }
 
@@ -512,14 +515,14 @@ async function speakWithElevenLabs(text) {
         }
         audio.play();
         lastSpoken = text;
-        addToConversation('you', text);
+        // FIX: Only add to conversation here, not in both places
     } catch (err) { speakWithOS(text); }
 }
 
 function speakWithOS(text) {
     if (!text) return;
     lastSpoken = text;
-    addToConversation('you', text);
+    // FIX: Only add to conversation in one place
     window.speechSynthesis.cancel();
     genBtn.disabled = true;
     btnText.innerHTML = '<span class="text-xs md:text-lg">🔊...</span>';
@@ -561,6 +564,8 @@ function renderElevenVoiceSelect() {
 
 function speak(text) {
     if (!text) return;
+    // FIX: Add to conversation only once when speak is called
+    addToConversation('you', text);
     if (ttsProvider === 'elevenlabs') speakWithElevenLabs(text);
     else speakWithOS(text);
 }
@@ -626,8 +631,25 @@ function renderPhrases() {
 }
 
 function renderConversationHistory() {
+    // FIX: Clear and rebuild without duplicates
     convHistoryEl.innerHTML = '';
     convHistoryMobileEl.innerHTML = '';
+    
+    // FIX: Use a Set to track unique messages and prevent duplicates
+    const seenMessages = new Set();
+    const uniqueHistory = conversationHistory.filter(msg => {
+        const key = `${msg.speaker}|${msg.text}`;
+        if (seenMessages.has(key)) return false;
+        seenMessages.add(key);
+        return true;
+    });
+    
+    // Update conversationHistory with deduplicated version
+    if (uniqueHistory.length !== conversationHistory.length) {
+        conversationHistory = uniqueHistory;
+        saveConversation();
+    }
+    
     conversationHistory.forEach(msg => {
         appendMessageUI(msg.speaker, msg.text, convHistoryEl);
         appendMessageUI(msg.speaker, msg.text, convHistoryMobileEl);
@@ -638,13 +660,38 @@ function renderConversationHistory() {
 function appendMessageUI(speaker, text, container) {
     const div = document.createElement('div');
     div.className = `msg ${speaker === 'you' ? 'msg-you' : 'msg-other'}`;
-    let htmlContent = `<div>${text}</div>`;
-    if (speaker === 'you') htmlContent += `<button class="save-phrase-btn" onclick="openSaveFromHistory('${text.replace(/'/g, "\\'")}')">💾 Save Phrase</button>`;
+    
+    // FIX: Handle speaker labels properly
+    let displayText = text;
+    let speakerLabel = '';
+    if (text.startsWith('(Speaker ') || text.startsWith('(Partner)')) {
+        const match = text.match(/^\(([^)]+)\)\s*(.*)/);
+        if (match) {
+            speakerLabel = match[1];
+            displayText = match[2];
+        }
+    }
+    
+    let htmlContent = `<div>`;
+    if (speakerLabel && speaker !== 'you') {
+        htmlContent += `<span class="text-xs text-indigo-400 font-bold">${speakerLabel}: </span>`;
+    }
+    htmlContent += `${displayText}</div>`;
+    
+    if (speaker === 'you') {
+        htmlContent += `<button class="save-phrase-btn" onclick="window.openSaveFromHistory('${displayText.replace(/'/g, "\\'")}')">💾 Save Phrase</button>`;
+    }
     div.innerHTML = htmlContent;
     container.appendChild(div);
 }
 
 function addToConversation(speaker, text) {
+    // FIX: Prevent duplicate entries within 100ms
+    const lastEntry = conversationHistory[conversationHistory.length - 1];
+    if (lastEntry && lastEntry.speaker === speaker && lastEntry.text === text) {
+        return; // Skip duplicate
+    }
+    
     conversationHistory.push({ speaker, text });
     saveConversation();
     renderConversationHistory();
@@ -667,8 +714,15 @@ function openModal(phraseText, category, index) {
     document.getElementById('phraseModal').classList.remove('hidden');
 }
 
-// ====================== CONTEXT GENERATOR FIXED Retries Added ======================
+// ====================== CONTEXT GENERATOR FIXED ======================
 async function generateGrokSuggestions() {
+    // FIX: Prevent multiple simultaneous requests
+    if (aiRequestInProgress) {
+        console.log("AI request already in progress, skipping...");
+        return;
+    }
+    aiRequestInProgress = true;
+    
     let numReplies = parseInt(aiCountSlider.value);
     const contextLimit = parseInt(aiContextSlider.value);
     
@@ -676,11 +730,11 @@ async function generateGrokSuggestions() {
     const targetLengthRule = lengthLabels[parseInt(replyLenSlider.value) - 1];
 
     const activeLabel = aiProvider === 'v4-flash' ? 'DEEPSEEK V4-FLASH' : 'GROK';
-    grokSuggestionsEl.innerHTML = `<div class="col-span-full text-center text-slate-400 py-6 font-bold tracking-wide">Connecting with ${activeLabel}...</div>`;
+    grokSuggestionsEl.innerHTML = `<div class="col-span-full text-center text-slate-400 py-6 font-bold tracking-wide">Generating ${activeLabel} suggestions...</div>`;
+    suggestStatus.textContent = `AI Suggestions (Generating...)`;
 
     let recentConv = conversationHistory.slice(-contextLimit).map(m => `${m.speaker === 'you' ? 'ALS User' : 'Partner'}: ${m.text}`).join('\n');
     
-    // Weighted context input tracking enabled cleanly
     if (useUnsentContext.checked && textInput.value.trim()) {
         recentConv += `\n[Highest Priority Context: The ALS user has started typing this context into their screen box: "${textInput.value.trim()}". Base suggestion vectors directly off this thought process.]`;
     }
@@ -694,11 +748,11 @@ async function generateGrokSuggestions() {
             { messages, max_tokens: 250, temperature: 0.75, model: "deepseek-v4-flash" } :
             { model: 'grok-3-mini', messages, max_tokens: 250, temperature: 0.6 };
 
-        const response = await fetchWithInfiniteRetry(targetURL, {
+        const response = await fetchWithRetry(targetURL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        }, suggestStatus);
+        });
         
         const data = await response.json();
         const content = data.choices[0].message.content;
@@ -713,8 +767,11 @@ async function generateGrokSuggestions() {
             grokSuggestionsEl.appendChild(btn);
         });
     } catch (err) { 
-        suggestStatus.textContent = 'AI Suggestions failed'; 
-        grokSuggestionsEl.innerHTML = '<div class="col-span-full text-center text-red-400 py-6">Suggestions took too long. Click again to force wake.</div>'; 
+        suggestStatus.textContent = 'AI Suggestions failed - try again'; 
+        grokSuggestionsEl.innerHTML = '<div class="col-span-full text-center text-red-400 py-6">Suggestions failed. Click again to retry.</div>'; 
+        console.error("AI suggestion error:", err);
+    } finally {
+        aiRequestInProgress = false;
     }
 }
 
@@ -733,61 +790,117 @@ async function getAssemblyToken() {
             token = JSON.parse(textData).token;
         }
         return token;
-    } catch (e) { return null; }
+    } catch (e) { 
+        console.error("Token fetch error:", e);
+        return null; 
+    }
 }
 
 async function startAssemblyAI() {
+    if (isAssemblyListening) {
+        console.log("Already listening, skipping...");
+        return;
+    }
+    
     const token = await getAssemblyToken();
     if (!token) {
-        alert("Microphone activation failed: Serverless signature token could not be fetched.");
-        useAssemblyAI = false;
-        useAssemblyAIChk.checked = false;
-        localStorage.setItem('useAssemblyAI', false);
+        alert("Microphone activation failed: Could not get AssemblyAI token. Please try again.");
         updateMicUI(false);
         return;
     }
 
     const diarizeEnabled = useAssemblyAIChk.checked;
-    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le&speaker_labels=${diarizeEnabled}&max_speakers=6`;
+    const url = `wss://na-west-2.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le${diarizeEnabled ? '&speaker_labels=true&max_speakers=6' : ''}`;
 
-    console.log("🚀 Initializing secure diarized live stream...");
-    assemblyWS = new WebSocket(url);
+    console.log("🚀 Initializing AssemblyAI stream with diarization:", diarizeEnabled);
     
-    assemblyWS.onopen = () => { 
-        isAssemblyListening = true; 
-        updateMicUI(true); 
-        resetInactivityTimer(); 
-    };
-    
-    assemblyWS.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            
-            // STRICT CHUNK FILTER: Maps both 'FinalTranscript' packet labels and 'end_of_turn' gates natively
-            const isFinalPacket = data.message_type === "FinalTranscript" || data.end_of_turn === true;
-            const text = data.transcript || "";
-            const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Partner";
-            
-            if (text.trim() && !isFinalPacket) {
-                // Keep the rolling interim updates pinned strictly to the live preview field
-                liveTranscript.textContent = `🗣️ ${text.trim()}`;
-                liveTranscript.classList.remove('hidden');
-            }
-
-            if (isFinalPacket && text.trim()) {
-                resetInactivityTimer();
-                addToConversation('other', diarizeEnabled ? `(${speakerLabel}) ${text.trim()}` : text.trim());
-                liveTranscript.textContent = `🗣️ ${text.trim()}`;
-                setTimeout(() => liveTranscript.classList.add('hidden'), 1500);
-            }
-        } catch(e) { console.error("Insulated data stream error handled safely:", e); }
-    };
-    
-    assemblyWS.onerror = (e) => console.error("WebSocket handoff drop:", e);
-    assemblyWS.onclose = () => { isAssemblyListening = false; updateMicUI(false); };
-
     try {
-        assemblyStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        assemblyWS = new WebSocket(url);
+        
+        assemblyWS.onopen = () => { 
+            isAssemblyListening = true; 
+            updateMicUI(true); 
+            resetInactivityTimer();
+            console.log("AssemblyAI WebSocket connected");
+        };
+        
+        assemblyWS.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                // FIX: Handle different message types properly
+                if (data.message_type === 'SessionBegins') {
+                    console.log("Session begun, ID:", data.session_id);
+                    return;
+                }
+                
+                const isFinal = data.message_type === "FinalTranscript";
+                const text = data.text || "";
+                
+                if (text.trim() && !isFinal) {
+                    liveTranscript.textContent = `🗣️ ${text.trim()}`;
+                    liveTranscript.classList.remove('hidden');
+                }
+
+                if (isFinal && text.trim()) {
+                    resetInactivityTimer();
+                    
+                    // FIX: Properly format speaker labels
+                    let finalText = text.trim();
+                    if (diarizeEnabled && data.speaker) {
+                        const speakerLabel = data.speaker === 'A' ? 'You' : `Speaker ${data.speaker}`;
+                        finalText = `(${speakerLabel}) ${finalText}`;
+                    } else if (diarizeEnabled) {
+                        finalText = `(Partner) ${finalText}`;
+                    }
+                    
+                    addToConversation('other', finalText);
+                    liveTranscript.textContent = `🗣️ ${text.trim()}`;
+                    setTimeout(() => {
+                        if (liveTranscript.textContent.includes(text.trim())) {
+                            liveTranscript.classList.add('hidden');
+                        }
+                    }, 1500);
+                }
+            } catch(e) { 
+                console.error("Message parse error:", e);
+            }
+        };
+        
+        assemblyWS.onerror = (e) => {
+            console.error("WebSocket error:", e);
+            stopAssemblyAI();
+        };
+        
+        assemblyWS.onclose = (e) => {
+            console.log("WebSocket closed:", e.code, e.reason);
+            if (isAssemblyListening) {
+                stopAssemblyAI();
+            }
+        };
+
+        // Wait for connection before starting audio stream
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error("Connection timeout")), 10000);
+            assemblyWS.onopen = () => {
+                clearTimeout(timeout);
+                resolve();
+            };
+            assemblyWS.onerror = () => {
+                clearTimeout(timeout);
+                reject(new Error("Connection failed"));
+            };
+        });
+
+        assemblyStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                channelCount: 1,
+                sampleRate: 16000,
+                echoCancellation: true,
+                noiseSuppression: true
+            } 
+        });
+        
         assemblyAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
         const source = assemblyAudioContext.createMediaStreamSource(assemblyStream);
         assemblyProcessor = assemblyAudioContext.createScriptProcessor(4096, 1, 1);
@@ -797,22 +910,44 @@ async function startAssemblyAI() {
             const input = e.inputBuffer.getChannelData(0);
             const pcm = new Int16Array(input.length);
             for (let i = 0; i < input.length; i++) {
-                pcm[i] = Math.max(-32768, Math.min(32767, input[i] * 32768));
+                const s = Math.max(-1, Math.min(1, input[i]));
+                pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
             }
             assemblyWS.send(pcm.buffer);
         };
         source.connect(assemblyProcessor);
         assemblyProcessor.connect(assemblyAudioContext.destination);
-    } catch (err) { console.error("Hardware pipeline error:", err); stopAssemblyAI(); }
+        
+    } catch (err) { 
+        console.error("Hardware pipeline error:", err); 
+        stopAssemblyAI();
+        alert("Could not access microphone. Please check permissions.");
+    }
 }
 
 function stopAssemblyAI() {
-    if (assemblyProcessor) assemblyProcessor.disconnect();
-    if (assemblyAudioContext) assemblyAudioContext.close();
-    if (assemblyStream) assemblyStream.getTracks().forEach(track => track.stop());
+    if (assemblyProcessor) {
+        assemblyProcessor.disconnect();
+        assemblyProcessor = null;
+    }
+    if (assemblyAudioContext) {
+        assemblyAudioContext.close();
+        assemblyAudioContext = null;
+    }
+    if (assemblyStream) {
+        assemblyStream.getTracks().forEach(track => track.stop());
+        assemblyStream = null;
+    }
     if (assemblyWS) {
-        try { assemblyWS.send(JSON.stringify({ type: "Terminate" })); } catch(e){}
+        if (assemblyWS.readyState === WebSocket.OPEN) {
+            try { 
+                assemblyWS.send(JSON.stringify({ terminate_session: true })); 
+            } catch(e) {
+                console.warn("Error sending terminate:", e);
+            }
+        }
         assemblyWS.close();
+        assemblyWS = null;
     }
     isAssemblyListening = false;
     updateMicUI(false);
@@ -823,9 +958,11 @@ function stopAssemblyAI() {
 function updateMicUI(isListening) {
     if (isListening) {
         listenBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1 animate-pulse">🔴</span>Mic ON';
+        listenBtn.classList.add('animate-pulse');
+        listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🔴</span>Mic ON';
     } else {
         listenBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+        listenBtn.classList.remove('animate-pulse');
         listenBtn.innerHTML = '<span class="text-lg md:text-xl leading-none mb-0.5 md:mb-1">🎤</span>Mic OFF';
     }
 }
@@ -833,8 +970,11 @@ function updateMicUI(isListening) {
 let recognition = null;
 listenBtn.onclick = () => {
     if (useAssemblyAI) {
-        if (isAssemblyListening) stopAssemblyAI();
-        else startAssemblyAI();
+        if (isAssemblyListening) {
+            stopAssemblyAI();
+        } else {
+            startAssemblyAI();
+        }
     } else {
         if (!intentionallyStopped) {
             intentionallyStopped = true;
@@ -845,15 +985,30 @@ listenBtn.onclick = () => {
             intentionallyStopped = false;
             updateMicUI(true);
             if (!recognition) recognition = createRecognition();
-            if (recognition) recognition.start();
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.warn("Recognition start error:", e);
+                    // Recognition might already be started
+                }
+            }
             resetInactivityTimer();
         }
     }
 };
 
 function createRecognition() {
+    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+        console.warn("Speech recognition not supported");
+        return null;
+    }
+    
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true;
+    rec.lang = 'en-US'; 
+    rec.interimResults = true; 
+    rec.continuous = true;
+    
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
@@ -864,13 +1019,43 @@ function createRecognition() {
             resetInactivityTimer();
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
-            setTimeout(() => {
+            
+            // Check if this is a final result
+            const isFinal = event.results[event.results.length - 1].isFinal;
+            if (isFinal) {
                 const finalText = currentTranscript.trim();
-                if (finalText) addToConversation('other', finalText);
-                liveTranscript.classList.add('hidden');
-            }, 1200);
+                if (finalText) {
+                    addToConversation('other', finalText);
+                }
+                setTimeout(() => {
+                    if (liveTranscript.textContent === '🗣️ ' + currentTranscript) {
+                        liveTranscript.classList.add('hidden');
+                    }
+                }, 1200);
+            }
         }
     };
+    
+    rec.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error === 'not-allowed') {
+            alert("Microphone access denied. Please allow microphone access in your browser settings.");
+        }
+        intentionallyStopped = true;
+        updateMicUI(false);
+    };
+    
+    rec.onend = () => {
+        if (!intentionallyStopped) {
+            // Auto-restart if not intentionally stopped
+            try {
+                rec.start();
+            } catch(e) {
+                console.warn("Auto-restart failed:", e);
+            }
+        }
+    };
+    
     return rec;
 }
 
@@ -1079,12 +1264,14 @@ function updateAIUI() {
 aiProviderSelect.addEventListener('change', () => { 
     aiProvider = aiProviderSelect.value; 
     localStorage.setItem('aiProvider', aiProvider); 
-    updateAIUI(); 
 });
 
 useAssemblyAIChk.addEventListener('change', () => { 
     useAssemblyAI = useAssemblyAIChk.checked; 
-    localStorage.setItem('useAssemblyAI', useAssemblyAI); 
+    localStorage.setItem('useAssemblyAI', useAssemblyAI);
+    if (isAssemblyListening && !useAssemblyAI) {
+        stopAssemblyAI();
+    }
 });
 
 // Run Application Lifecycle Mount Functions Safely
