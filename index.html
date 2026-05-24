@@ -743,7 +743,7 @@ async function generateGrokSuggestions() {
         recentConv += `\n[Highest Priority Context: The ALS user has started typing this context into their screen box: "${textInput.value.trim()}". Base suggestion vectors directly off this thought process.]`;
     }
 
-    const promptText = `You are a human with ALS using a speech-generating communicator application. Based on this conversation log:\n${recentConv}\n\nGenerate exactly ${numReplies} natural, casual first-person conversational options. Length constraints: Target each option to be ${targetLengthRule}. Do not include numbers, prefixes, quotes, or dashes. Return exactly ${numReplies} phrases, one per line.`;
+    const promptText = `You are a human with ALS using a speech-generating communicator application. Based on this conversation log:\n${recentConv}\n\nGenerate exactly ${numReplies} natural, casual first-person conversational options. Length constraints: Target each option to be ${targetLengthRule}. Do not include quotes or dashes. Return exactly ${numReplies} phrases, one per line.`;
 
     try {
         const messages = [{ role: 'user', content: promptText }];
