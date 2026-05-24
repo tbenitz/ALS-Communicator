@@ -8,7 +8,6 @@
     <style>
         body { background-color: #121212; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
  
-        /* Custom Scrollbars */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -22,7 +21,6 @@
         @keyframes pulse-border { 0% { border-color: #3b82f6; } 50% { border-color: #93c5fd; } 100% { border-color: #3b82f6; } }
         .edit-mode-btn { border: 3px dashed #3b82f6; animation: pulse-border 2s infinite; }
 
-        /* Flexible suggestion button layouts for extreme lengths */
         .suggestion-btn { background: #166534; border: 2px solid #22c55e; font-size: 1.05rem; white-space: normal; word-break: break-word; overflow-wrap: break-word; hyphens: auto; display: flex; align-items: center; justify-content: center; padding: 0.75rem; transition: all 0.2s; border-radius: 0.75rem; color: #f8fafc; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.3); min-height: 64px; text-align: center; }
         .suggestion-btn:hover { background: #15803d; transform: scale(1.01); }
 
@@ -228,6 +226,12 @@
                 <label class="font-bold text-slate-300 text-lg flex items-center gap-2"><input type="checkbox" id="useAssemblyAI" class="w-5 h-5 accent-green-500">Enable Diarized AssemblyAI Mic Engine Mode</label>
             </div>
 
+            <div class="flex flex-col gap-3 border-t border-slate-700 pt-4">
+                <label class="font-bold text-slate-300 text-lg">AssemblyAI API Key</label>
+                <input type="password" id="assemblyApiKey" placeholder="Enter your AssemblyAI API key..." class="w-full bg-slate-800 border border-slate-600 text-white p-3 rounded-xl">
+                <button id="saveAssemblyKeyBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl text-sm self-start">Save Key</button>
+            </div>
+
             <div class="flex gap-2 border-t border-slate-700 pt-4">
                 <button id="exportBtn" class="flex-1 bg-slate-700 text-white font-bold py-2 rounded-xl text-sm">📤 Backup Phrases</button>
                 <button id="importBtn" class="flex-1 bg-slate-700 text-white font-bold py-2 rounded-xl text-sm">📥 Restore Backup</button>
@@ -264,7 +268,6 @@
 // ====================== ARCHITECTURE INITIALIZATION ======================
 const GROK_API_URL = '/api/grok';
 const DEEPSEEK_API_URL = '/api/deepseek';
-const ASSEMBLYAI_TOKEN_URL = '/api/token';
 
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
@@ -300,6 +303,8 @@ const elevenVoiceSelect = document.getElementById('elevenVoiceSelect');
 const refreshElevenVoicesBtn = document.getElementById('refreshElevenVoicesBtn');
 const desktopConvContainer = document.getElementById('desktopConvContainer');
 const toggleConvBtn = document.getElementById('toggleConvBtn');
+const assemblyApiKeyInput = document.getElementById('assemblyApiKey');
+const saveAssemblyKeyBtn = document.getElementById('saveAssemblyKeyBtn');
 
 const stabSlider = document.getElementById('stabSlider');
 const simSlider = document.getElementById('simSlider');
@@ -360,6 +365,7 @@ let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5
 let audioContextGlobal = null;
 let isLogMinimized = false;
 let useAssemblyAI = localStorage.getItem('useAssemblyAI') === 'true';
+let assemblyApiKey = localStorage.getItem('assemblyApiKey') || '';
 
 let assemblyWS = null;
 let assemblyStream = null;
@@ -531,12 +537,10 @@ function speakWithOS(text) {
     genBtn.disabled = true;
     btnText.innerHTML = '<span class="text-xs md:text-lg">🔊...</span>';
     
-    // Wait a brief moment after cancel to ensure voices are available
     setTimeout(() => {
         const utterance = new SpeechSynthesisUtterance(text);
         const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
         
-        // Refresh available voices if needed
         if (availableVoices.length === 0 && window.speechSynthesis) {
             availableVoices = window.speechSynthesis.getVoices();
         }
@@ -782,22 +786,35 @@ async function generateGrokSuggestions() {
     }
 }
 
-// ====================== REALTIME SECURE ASSEMBLYAI ENGINE ======================
+// ====================== ASSEMBLYAI TOKEN - DIRECT API CALL ======================
 async function getAssemblyToken() {
+    if (!assemblyApiKey) {
+        console.error("No AssemblyAI API key configured");
+        return null;
+    }
+    
     try {
-        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
-        if (!res.ok) return null;
-        const contentType = res.headers.get("content-type");
-        let token = null;
-        if (contentType && contentType.includes("application/json")) {
-            const data = await res.json();
-            token = data.token;
-        } else {
-            const textData = await res.text();
-            token = JSON.parse(textData).token;
+        console.log("Requesting AssemblyAI token...");
+        const response = await fetch('https://api.assemblyai.com/v2/realtime/token', {
+            method: 'POST',
+            headers: {
+                'Authorization': assemblyApiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ expires_in: 3600 })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("AssemblyAI token error:", response.status, errorText);
+            return null;
         }
-        return token;
+        
+        const data = await response.json();
+        console.log("AssemblyAI token received successfully");
+        return data.token;
     } catch (e) { 
+        console.error("Token fetch error:", e);
         return null; 
     }
 }
@@ -808,10 +825,16 @@ async function startAssemblyAI() {
         return;
     }
     
+    if (!assemblyApiKey) {
+        alert("Please enter your AssemblyAI API key in Settings first.");
+        settingsModal.classList.remove('hidden');
+        return;
+    }
+    
     try {
         const token = await getAssemblyToken();
         if (!token) {
-            alert("Microphone activation failed: Could not fetch AssemblyAI token. Please check your internet connection and try again.");
+            alert("Failed to get AssemblyAI token. Please check your API key in Settings.");
             updateMicUI(false);
             return;
         }
@@ -819,7 +842,7 @@ async function startAssemblyAI() {
         const diarizeEnabled = useAssemblyAIChk.checked;
         const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le${diarizeEnabled ? '&speaker_labels=true&max_speakers=6' : ''}`;
 
-        console.log("🚀 Initializing AssemblyAI stream...");
+        console.log("Connecting to AssemblyAI...");
         
         assemblyWS = new WebSocket(url);
         
@@ -884,7 +907,6 @@ async function startAssemblyAI() {
             }
         };
 
-        // Wait for WebSocket connection
         await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => reject(new Error("Connection timeout")), 10000);
             const originalOnOpen = assemblyWS.onopen;
@@ -901,7 +923,6 @@ async function startAssemblyAI() {
             };
         });
 
-        // Get microphone access with specific constraints
         assemblyStream = await navigator.mediaDevices.getUserMedia({ 
             audio: {
                 channelCount: 1,
@@ -939,7 +960,7 @@ async function startAssemblyAI() {
         } else if (err.name === 'NotFoundError') {
             alert("No microphone found. Please connect a microphone and try again.");
         } else {
-            alert("Could not access microphone. Please check your browser permissions.");
+            alert("Could not access microphone: " + err.message);
         }
     }
 }
@@ -1265,6 +1286,15 @@ elevenVoiceSelect.addEventListener('change', () => {
     selectedElevenVoiceId = elevenVoiceSelect.value; localStorage.setItem('selectedElevenVoiceId', selectedElevenVoiceId);
 });
 
+saveAssemblyKeyBtn.onclick = () => {
+    const key = assemblyApiKeyInput.value.trim();
+    if (key) {
+        assemblyApiKey = key;
+        localStorage.setItem('assemblyApiKey', assemblyApiKey);
+        alert("AssemblyAI API key saved!");
+    }
+};
+
 window.openSaveFromHistory = (text) => {
     isEditMode = true;
     openModal(text, currentCategory, -1);
@@ -1280,6 +1310,7 @@ function updateAudioBoostUI() {
 function updateAIUI() { 
     aiProviderSelect.value = aiProvider; 
     useAssemblyAIChk.checked = useAssemblyAI;
+    assemblyApiKeyInput.value = assemblyApiKey;
 }
 
 aiProviderSelect.addEventListener('change', () => { 
