@@ -425,7 +425,7 @@ async function fetchWithRetry(url, options, maxRetries = 5) {
     }
 }
 
-// ====================== RESTORED & SANITIZED PREDICTIVE LOGIC ======================
+// ====================== PREDICTIVE LOGIC ======================
 async function getDeepSeekPredictive(lastWords) {
     try {
         const res = await fetch(DEEPSEEK_API_URL, {
@@ -440,12 +440,7 @@ async function getDeepSeekPredictive(lastWords) {
         });
         if (!res.ok) return [];
         const data = await res.json();
-        
-        // Split output cleanly and strip unwanted quotes or punctuation markings
-        return data.choices[0].message.content.trim()
-            .replace(/["'.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
-            .split(/\s+/)
-            .slice(0,4);
+        return data.choices[0].message.content.trim().replace(/["'.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(/\s+/).slice(0,4);
     } catch (e) { return []; }
 }
 
@@ -508,7 +503,7 @@ async function speakWithElevenLabs(text) {
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         audio.onended = () => { URL.revokeObjectURL(audioUrl); finishTTS(); };
-        audio.onerror = () => { URL.revokeObjectURL(audioUrl); finishTTS(); speakWithOS(text); };
+        audio.onerror = () => { URL.revokeObjectURL(audioUrl); finishTTS(); };
         if (audioBoostLevel > 1) {
             if (!audioContextGlobal) audioContextGlobal = new (window.AudioContext || window.webkitAudioContext)();
             if (audioContextGlobal.state === 'suspended') await audioContextGlobal.resume();
@@ -519,29 +514,50 @@ async function speakWithElevenLabs(text) {
         }
         audio.play();
         lastSpoken = text;
-    } catch (err) { speakWithOS(text); }
+    } catch (err) { 
+        speakWithOS(text); 
+    }
 }
 
 function speakWithOS(text) {
     if (!text) return;
+    if (!window.speechSynthesis) {
+        console.error("Speech synthesis not supported");
+        finishTTS();
+        return;
+    }
     lastSpoken = text;
     window.speechSynthesis.cancel();
     genBtn.disabled = true;
     btnText.innerHTML = '<span class="text-xs md:text-lg">🔊...</span>';
-    const utterance = new SpeechSynthesisUtterance(text);
-    const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
-    if (savedVoiceURI && availableVoices.length > 0) {
-        const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
-        if (exactVoice) utterance.voice = exactVoice;
-    } else { utterance.lang = 'en-US'; }
-    utterance.volume = Math.min(1.0, audioBoostLevel);
-    utterance.rate = 0.92;
-    utterance.onend = finishTTS;
-    utterance.onerror = finishTTS;
-    window.speechSynthesis.speak(utterance);
+    
+    // Wait a brief moment after cancel to ensure voices are available
+    setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+        
+        // Refresh available voices if needed
+        if (availableVoices.length === 0 && window.speechSynthesis) {
+            availableVoices = window.speechSynthesis.getVoices();
+        }
+        
+        if (savedVoiceURI && availableVoices.length > 0) {
+            const exactVoice = availableVoices.find(v => v.voiceURI === savedVoiceURI);
+            if (exactVoice) utterance.voice = exactVoice;
+        } else { 
+            utterance.lang = 'en-US'; 
+        }
+        utterance.volume = Math.min(1.0, audioBoostLevel);
+        utterance.rate = 0.92;
+        utterance.onend = finishTTS;
+        utterance.onerror = (e) => {
+            console.error("Speech error:", e);
+            finishTTS();
+        };
+        window.speechSynthesis.speak(utterance);
+    }, 100);
 }
 
-// RESTORED: Core definitions for ElevenLabs profiles tracking
 async function fetchElevenVoices() {
     if (!elevenApiKey) return;
     try {
@@ -710,7 +726,7 @@ function openModal(phraseText, category, index) {
     document.getElementById('phraseModal').classList.remove('hidden');
 }
 
-// ====================== CONTEXT GENERATOR FIXED ======================
+// ====================== CONTEXT GENERATOR ======================
 async function generateGrokSuggestions() {
     if (aiRequestInProgress) return;
     aiRequestInProgress = true;
@@ -787,24 +803,28 @@ async function getAssemblyToken() {
 }
 
 async function startAssemblyAI() {
-    if (isAssemblyListening) return;
-    
-    const token = await getAssemblyToken();
-    if (!token) {
-        alert("Microphone activation failed: Could not fetch validation token.");
-        updateMicUI(false);
+    if (isAssemblyListening) {
+        console.log("Already listening, skipping start");
         return;
     }
-
-    const diarizeEnabled = useAssemblyAIChk.checked;
-    const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le${diarizeEnabled ? '&speaker_labels=true&max_speakers=6' : ''}`;
-
-    console.log("🚀 Initializing secure global streaming gateway...");
     
     try {
+        const token = await getAssemblyToken();
+        if (!token) {
+            alert("Microphone activation failed: Could not fetch AssemblyAI token. Please check your internet connection and try again.");
+            updateMicUI(false);
+            return;
+        }
+
+        const diarizeEnabled = useAssemblyAIChk.checked;
+        const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le${diarizeEnabled ? '&speaker_labels=true&max_speakers=6' : ''}`;
+
+        console.log("🚀 Initializing AssemblyAI stream...");
+        
         assemblyWS = new WebSocket(url);
         
         assemblyWS.onopen = () => { 
+            console.log("AssemblyAI WebSocket connected");
             isAssemblyListening = true; 
             updateMicUI(true); 
             resetInactivityTimer();
@@ -813,15 +833,17 @@ async function startAssemblyAI() {
         assemblyWS.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.message_type === 'SessionBegins') return;
+                
+                if (data.message_type === 'SessionBegins') {
+                    console.log("Session begun:", data.session_id);
+                    return;
+                }
                 
                 const isFinal = data.message_type === "FinalTranscript";
-                
-                // CRITICAL TRANSCRIPTION REPAIR: Check data.transcript as first priority property
                 const text = data.transcript || data.text || "";
                 
                 if (text.trim() && !isFinal) {
-                    liveTranscript.textContent = `🗣... ${text.trim()}`;
+                    liveTranscript.textContent = `🗣️ ${text.trim()}`;
                     liveTranscript.classList.remove('hidden');
                 }
 
@@ -838,22 +860,56 @@ async function startAssemblyAI() {
                     
                     addToConversation('other', finalText);
                     liveTranscript.textContent = `🗣️ ${text.trim()}`;
-                    setTimeout(() => liveTranscript.classList.add('hidden'), 1500);
+                    setTimeout(() => {
+                        if (liveTranscript.textContent === `🗣️ ${text.trim()}`) {
+                            liveTranscript.classList.add('hidden');
+                        }
+                    }, 1500);
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                console.error("AssemblyAI message error:", e);
+            }
         };
         
-        assemblyWS.onerror = () => stopAssemblyAI();
-        assemblyWS.onclose = () => { if (isAssemblyListening) stopAssemblyAI(); };
+        assemblyWS.onerror = (e) => {
+            console.error("AssemblyAI WebSocket error:", e);
+            stopAssemblyAI();
+            alert("Microphone connection error. Please try again.");
+        };
+        
+        assemblyWS.onclose = (e) => {
+            console.log("AssemblyAI WebSocket closed:", e.code, e.reason);
+            if (isAssemblyListening) {
+                stopAssemblyAI();
+            }
+        };
 
+        // Wait for WebSocket connection
         await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error("Timeout")), 10000);
-            assemblyWS.onopen = () => { clearTimeout(timeout); resolve(); };
-            assemblyWS.onerror = () => { clearTimeout(timeout); reject(); };
+            const timeout = setTimeout(() => reject(new Error("Connection timeout")), 10000);
+            const originalOnOpen = assemblyWS.onopen;
+            assemblyWS.onopen = (event) => {
+                clearTimeout(timeout);
+                if (originalOnOpen) originalOnOpen.call(assemblyWS, event);
+                resolve();
+            };
+            const originalOnError = assemblyWS.onerror;
+            assemblyWS.onerror = (event) => {
+                clearTimeout(timeout);
+                if (originalOnError) originalOnError.call(assemblyWS, event);
+                reject(new Error("Connection error"));
+            };
         });
 
+        // Get microphone access with specific constraints
         assemblyStream = await navigator.mediaDevices.getUserMedia({ 
-            audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true } 
+            audio: {
+                channelCount: 1,
+                sampleRate: 16000,
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            } 
         });
         
         assemblyAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -872,28 +928,49 @@ async function startAssemblyAI() {
         };
         source.connect(assemblyProcessor);
         assemblyProcessor.connect(assemblyAudioContext.destination);
-        isAssemblyListening = true; 
-        updateMicUI(true);
+        
+        console.log("AssemblyAI listening started successfully");
         
     } catch (err) { 
+        console.error("Hardware pipeline error:", err);
         stopAssemblyAI();
-        alert("Could not access microphone.");
+        if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
+            alert("Microphone access denied. Please allow microphone access in your browser settings and try again.");
+        } else if (err.name === 'NotFoundError') {
+            alert("No microphone found. Please connect a microphone and try again.");
+        } else {
+            alert("Could not access microphone. Please check your browser permissions.");
+        }
     }
 }
 
 function stopAssemblyAI() {
-    if (assemblyProcessor) { assemblyProcessor.disconnect(); assemblyProcessor = null; }
-    if (assemblyAudioContext) { assemblyAudioContext.close(); assemblyAudioContext = null; }
-    if (assemblyStream) { assemblyStream.getTracks().forEach(track => track.stop()); assemblyStream = null; }
+    if (assemblyProcessor) {
+        assemblyProcessor.disconnect();
+        assemblyProcessor = null;
+    }
+    if (assemblyAudioContext) {
+        assemblyAudioContext.close().catch(console.error);
+        assemblyAudioContext = null;
+    }
+    if (assemblyStream) {
+        assemblyStream.getTracks().forEach(track => track.stop());
+        assemblyStream = null;
+    }
     if (assemblyWS) {
         if (assemblyWS.readyState === WebSocket.OPEN) {
-            try { assemblyWS.send(JSON.stringify({ terminate_session: true })); } catch(e){}
+            try { 
+                assemblyWS.send(JSON.stringify({ terminate_session: true })); 
+            } catch(e) {
+                console.warn("Error sending terminate:", e);
+            }
         }
         assemblyWS.close();
         assemblyWS = null;
     }
     isAssemblyListening = false;
     updateMicUI(false);
+    if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
 }
 
 // ====================== NATIVE PERIPHERALS FALLBACKS ======================
@@ -912,27 +989,50 @@ function updateMicUI(isListening) {
 let recognition = null;
 listenBtn.onclick = () => {
     if (useAssemblyAI) {
-        if (isAssemblyListening) stopAssemblyAI();
-        else startAssemblyAI();
+        if (isAssemblyListening) {
+            stopAssemblyAI();
+        } else {
+            startAssemblyAI();
+        }
     } else {
         if (!intentionallyStopped) {
             intentionallyStopped = true;
-            if (recognition) recognition.stop();
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch(e) {
+                    console.warn("Error stopping recognition:", e);
+                }
+            }
             updateMicUI(false);
+            if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
         } else {
             intentionallyStopped = false;
             updateMicUI(true);
             if (!recognition) recognition = createRecognition();
-            if (recognition) { try { recognition.start(); } catch(e){} }
+            if (recognition) { 
+                try { 
+                    recognition.start(); 
+                } catch(e) {
+                    console.warn("Error starting recognition:", e);
+                }
+            }
             resetInactivityTimer();
         }
     }
 };
 
 function createRecognition() {
-    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) return null;
+    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+        console.warn("Speech recognition not supported in this browser");
+        return null;
+    }
+    
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true;
+    rec.lang = 'en-US'; 
+    rec.interimResults = true; 
+    rec.continuous = true;
+    
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
@@ -943,14 +1043,41 @@ function createRecognition() {
             resetInactivityTimer();
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
-            if (event.results[event.results.length - 1].isFinal) {
+            
+            const isFinal = event.results[event.results.length - 1].isFinal;
+            if (isFinal) {
                 const finalText = currentTranscript.trim();
                 if (finalText) addToConversation('other', finalText);
-                setTimeout(() => liveTranscript.classList.add('hidden'), 1200);
+                setTimeout(() => {
+                    if (liveTranscript.textContent === '🗣️ ' + currentTranscript) {
+                        liveTranscript.classList.add('hidden');
+                    }
+                }, 1200);
             }
         }
     };
-    rec.onend = () => { if (!intentionallyStopped) try { rec.start(); } catch(e){} };
+    
+    rec.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        if (event.error === 'not-allowed') {
+            alert("Microphone access denied. Please allow microphone access in your browser settings.");
+        }
+        intentionallyStopped = true;
+        updateMicUI(false);
+    };
+    
+    rec.onend = () => { 
+        if (!intentionallyStopped) { 
+            try { 
+                rec.start(); 
+            } catch(e) {
+                console.warn("Auto-restart failed:", e);
+                intentionallyStopped = true;
+                updateMicUI(false);
+            }
+        }
+    };
+    
     return rec;
 }
 
@@ -958,6 +1085,26 @@ function createRecognition() {
 openSettingsBtn.onclick = () => settingsModal.classList.remove('hidden');
 closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
 closeSettingsBtnBottom.onclick = () => settingsModal.classList.add('hidden');
+
+textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        genBtn.click();
+    }
+});
+
+genBtn.onclick = () => {
+    const text = textInput.value.trim();
+    if (text) {
+        speak(text);
+        textInput.value = '';
+        predictiveBar.classList.add('hidden');
+    }
+};
+
+replayBtn.onclick = () => { if (lastSpoken) speak(lastSpoken); };
+document.getElementById('clearBtn').onclick = () => { textInput.value = ''; predictiveBar.classList.add('hidden'); };
+editToggleBtn.onclick = () => { isEditMode = !isEditMode; renderPhrases(); };
 
 addCategoryBtn.onclick = () => {
     const newCat = prompt("Enter new category name:");
