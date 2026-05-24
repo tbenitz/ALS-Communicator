@@ -262,6 +262,7 @@
 // ====================== ARCHITECTURE INITIALIZATION ======================
 const GROK_API_URL = '/api/grok';
 const DEEPSEEK_API_URL = '/api/deepseek';
+const ASSEMBLYAI_TOKEN_URL = '/api/token';
 
 const textInput = document.getElementById('textInput');
 const predictiveBar = document.getElementById('predictiveBar');
@@ -357,7 +358,6 @@ let audioBoostLevel = parseFloat(localStorage.getItem('audioBoostLevel')) || 2.5
 let audioContextGlobal = null;
 let isLogMinimized = false;
 let useAssemblyAI = localStorage.getItem('useAssemblyAI') === 'true';
-let assemblyApiKey = localStorage.getItem('assemblyai_key') || '';
 
 let assemblyWS = null;
 let assemblyStream = null;
@@ -778,23 +778,40 @@ async function generateGrokSuggestions() {
     }
 }
 
-// ====================== ASSEMBLYAI USING API KEY DIRECTLY ======================
+// ====================== ASSEMBLYAI USING /api/token ENDPOINT ======================
+async function getAssemblyToken() {
+    try {
+        const res = await fetch(ASSEMBLYAI_TOKEN_URL);
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("Token endpoint error:", res.status, errorText);
+            return null;
+        }
+        const data = await res.json();
+        return data.token;
+    } catch (e) { 
+        console.error("Token fetch error:", e);
+        return null; 
+    }
+}
+
 async function startAssemblyAI() {
     if (isAssemblyListening) {
         console.log("Already listening, skipping start");
         return;
     }
     
-    if (!assemblyApiKey) {
-        alert("Please enter your AssemblyAI API key in Settings first.\n\nGet one at: https://www.assemblyai.com/");
-        settingsModal.classList.remove('hidden');
-        return;
-    }
-    
     try {
+        // Get temporary token from Vercel serverless function
+        const token = await getAssemblyToken();
+        if (!token) {
+            alert("Could not connect to speech service. Please check your connection and try again.");
+            updateMicUI(false);
+            return;
+        }
+
         const diarizeEnabled = useAssemblyAIChk.checked;
-        // Use API key directly in WebSocket URL - same as working example
-        const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(assemblyApiKey)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le${diarizeEnabled ? '&speaker_labels=true&max_speakers=6' : ''}`;
+        const url = `wss://streaming.assemblyai.com/v3/ws?token=${encodeURIComponent(token)}&speech_model=universal-streaming-english&sample_rate=16000&encoding=pcm_s16le${diarizeEnabled ? '&speaker_labels=true&max_speakers=6' : ''}`;
 
         console.log("Connecting to AssemblyAI...");
         
@@ -811,7 +828,6 @@ async function startAssemblyAI() {
             try {
                 const data = JSON.parse(event.data);
                 
-                // Handle Turn-based diarization (same as working example)
                 if (data.type === "Turn") {
                     const text = data.transcript || "";
                     const speakerLabel = data.speaker_label ? `Speaker ${data.speaker_label}` : "Partner";
@@ -819,13 +835,11 @@ async function startAssemblyAI() {
                     if (!text.trim()) return;
                     
                     if (data.end_of_turn) {
-                        // Final utterance
                         const finalText = diarizeEnabled ? `(${speakerLabel}) ${text.trim()}` : text.trim();
                         addToConversation('other', finalText);
                         liveTranscript.textContent = `🗣️ ${text.trim()}`;
                         setTimeout(() => liveTranscript.classList.add('hidden'), 1500);
                     } else {
-                        // Interim result
                         liveTranscript.textContent = `🗣️ ${speakerLabel}: ${text.trim()}`;
                         liveTranscript.classList.remove('hidden');
                     }
@@ -838,7 +852,6 @@ async function startAssemblyAI() {
         assemblyWS.onerror = (e) => {
             console.error("AssemblyAI WebSocket error:", e);
             stopAssemblyAI();
-            alert("Microphone connection error. Please try again.");
         };
         
         assemblyWS.onclose = (e) => {
@@ -882,9 +895,9 @@ async function startAssemblyAI() {
         console.error("Hardware pipeline error:", err);
         stopAssemblyAI();
         if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
-            alert("Microphone access denied. Please allow microphone access in your browser settings and try again.");
+            alert("Microphone access denied. Please allow microphone access in your browser settings.");
         } else if (err.name === 'NotFoundError') {
-            alert("No microphone found. Please connect a microphone and try again.");
+            alert("No microphone found. Please connect a microphone.");
         } else {
             alert("Could not access microphone: " + err.message);
         }
@@ -908,9 +921,7 @@ function stopAssemblyAI() {
         if (assemblyWS.readyState === WebSocket.OPEN) {
             try { 
                 assemblyWS.send(JSON.stringify({ terminate_session: true })); 
-            } catch(e) {
-                console.warn("Error sending terminate:", e);
-            }
+            } catch(e) {}
         }
         assemblyWS.close();
         assemblyWS = null;
@@ -945,11 +956,7 @@ listenBtn.onclick = () => {
         if (!intentionallyStopped) {
             intentionallyStopped = true;
             if (recognition) {
-                try {
-                    recognition.stop();
-                } catch(e) {
-                    console.warn("Error stopping recognition:", e);
-                }
+                try { recognition.stop(); } catch(e) {}
             }
             updateMicUI(false);
             if (inactivityTimeoutTracker) clearTimeout(inactivityTimeoutTracker);
@@ -958,11 +965,7 @@ listenBtn.onclick = () => {
             updateMicUI(true);
             if (!recognition) recognition = createRecognition();
             if (recognition) { 
-                try { 
-                    recognition.start(); 
-                } catch(e) {
-                    console.warn("Error starting recognition:", e);
-                }
+                try { recognition.start(); } catch(e) {}
             }
             resetInactivityTimer();
         }
@@ -970,16 +973,9 @@ listenBtn.onclick = () => {
 };
 
 function createRecognition() {
-    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
-        console.warn("Speech recognition not supported in this browser");
-        return null;
-    }
-    
+    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) return null;
     const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = 'en-US'; 
-    rec.interimResults = true; 
-    rec.continuous = true;
-    
+    rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = true;
     rec.onresult = (event) => {
         if (isTTSPlaying) return;
         let currentTranscript = '';
@@ -990,41 +986,28 @@ function createRecognition() {
             resetInactivityTimer();
             liveTranscript.textContent = '🗣️ ' + currentTranscript;
             liveTranscript.classList.remove('hidden');
-            
-            const isFinal = event.results[event.results.length - 1].isFinal;
-            if (isFinal) {
+            if (event.results[event.results.length - 1].isFinal) {
                 const finalText = currentTranscript.trim();
                 if (finalText) addToConversation('other', finalText);
-                setTimeout(() => {
-                    if (liveTranscript.textContent === '🗣️ ' + currentTranscript) {
-                        liveTranscript.classList.add('hidden');
-                    }
-                }, 1200);
+                setTimeout(() => liveTranscript.classList.add('hidden'), 1200);
             }
         }
     };
-    
     rec.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
         if (event.error === 'not-allowed') {
             alert("Microphone access denied. Please allow microphone access in your browser settings.");
         }
         intentionallyStopped = true;
         updateMicUI(false);
     };
-    
     rec.onend = () => { 
         if (!intentionallyStopped) { 
-            try { 
-                rec.start(); 
-            } catch(e) {
-                console.warn("Auto-restart failed:", e);
+            try { rec.start(); } catch(e) {
                 intentionallyStopped = true;
                 updateMicUI(false);
             }
         }
     };
-    
     return rec;
 }
 
@@ -1240,17 +1223,12 @@ useAssemblyAIChk.addEventListener('change', () => {
     if (isAssemblyListening && !useAssemblyAI) stopAssemblyAI();
 });
 
-// Run Application Lifecycle Mount Functions safely in order
+// Run Application Lifecycle Mount Functions
 updateAIUI(); updateActionUI(); renderCategories(); renderPhrases(); renderConversationHistory(); populateVoiceList(); updateTTSProviderUI(); updateElevenSliders(); updateAudioBoostUI();
 if (elevenApiKey) fetchElevenVoices();
 
-// Load AssemblyAI key from the working example's localStorage key
-if (localStorage.getItem('assemblyai_key')) {
-    assemblyApiKey = localStorage.getItem('assemblyai_key');
-}
-
 grokSuggestBtn.onclick = generateGrokSuggestions;
-console.log("✅ Core System Engines Fully Functional.");
+console.log("✅ ALS Communicator Ready - Token-based AssemblyAI configured");
 </script>
 </body>
 </html>
