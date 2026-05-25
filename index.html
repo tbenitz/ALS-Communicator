@@ -278,7 +278,7 @@ async function generateGrokSuggestions(retryCount=0){
 
 ${convStr}${promptExtra}
 
-Generate exactly ${n} natural, casual conversational phrases that the ALS User might say next. These should be ${tl}. The phrases should flow naturally from the conversation context. If the user is typing something, generate phrases that continue or elaborate on their current thought. Return exactly ${n} phrases, one per line, with no numbers, dashes, or quotes.`;
+Generate exactly ${n} natural, casual conversational phrases that the ALS User might say next. These should be ${tl}. The phrases should flow naturally from the conversation context. If the user is typing something, generate phrases that continue or elaborate on their current thought. Return exactly ${n} phrases, one per line, with no quotes.`;
 
     try{
         const controller=new AbortController();
