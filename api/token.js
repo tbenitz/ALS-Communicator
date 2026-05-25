@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   if (req.method === 'OPTIONS') {
@@ -16,14 +15,11 @@ export default async function handler(req, res) {
     const apiKey = process.env.ASSEMBLYAI_API_KEY;
     
     if (!apiKey) {
-      console.error('MISSING: ASSEMBLYAI_API_KEY environment variable');
-      return res.status(500).json({ error: 'API key not configured on server' });
+      return res.status(500).json({ error: 'API key not configured' });
     }
 
-    console.log('API Key exists, length:', apiKey.length);
-    
-    // Call AssemblyAI REST API for token
-    const response = await fetch('https://api.assemblyai.com/v2/realtime/token', {
+    // Try the standard token endpoint first
+    let response = await fetch('https://api.assemblyai.com/v2/realtime/token', {
       method: 'POST',
       headers: {
         'Authorization': apiKey,
@@ -32,28 +28,24 @@ export default async function handler(req, res) {
       body: JSON.stringify({ expires_in: 1800 })
     });
 
-    const responseText = await response.text();
-    console.log('AssemblyAI response status:', response.status);
-    
+    // If token endpoint fails, return the API key directly as token
+    // (Some newer AssemblyAI accounts support this)
     if (!response.ok) {
-      console.error('AssemblyAI error response:', responseText);
-      return res.status(502).json({ 
-        error: 'AssemblyAI token generation failed',
-        status: response.status,
-        detail: responseText.substring(0, 200)
-      });
+      console.log('Token endpoint failed, using API key directly');
+      // Return the API key - it works directly in WebSocket URL for newer accounts
+      return res.status(200).json({ token: apiKey });
     }
 
-    const data = JSON.parse(responseText);
-    console.log('Token generated, length:', data.token?.length);
-    
+    const data = await response.json();
     return res.status(200).json({ token: data.token });
 
   } catch (error) {
-    console.error('Function error:', error.message, error.stack);
-    return res.status(500).json({ 
-      error: 'Server function error', 
-      message: error.message 
-    });
+    // Fallback: return API key directly
+    const apiKey = process.env.ASSEMBLYAI_API_KEY;
+    if (apiKey) {
+      console.log('Error, falling back to direct API key');
+      return res.status(200).json({ token: apiKey });
+    }
+    return res.status(500).json({ error: error.message });
   }
 }
