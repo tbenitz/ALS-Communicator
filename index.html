@@ -139,7 +139,23 @@ function speak(text){if(!text)return;addToConversation('you',text);if(settings.t
 function finishTTS(){genBtn.disabled=false;btnText.innerHTML='<span class="flex flex-col items-center"><span class="text-lg md:text-2xl mb-0.5">🔊</span>Speak</span>';isTTSPlaying=false;}
 
 // ====================== PHRASE GRID WITH DRAG REORDER ======================
-function handlePhraseTap(phrase){if(isEditMode||isReorderMode)return;resetInactivityTimer();if(settings.clickAction==='speak'){speak(phrase);textInput.value='';}else{textInput.value+=(textInput.value&&!textInput.value.endsWith(' ')?' ':'')+phrase+' ';textInput.scrollTop=textInput.scrollHeight;textInput.focus();}}
+function handlePhraseTap(phrase){
+    if(isEditMode||isReorderMode)return;
+    resetInactivityTimer();
+    if(settings.clickAction==='speak'){
+        speak(phrase);
+        textInput.value='';
+    } else {
+        // If elaborate mode is on, replace the input entirely since the suggestion already incorporates the intent
+        if(settings.elaborateResponses){
+            textInput.value = phrase + ' ';
+        } else {
+            textInput.value += (textInput.value && !textInput.value.endsWith(' ') ? ' ' : '') + phrase + ' ';
+        }
+        textInput.scrollTop = textInput.scrollHeight;
+        textInput.focus();
+    }
+}
 function saveToStorage(){localStorage.setItem('alsPhrases',JSON.stringify(phraseCategories));}
 function saveConversation(){localStorage.setItem('alsConversation',JSON.stringify(conversationHistory));}
 
@@ -270,7 +286,7 @@ async function generateGrokSuggestions(retryCount=0){
         const inputText=textInput.value.trim();
         if(settings.elaborateResponses){
             // When elaborate mode is on, generate full responses that replace the input
-            promptExtra=`\n\nIMPORTANT - The ALS user has typed "${inputText}" but this may be incomplete or just keywords. Generate COMPLETE, fully-formed responses that ELABORATE these keywords into a natural, polite, and complete thought. For example, if the user typed "water" generate something like "Could I have some water, please?" If they typed "pain" generate something like "I'm feeling some pain right now." The suggestions should REPLACE the user's input entirely, not just continue after it. Make them sound natural and conversational.`;
+            promptExtra=`\n\nIMPORTANT - The ALS user has typed "${inputText}" but this may be incomplete or just keywords. Generate COMPLETE, fully-formed responses that ELABORATE these keywords into a natural, polite, and complete thought. For example, if the user typed "water" generate something like "Could I have some water, please?" If they typed "pain" generate something like "I'm feeling some pain right now." If they typed "yes water" generate "Yes, I'd like some water please." The suggestions should REPLACE the user's input entirely, not just continue after it. Make them sound natural and conversational. Do NOT include the original keywords as-is followed by more text - instead create one cohesive complete sentence that incorporates the intent.`;
         } else {
             promptExtra=`\n\nIMPORTANT - The ALS user is currently typing: "${inputText}". They want suggestions that CONTINUE or ELABORATE on this thought, NOT answer it as a question. Generate phrases that extend this topic naturally in a conversational way.`;
         }
@@ -307,7 +323,29 @@ Generate exactly ${n} natural, casual conversational phrases that the ALS User m
         
         grokSuggestionsEl.innerHTML='';
         suggestStatus.textContent='AI Suggestions';
-        sugs.slice(0,n).forEach(p=>{const btn=document.createElement('button');btn.className='suggestion-btn';btn.textContent=p;btn.onclick=()=>handlePhraseTap(p);grokSuggestionsEl.appendChild(btn);});
+        sugs.slice(0,n).forEach(p=>{
+            const btn=document.createElement('button');
+            btn.className='suggestion-btn';
+            btn.textContent=p;
+            btn.onclick=()=>{
+                if(isEditMode||isReorderMode)return;
+                resetInactivityTimer();
+                if(settings.clickAction==='speak'){
+                    speak(p);
+                    textInput.value='';
+                } else {
+                    // When elaborate is on, replace the input entirely with the elaborated response
+                    if(settings.elaborateResponses){
+                        textInput.value = p + ' ';
+                    } else {
+                        textInput.value += (textInput.value && !textInput.value.endsWith(' ') ? ' ' : '') + p + ' ';
+                    }
+                    textInput.scrollTop = textInput.scrollHeight;
+                    textInput.focus();
+                }
+            };
+            grokSuggestionsEl.appendChild(btn);
+        });
     }catch(e){
         if(retryCount<2){
             suggestStatus.textContent=`Retrying (${retryCount+1}/3)...`;
